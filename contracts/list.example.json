@@ -1,0 +1,6 @@
+{
+  "name": "Equipe exemplo",
+  "recipients": [
+    {"name": "Pessoa exemplo", "address": "pessoa@example.com"}
+  ]
+}

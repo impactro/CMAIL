@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "1.0",
+  "version": "26.9.11a",
+  "owner": "CMAIL",
+  "capabilities": [
+    {
+      "id": "cmail.webmail",
+      "status": "operational",
+      "productionReady": false,
+      "entrypoint": "python -m cmail serve",
+      "network": "loopback-only",
+      "providers": ["demo", "imap-smtp"]
+    },
+    {
+      "id": "cmail.lists",
+      "status": "operational",
+      "productionReady": false,
+      "entrypoint": "python -m cmail lists",
+      "storage": "module-owned SQLite"
+    },
+    {
+      "id": "cmail.send",
+      "status": "operational",
+      "productionReady": false,
+      "entrypoint": "python -m cmail send-prepare / send-execute",
+      "requires": ["preview", "single-use confirmation", "--execute"],
+      "uncertainFailureRetry": "blocked"
+    }
+  ]
+}

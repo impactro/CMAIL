@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "crania-cmail"
+version = "26.9.11a0"
+description = "Webmail, listas e disparos controlados do Crania Agent"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["Flask>=3.0,<4", "waitress>=3,<4"]
+
+[project.scripts]
+cmail = "cmail.__main__:main"
+
+[project.entry-points."crania_agent.components"]
+cmail = "cmail.cm:describe"
+
+[tool.setuptools.packages.find]
+include = ["cmail*"]
+
+[tool.setuptools.package-data]
+cmail = ["templates/*.html", "static/*.css", "static/*.js", "skills/*/SKILL.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,5 @@
+{
+  "recipients": ["pessoa@example.com"],
+  "subject": "Assunto de exemplo",
+  "body": "Conteúdo de exemplo sem dados reais."
+}
