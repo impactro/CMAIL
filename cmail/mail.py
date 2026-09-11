@@ -216,4 +216,8 @@ class ImapSmtpProvider:
 
 
 def provider(config: Config) -> Provider:
-    return DemoProvider() if config.mode == "demo" else ImapSmtpProvider(config)
+    if config.mode == "demo":
+        return DemoProvider()
+    if config.mode == "imap":
+        return ImapSmtpProvider(config)
+    raise MailError("O provedor OAuth exige uma identidade autenticada.")

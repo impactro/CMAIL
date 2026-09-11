@@ -1,0 +1,39 @@
+{
+  "schemaVersion": "1.1",
+  "mode": "setup",
+  "server": {
+    "host": "127.0.0.1",
+    "port": 7420,
+    "openBrowser": true,
+    "sessionHours": 12,
+    "cookieSecure": false
+  },
+  "state": {
+    "directory": ".state"
+  },
+  "microsoft": {
+    "account": "",
+    "clientId": "",
+    "tenantId": "",
+    "clientSecretFile": "",
+    "redirectUri": ""
+  },
+  "google": {
+    "account": "",
+    "clientId": "",
+    "clientSecretFile": "",
+    "redirectUri": ""
+  },
+  "imap": {
+    "account": "",
+    "username": "",
+    "passwordFile": "",
+    "imapHost": "",
+    "imapPort": 993,
+    "imapSecurity": "ssl",
+    "smtpHost": "",
+    "smtpPort": 587,
+    "smtpSecurity": "starttls",
+    "sentFolder": "Sent"
+  }
+}

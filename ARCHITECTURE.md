@@ -1,31 +1,50 @@
 # Arquitetura CMAIL
 
 ```text
-Flask / CLI / Component Manager
-             -> MailService
-             -> IMAP (leitura) / SMTP (envio)
-             -> SQLite (listas, journal e auditoria mínima)
+Flask standalone / Blueprint / API Python / Component Manager
+             -> MicrosoftAuthService / GoogleAuthService -> OAuth + DPAPI
+             -> MailService + Principal/capabilities
+             -> Microsoft Graph, Gmail API ou IMAP/SMTP
+             -> SQLite (identidades, sessões, listas, journal e auditoria mínima)
 ```
 
-`config.py` lê o único `.env` da raiz de execução e resolve o segredo somente
-por referência externa. `mail.py` isola os provedores. `store.py` é dono de
-listas, rascunhos, tokens e journal. `service.py` impede repetição de rascunho
-consumido. `web.py` usa os mesmos casos de uso da CLI.
+`config.py` aceita no `.env` somente `CMAIL_CONFIG_FILE`, valida o JSON fechado
+de schema `1.1` (e lê `1.0` para rollback) e resolve caminhos relativos à pasta
+desse JSON. Segredos e
+senhas nunca ficam no JSON: somente referências para arquivos externos.
+`auth.py` mantém Microsoft SSO; `gmail.py`, Google OAuth e Gmail API; `setup.py`,
+a configuração local unitária. `mail.py` isola demo/IMAP/SMTP; `graph.py`, o
+Microsoft Graph. `store.py` é dono
+de identidades, sessões, listas, rascunhos e journal isolados por principal.
+`service.py` aplica capacidades e impede repetição de rascunho consumido.
+`api.py`, CLI e `web.py` reutilizam os mesmos casos de uso.
+
+A UI é clara, responsiva e organizada como webmail: navegação por pastas,
+lista de mensagens, painel de leitura e composição separada. Valores externos
+são inseridos no DOM apenas por `textContent`; corpo de e-mail é solicitado ao
+Graph como texto. A tela distingue demonstração, desconectado e conectado.
 
 ## Segurança
 
 - interface somente em loopback;
-- cookie HttpOnly/SameSite e token CSRF nos efeitos locais;
-- senha fora do repositório e omitida de status/log/API;
+- tenant/conta fixos, state OAuth, vínculo ao navegador, expiração e bloqueio de replay;
+- sessão opaca server-side, cookie HttpOnly/SameSite e CSRF nos efeitos;
+- cache OAuth por `tenant + subject`, protegido por DPAPI e fora de Git/JSON;
+- senha/segredo fora do repositório e omitidos de status/log/API;
+- todos os endpoints de dados exigem identidade; efeitos exigem CSRF;
+- API Python exige `Principal` e capability, sem aceitar cookie/token web;
+- CSP restritiva e saída DOM sem `innerHTML` para dados externos;
 - HTML de e-mail não é renderizado;
 - prévia e confirmação específica para todo envio;
 - token de confirmação expira e é de uso único;
 - falha SMTP após claim é incerta e bloqueia retry automático;
 - auditoria guarda ação, estado e quantidade, não corpo, assunto ou destinatários.
 
-O módulo ainda não implementa OAuth Microsoft/Google, download de anexo,
-calendário nem exclusão de mensagem. Esses recursos exigem contratos separados,
-revisão de permissões e aprovação de segurança antes de ativação real.
+O módulo ainda não implementa download de anexo, proxy de imagem, contatos,
+calendário nem editor HTML. Esses recursos exigem contratos separados e nova
+aprovação das permissões correspondentes.
 
-Rollback é desabilitar/remover o pacote da composição. A conta de e-mail não é
-migrada nem alterada por instalar o módulo.
+Logout revoga a sessão CMAIL. Desconectar remove o cache local DPAPI e revoga
+as sessões da identidade; revogação global na Microsoft continua sendo ação da
+conta/tenant. Rollback é desabilitar/remover o pacote da composição. O código e
+os tokens atuais do CA permanecem intocados durante a homologação.

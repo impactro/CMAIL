@@ -13,9 +13,9 @@ def describe() -> dict[str, object]:
 
     return {
         "id": "cmail", "contractVersion": 2, "version": __version__, "pythonModule": "cmail",
-        "description": "Webmail local, leitura IMAP, listas de destinatários e envio SMTP confirmado.",
+        "description": "Webmail independente com Microsoft SSO/Graph, API Python, listas e envio confirmado.",
         "skillGroups": [
-            {"id": "webmail", "name": "Webmail", "description": "Consulta de conta, pastas e mensagens.",
+            {"id": "webmail", "name": "Webmail", "description": "Consulta e gestão de conta, pastas e mensagens.",
              "skills": [{"path": skill("consultar-email"), "operations": ["check-config", "status", "list-folders", "list-messages", "serve"]}]},
             {"id": "mailing", "name": "Listas e disparos", "description": "Gestão local de listas e envio com confirmação.",
              "skills": [{"path": skill("gerir-listas-email"), "operations": ["lists"]},

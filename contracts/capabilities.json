@@ -1,6 +1,7 @@
 {
   "schemaVersion": "1.0",
-  "version": "26.9.11a",
+  "version": "26.9.11c",
+  "packageVersion": "26.9.11.post2",
   "owner": "CMAIL",
   "capabilities": [
     {
@@ -9,7 +10,17 @@
       "productionReady": false,
       "entrypoint": "python -m cmail serve",
       "network": "loopback-only",
-      "providers": ["demo", "imap-smtp"]
+      "providers": ["setup", "microsoft-graph", "gmail-api", "imap-smtp-web"],
+      "authentication": "provider-owned-oauth-or-local-imap-secret",
+      "accountModel": "one-account-per-operational-root"
+    },
+    {
+      "id": "cmail.python-api",
+      "status": "operational",
+      "productionReady": false,
+      "factory": "cmail:create_api",
+      "authorization": "principal-and-capability",
+      "webTokensAccepted": false
     },
     {
       "id": "cmail.lists",

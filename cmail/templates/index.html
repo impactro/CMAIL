@@ -1,3 +1,92 @@
-<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CMAIL</title><link rel="stylesheet" href="/static/style.css"></head>
-<body data-csrf="{{ csrf }}"><header><div><small>CrânIA Module</small><h1>CMAIL</h1><p>Webmail, listas e disparos controlados</p></div><button id="refresh">Atualizar caixa</button></header>
-<main><aside><h2>Pastas</h2><nav id="folders"></nav><h2>Listas</h2><div id="lists"></div><details><summary>Nova lista</summary><label>Nome<input id="listName"></label><label>Um e-mail por linha<textarea id="listRecipients"></textarea></label><button id="saveList">Salvar lista</button></details></aside><section class="mail"><div id="notice">Carregando…</div><div id="messages"></div></section><section class="compose"><h2>Nova mensagem</h2><label>Lista opcional<select id="listId"><option value="">Nenhuma</option></select></label><label>Destinatários adicionais<input id="to" placeholder="email@dominio.com; outro@dominio.com"></label><label>Assunto<input id="subject"></label><label>Mensagem<textarea id="body"></textarea></label><button id="prepare">Revisar envio</button><div id="preview"></div></section></main><dialog id="confirm"><h2>Confirmar envio</h2><p id="confirmText"></p><button id="execute">Confirmar e enviar</button><button id="cancel">Cancelar</button></dialog><script src="/static/app.js"></script></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CMAIL · Webmail</title>
+  <link rel="stylesheet" href="{{ url_for('cmail.static', filename='style.css') }}">
+</head>
+<body data-base="{{ url_for('cmail.index').rstrip('/') }}" data-csrf="{{ csrf }}" data-authenticated="{{ 'true' if authenticated else 'false' }}" data-mode="{{ mode }}">
+{% if not authenticated %}
+  <main class="signin-shell">
+    <section class="signin-card" aria-labelledby="signin-title">
+      <div class="brand-mark" aria-hidden="true">C</div>
+      <p class="eyebrow">CrânIA Module</p>
+      <h1 id="signin-title">{{ 'Reconecte o CMAIL' if auth_state == 'reauthorize' else 'Entre no CMAIL' }}</h1>
+      <p class="signin-copy">{{ 'Sua autorização expirou ou foi revogada. Entre novamente para continuar.' if auth_state == 'reauthorize' else 'Sua conta Microsoft autentica o acesso e abre somente a sua própria caixa de e-mail.' }}</p>
+      <a class="microsoft-login" href="{{ url_for('cmail.microsoft_login') }}">
+        <span class="microsoft-grid" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        Continuar com Microsoft
+      </a>
+      <p class="privacy-note">O CMAIL não reutiliza sessões nem tokens do CraniaAgent.</p>
+    </section>
+  </main>
+{% else %}
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark small" aria-hidden="true">C</span><div><strong>CMAIL</strong><span>Webmail</span></div></div>
+      <div class="topbar-actions">
+        <span id="modeBadge" class="mode-badge">{{ 'Demonstração · nenhum envio real' if mode == 'demo' else 'Gmail conectado' if mode == 'gmail' else 'Outlook conectado' if mode == 'microsoft' else 'IMAP local' }}</span>
+        <span class="account">{{ identity.email if identity else '' }}</span>
+        <a class="quiet-button setup-link" href="{{ url_for('cmail.setup_page') }}">Configuração</a>
+        {% if mode in ['microsoft', 'gmail'] %}<button id="logout" class="quiet-button" type="button">Sair</button>{% endif %}
+      </div>
+    </header>
+
+    <aside class="sidebar" aria-label="Navegação do webmail">
+      <button id="newMessage" class="compose-button" type="button"><span aria-hidden="true">＋</span> Nova mensagem</button>
+      <h2>Pastas</h2>
+      <nav id="folders" aria-label="Pastas da caixa"></nav>
+      <div class="sidebar-heading"><h2>Listas</h2><button id="showListForm" type="button" aria-label="Criar lista">＋</button></div>
+      <div id="lists" class="lists"></div>
+      <form id="listForm" class="compact-form" hidden>
+        <label for="listName">Nome da lista</label>
+        <input id="listName" maxlength="120" autocomplete="off" required>
+        <label for="listRecipients">Um e-mail por linha</label>
+        <textarea id="listRecipients" rows="5" required></textarea>
+        <div><button id="saveList" type="submit">Salvar</button><button id="cancelList" class="quiet-button" type="button">Cancelar</button></div>
+      </form>
+    </aside>
+
+    <main class="mailbox">
+      <section class="message-column" aria-labelledby="folderTitle">
+        <div class="section-toolbar">
+          <div><p class="eyebrow">Caixa de e-mail</p><h1 id="folderTitle">Caixa de entrada</h1></div>
+          <button id="refresh" class="icon-button" type="button" aria-label="Atualizar mensagens">↻</button>
+        </div>
+        <div id="notice" class="notice" role="status" aria-live="polite">Carregando…</div>
+        <div id="messages" class="message-list" aria-label="Mensagens"></div>
+      </section>
+
+      <section id="reader" class="reader" aria-live="polite">
+        <div id="readerEmpty" class="empty-state"><span aria-hidden="true">✉</span><h2>Selecione uma mensagem</h2><p>O conteúdo será exibido aqui como texto seguro.</p></div>
+        <article id="readerContent" hidden>
+          <div class="reader-toolbar"><button id="reply" type="button">Responder</button><button id="replyAll" type="button">Responder a todos</button><button id="forward" type="button">Encaminhar</button><button id="toggleRead" class="quiet-button" type="button">Marcar como não lida</button></div>
+          <h2 id="readSubject"></h2>
+          <div class="message-meta"><strong id="readFrom"></strong><span id="readDate"></span></div>
+          <pre id="readBody"></pre>
+        </article>
+      </section>
+
+      <section id="composePane" class="compose-pane" hidden aria-labelledby="composeTitle">
+        <div class="section-toolbar"><h2 id="composeTitle">Nova mensagem</h2><button id="closeCompose" class="icon-button" type="button" aria-label="Fechar composição">×</button></div>
+        <form id="composeForm">
+          <label for="listId">Lista opcional</label><select id="listId"><option value="">Nenhuma</option></select>
+          <label for="to">Destinatários adicionais</label><input id="to" type="text" autocomplete="off" placeholder="email@dominio.com; outro@dominio.com">
+          <label for="subject">Assunto</label><input id="subject" maxlength="500" required>
+          <label for="body">Mensagem</label><textarea id="body" rows="12" maxlength="200000" required></textarea>
+          <button id="prepare" type="submit">Revisar envio</button>
+          <p class="form-hint">O envio só ocorre após uma segunda confirmação específica.</p>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="confirm" aria-labelledby="confirmTitle">
+    <h2 id="confirmTitle">Confirmar envio</h2><p id="confirmText"></p>
+    <div class="dialog-actions"><button id="execute" type="button">Confirmar e enviar</button><button id="cancel" class="quiet-button" type="button">Cancelar</button></div>
+  </dialog>
+{% endif %}
+<script src="{{ url_for('cmail.static', filename='app.js') }}" defer></script>
+</body>
+</html>
