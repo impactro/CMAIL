@@ -18,33 +18,35 @@
       <input type="hidden" name="csrf" value="{{ csrf }}">
       <fieldset class="provider-options">
         <legend>Tipo da conta</legend>
-        <label><input type="radio" name="provider" value="outlook" checked> Outlook / Microsoft 365</label>
-        <label><input type="radio" name="provider" value="gmail"> Gmail / Google Workspace</label>
-        <label><input type="radio" name="provider" value="imap"> IMAP + SMTP</label>
+        <label><input type="radio" name="provider" value="outlook" {% if values.provider == 'outlook' %}checked{% endif %}> Outlook / Microsoft 365</label>
+        <label><input type="radio" name="provider" value="gmail" {% if values.provider == 'gmail' %}checked{% endif %}> Gmail / Google Workspace</label>
+        <label><input type="radio" name="provider" value="imap" {% if values.provider == 'imap' %}checked{% endif %}> IMAP + SMTP</label>
       </fieldset>
-      <label>Conta de e-mail<input type="email" name="account" autocomplete="email" required placeholder="voce@empresa.com"></label>
 
       <section data-provider-panel="oauth">
         <h2>Aplicativo OAuth</h2>
-        <label>Client ID<input name="clientId" autocomplete="off"></label>
-        <label>Client secret<input type="password" name="clientSecret" autocomplete="new-password"></label>
-        <label data-outlook-only>Tenant ID<input name="tenantId" autocomplete="off"></label>
-        <p class="setup-hint">Callback desta instância: <code>http://127.0.0.1:{{ port }}/auth/&lt;provedor&gt;/callback</code>. Após salvar, o login do provedor será obrigatório.</p>
+        {% if values.oauthAccount %}<p class="setup-current-account">Conta vinculada atualmente: <strong>{{ values.oauthAccount }}</strong></p>{% endif %}
+        <p class="setup-hint">Não é necessário digitar o e-mail. A identidade verificada será devolvida pelo provedor e vinculada após o login.</p>
+        <label>Client ID<input name="clientId" autocomplete="off" value="{{ values.clientId }}"></label>
+        <label>Client secret<input type="password" name="clientSecret" autocomplete="new-password" data-configured="{{ 'true' if values.hasOAuthSecret else 'false' }}" placeholder="{{ 'Deixe em branco para manter o atual' if values.hasOAuthSecret else 'Obrigatório na primeira configuração' }}"></label>
+        <label data-outlook-only>Tenant ID<input name="tenantId" autocomplete="off" value="{{ values.tenantId }}"></label>
+        <p class="setup-hint">Callback Microsoft desta instância: <code>http://localhost:{{ port }}/auth/callback</code>. Após salvar, o login do provedor será obrigatório.</p>
       </section>
 
       <section data-provider-panel="imap" hidden>
         <h2>Servidores IMAP e SMTP</h2>
-        <label>Usuário<input name="username" autocomplete="username"></label>
-        <label>Senha<input type="password" name="password" autocomplete="new-password"></label>
+        <label>Conta de e-mail<input type="email" name="account" autocomplete="email" value="{{ values.account }}" placeholder="voce@empresa.com"></label>
+        <label>Usuário<input name="username" autocomplete="username" value="{{ values.username }}"></label>
+        <label>Senha<input type="password" name="password" autocomplete="new-password" data-configured="{{ 'true' if values.hasImapPassword else 'false' }}" placeholder="{{ 'Deixe em branco para manter a atual' if values.hasImapPassword else 'Obrigatória na primeira configuração' }}"></label>
         <div class="setup-grid">
-          <label>Servidor IMAP<input name="imapHost"></label>
-          <label>Porta IMAP<input name="imapPort" inputmode="numeric" value="993"></label>
-          <label>Segurança IMAP<select name="imapSecurity"><option value="ssl">SSL</option><option value="starttls">STARTTLS</option></select></label>
-          <label>Servidor SMTP<input name="smtpHost"></label>
-          <label>Porta SMTP<input name="smtpPort" inputmode="numeric" value="587"></label>
-          <label>Segurança SMTP<select name="smtpSecurity"><option value="starttls">STARTTLS</option><option value="ssl">SSL</option></select></label>
+          <label>Servidor IMAP<input name="imapHost" value="{{ values.imapHost }}"></label>
+          <label>Porta IMAP<input name="imapPort" inputmode="numeric" value="{{ values.imapPort }}"></label>
+          <label>Segurança IMAP<select name="imapSecurity"><option value="ssl" {% if values.imapSecurity == 'ssl' %}selected{% endif %}>SSL</option><option value="starttls" {% if values.imapSecurity == 'starttls' %}selected{% endif %}>STARTTLS</option></select></label>
+          <label>Servidor SMTP<input name="smtpHost" value="{{ values.smtpHost }}"></label>
+          <label>Porta SMTP<input name="smtpPort" inputmode="numeric" value="{{ values.smtpPort }}"></label>
+          <label>Segurança SMTP<select name="smtpSecurity"><option value="starttls" {% if values.smtpSecurity == 'starttls' %}selected{% endif %}>STARTTLS</option><option value="ssl" {% if values.smtpSecurity == 'ssl' %}selected{% endif %}>SSL</option></select></label>
         </div>
-        <label>Pasta de enviados<input name="sentFolder" value="Sent"></label>
+        <label>Pasta de enviados<input name="sentFolder" value="{{ values.sentFolder }}"></label>
         <p class="setup-hint">A senha será gravada em arquivo local com acesso restrito ao usuário atual; o JSON terá apenas a referência.</p>
       </section>
       <button class="setup-submit" type="submit">Salvar esta conta</button>

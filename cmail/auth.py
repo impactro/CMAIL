@@ -168,8 +168,14 @@ class MicrosoftAuthService:
             cache_path.unlink(missing_ok=True)
             raise AuthenticationError("Esta conta pertence a outro diretório Microsoft.")
         identity = self.store.save_identity(
-            tenant, subject, email, str(claims.get("name") or email).strip()[:160]
+            tenant, subject, email, str(claims.get("name") or email).strip()[:160],
+            enforce_single_account=True,
         )
+        if not identity:
+            cache_path.unlink(missing_ok=True)
+            raise AuthenticationError(
+                "A conta Microsoft escolhida não corresponde a esta instância."
+            )
         destination = self._identity_cache(identity["id"])
         destination.parent.mkdir(parents=True, exist_ok=True)
         if not cache_path.is_file():

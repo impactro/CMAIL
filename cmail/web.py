@@ -54,6 +54,53 @@ def create_blueprint(
             return session.setdefault("cmail_csrf", secrets.token_urlsafe(24))
         return str(request.cookies.get(CSRF_COOKIE) or "") if principal else ""
 
+    def setup_csrf() -> str:
+        return session.setdefault("cmail_setup_csrf", secrets.token_urlsafe(24))
+
+    def setup_values() -> dict[str, object]:
+        provider = (
+            "outlook" if config.mode == "microsoft"
+            else "gmail" if config.mode == "gmail"
+            else "imap" if config.mode == "imap"
+            else "outlook"
+        )
+        bound = (
+            current.store.bound_identity("microsoft") if provider == "outlook"
+            else current.store.bound_identity("google") if provider == "gmail"
+            else None
+        )
+        return {
+            "provider": provider,
+            "oauthAccount": str(bound.get("email") if bound else (
+                config.microsoft_account if provider == "outlook" else config.google_account
+            ) or ""),
+            "account": config.account if provider == "imap" else "",
+            "clientId": (
+                config.microsoft_client_id if provider == "outlook" else config.google_client_id
+            ),
+            "tenantId": config.microsoft_tenant_id if provider == "outlook" else "",
+            "hasOAuthSecret": bool(
+                config.microsoft_client_secret_file and config.microsoft_client_secret_file.is_file()
+                if provider == "outlook"
+                else config.google_client_secret_file and config.google_client_secret_file.is_file()
+            ),
+            "username": config.username if provider == "imap" else "",
+            "hasImapPassword": bool(config.password_file and config.password_file.is_file()),
+            "imapHost": config.imap_host,
+            "imapPort": config.imap_port,
+            "imapSecurity": config.imap_security,
+            "smtpHost": config.smtp_host,
+            "smtpPort": config.smtp_port,
+            "smtpSecurity": config.smtp_security,
+            "sentFolder": config.sent_folder,
+        }
+
+    def render_setup(error: str = "") -> str:
+        return render_template(
+            "setup.html", csrf=setup_csrf(), port=config.port, error=error[:240],
+            values=setup_values(),
+        )
+
     def require_principal() -> Principal:
         principal = _web_principal(current)
         if principal is None:
@@ -178,24 +225,22 @@ def create_blueprint(
 
     @app.get("/setup")
     def setup_page():
-        return render_template(
-            "setup.html", csrf=csrf(None), port=config.port,
-            error=str(request.args.get("error") or "")[:240],
-        )
+        return render_setup(str(request.args.get("error") or ""))
 
     @app.post("/setup")
     def setup_save():
         supplied = str(request.form.get("csrf") or "")
-        if not supplied or not secrets.compare_digest(supplied, csrf(None)):
-            raise PermissionError("CSRF_INVALID")
+        if not supplied or not secrets.compare_digest(supplied, setup_csrf()):
+            return render_setup(
+                "Sua sessão de configuração expirou. Recarregue a página e tente novamente."
+            ), 403
         try:
             result = SetupService(config).save(
                 {key: str(value) for key, value in request.form.items()}
             )
         except SetupError as error:
-            return render_template(
-                "setup.html", csrf=csrf(None), port=config.port, error=str(error)[:240],
-            ), 400
+            return render_setup(str(error)), 400
+        session.pop("cmail_setup_csrf", None)
         if restart_callback is not None:
             restart_callback()
         return render_template(
@@ -203,7 +248,7 @@ def create_blueprint(
             automatic=restart_callback is not None,
         ), 202
 
-    @app.get("/auth/microsoft/callback")
+    @app.get("/auth/callback")
     def microsoft_callback():
         if current.auth is None:
             raise AuthenticationError("Login Microsoft não está habilitado.")
@@ -348,7 +393,29 @@ def create_blueprint(
 
     @app.errorhandler(AuthenticationError)
     def authentication_failure(error: AuthenticationError):
-        return jsonify({"ok": False, "error": str(error)}), 401
+        message = str(error)[:300]
+        if request.path.startswith("/api/"):
+            return jsonify({"ok": False, "error": message}), 401
+        account_mismatch = "não corresponde a esta instância" in message.casefold()
+        retry_url = (
+            url_for("cmail.microsoft_login") if config.mode == "microsoft"
+            else url_for("cmail.google_login") if config.mode == "gmail"
+            else url_for("cmail.index")
+        )
+        response = make_response(render_template(
+            "auth_error.html",
+            title="Conta diferente da configurada" if account_mismatch else "Não foi possível entrar",
+            message=message,
+            retry_url=retry_url,
+            setup_url=url_for("cmail.setup_page"),
+        ), 401)
+        callback_path = (
+            url_for("cmail.microsoft_callback") if config.mode == "microsoft"
+            else url_for("cmail.google_callback") if config.mode == "gmail"
+            else url_for("cmail.index")
+        )
+        response.delete_cookie(BROWSER_COOKIE, path=callback_path)
+        return response
 
     @app.errorhandler(PermissionError)
     def permission_failure(error: PermissionError):

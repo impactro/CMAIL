@@ -18,17 +18,21 @@ Python instalado continua único.
 
 O modo inicial `setup` abre um assistente local para escolher Outlook, Gmail ou
 IMAP/SMTP. Depois de salvar, o processo standalone se reinicia. Outlook e Gmail
-iniciam OAuth obrigatório e recusam uma conta diferente da declarada para a
-instância. IMAP usa os dados informados na configuração e abre o webmail local.
+iniciam OAuth obrigatório sem pedir o e-mail antecipadamente: a primeira
+identidade verificada pelo provedor fica vinculada à instância, e outra conta é
+recusada até uma reconfiguração explícita. IMAP usa os dados informados na
+configuração e abre o webmail local.
 Segredos são gravados em arquivos com ACL restrita; o JSON mantém somente as
-referências. O antigo modo `demo` permanece apenas para testes controlados.
+referências. Ao reconfigurar, os campos não sensíveis retornam preenchidos e um
+segredo vazio preserva a referência já configurada. O antigo modo `demo`
+permanece apenas para testes controlados.
 
 O `.env` possui somente `CMAIL_CONFIG_FILE=<caminho>`. O JSON indicado segue
 schema fechado `1.1`; chaves ausentes ou desconhecidas são recusadas e caminhos
 relativos partem da pasta desse JSON. Configure nele `microsoft.clientId`,
 `microsoft.tenantId`, `microsoft.clientSecretFile` e
-`microsoft.redirectUri`. O redirect deve terminar em
-`/auth/microsoft/callback`. A aplicação registrada recebe apenas
+`microsoft.redirectUri`. O redirect deve usar `localhost` e terminar em
+`/auth/callback`. A aplicação registrada recebe apenas
 `openid`, `profile`, `email`, `User.Read`, `Mail.ReadWrite` e `Mail.Send`.
 O MSAL inclui `openid/profile` no protocolo; o CMAIL exclui explicitamente
 `offline_access`, portanto a expiração do token pode exigir novo login.

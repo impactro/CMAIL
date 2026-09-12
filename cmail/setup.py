@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Mapping
 
 from .config import Config
-from .store import EMAIL
+from .store import EMAIL, Store
 
 
 class SetupError(ValueError):
@@ -120,7 +120,6 @@ class SetupService:
         provider = _required(values, "provider", "Provedor", 20).casefold()
         if provider not in {"imap", "outlook", "gmail"}:
             raise SetupError("Escolha IMAP, Outlook ou Gmail.")
-        account = _account(values)
         state = self.config.state_dir
         base = {
             "schemaVersion": "1.1",
@@ -149,8 +148,15 @@ class SetupService:
             },
         }
         if provider == "imap":
+            account = _account(values)
+            supplied_password = str(values.get("password") or "")
             password_path = state / "security" / "imap" / "password.txt"
-            _write_secret(password_path, _required(values, "password", "Senha", 16_384))
+            if supplied_password:
+                _write_secret(password_path, supplied_password)
+            elif self.config.mode == "imap" and self.config.password_file and self.config.password_file.is_file():
+                password_path = self.config.password_file
+            else:
+                raise SetupError("Senha é obrigatória na primeira configuração IMAP.")
             base["imap"] = {
                 "account": account,
                 "username": _required(values, "username", "Usuário IMAP", 320),
@@ -165,23 +171,39 @@ class SetupService:
             }
         elif provider == "outlook":
             secret_path = state / "security" / "microsoft" / "client-secret.txt"
-            _write_secret(
-                secret_path, _required(values, "clientSecret", "Segredo do aplicativo", 16_384)
-            )
+            supplied_secret = str(values.get("clientSecret") or "")
+            if supplied_secret:
+                _write_secret(secret_path, supplied_secret)
+            elif (
+                self.config.mode == "microsoft"
+                and self.config.microsoft_client_secret_file
+                and self.config.microsoft_client_secret_file.is_file()
+            ):
+                secret_path = self.config.microsoft_client_secret_file
+            else:
+                raise SetupError("Segredo do aplicativo é obrigatório na primeira configuração Microsoft.")
             base["microsoft"] = {
-                "account": account,
+                "account": "",
                 "clientId": _required(values, "clientId", "Client ID", 255),
                 "tenantId": _required(values, "tenantId", "Tenant ID", 255),
                 "clientSecretFile": _reference(self.config, secret_path),
-                "redirectUri": f"http://{self.config.host}:{self.config.port}/auth/microsoft/callback",
+                "redirectUri": f"http://localhost:{self.config.port}/auth/callback",
             }
         else:
             secret_path = state / "security" / "google" / "client-secret.txt"
-            _write_secret(
-                secret_path, _required(values, "clientSecret", "Segredo do aplicativo", 16_384)
-            )
+            supplied_secret = str(values.get("clientSecret") or "")
+            if supplied_secret:
+                _write_secret(secret_path, supplied_secret)
+            elif (
+                self.config.mode == "gmail"
+                and self.config.google_client_secret_file
+                and self.config.google_client_secret_file.is_file()
+            ):
+                secret_path = self.config.google_client_secret_file
+            else:
+                raise SetupError("Segredo do aplicativo é obrigatório na primeira configuração Google.")
             base["google"] = {
-                "account": account,
+                "account": "",
                 "clientId": _required(values, "clientId", "Client ID", 255),
                 "clientSecretFile": _reference(self.config, secret_path),
                 "redirectUri": f"http://{self.config.host}:{self.config.port}/auth/google/callback",
@@ -200,9 +222,10 @@ class SetupService:
             os.replace(temporary, self.config.config_file)
             try:
                 Config.load(self.config.root)
+                Store(state).reset_oauth_identities()
             except Exception:
                 shutil.copy2(backup, self.config.config_file)
                 raise
         finally:
             temporary.unlink(missing_ok=True)
-        return SetupResult(provider, account)
+        return SetupResult(provider, account if provider == "imap" else "Conta definida no login OAuth")

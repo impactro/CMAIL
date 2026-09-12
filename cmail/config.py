@@ -192,7 +192,7 @@ class Config:
         if imap_security not in {"ssl", "starttls"} or smtp_security not in {"ssl", "starttls"}:
             raise ConfigError("Segurança IMAP/SMTP deve ser ssl ou starttls.")
         redirect_uri = _redirect(
-            microsoft["redirectUri"], "microsoft.redirectUri", "/auth/microsoft/callback"
+            microsoft["redirectUri"], "microsoft.redirectUri", "/auth/callback"
         )
         google_redirect_uri = _redirect(
             google["redirectUri"], "google.redirectUri", "/auth/google/callback"

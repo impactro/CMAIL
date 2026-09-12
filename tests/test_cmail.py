@@ -5,6 +5,7 @@ import sys
 import tomllib
 import types
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -17,6 +18,7 @@ from cmail.gmail import GMAIL_SCOPES, GoogleAuthService
 from cmail.service import MANAGE_LISTS, READ_MAIL, MailService, Principal
 from cmail.store import Store
 from cmail.web import create_app
+from cmail.__main__ import _serve
 
 
 class FakeMail:
@@ -109,6 +111,49 @@ def test_component_and_python_api_have_separate_entry_points():
     assert callable(__import__("cmail.api", fromlist=["create_api"]).create_api)
 
 
+def test_standalone_server_reloads_config_without_replacing_process():
+    first = SimpleNamespace(host="127.0.0.1", port=8020, open_browser=False)
+    second = SimpleNamespace(host="127.0.0.1", port=8020, open_browser=False)
+    created = []
+
+    class ImmediateTimer:
+        daemon = False
+        def __init__(self, _delay, callback): self.callback = callback
+        def start(self): self.callback()
+
+    class FakeServer:
+        def __init__(self, restart_callback, index):
+            self.restart_callback = restart_callback
+            self.index = index
+            self.closed = False
+            self.task_dispatcher = SimpleNamespace(shutdown=lambda: None)
+        def run(self):
+            if self.index == 0:
+                self.restart_callback()
+        def close(self): self.closed = True
+
+    def app_factory(config, _service, *, restart_callback):
+        created.append(config)
+        return restart_callback
+
+    servers = []
+    def server_factory(restart_callback, **_kwargs):
+        server = FakeServer(restart_callback, len(servers))
+        servers.append(server)
+        return server
+
+    assert _serve(
+        first,
+        config_loader=lambda: second,
+        service_factory=lambda _config: object(),
+        app_factory=app_factory,
+        server_factory=server_factory,
+        timer_factory=ImmediateTimer,
+    ) == 0
+    assert created == [first, second]
+    assert servers[0].closed is True
+
+
 def test_web_requires_csrf(tmp_path):
     selected = config(tmp_path)
     app = create_app(selected, MailService(selected, FakeMail()))
@@ -162,7 +207,57 @@ def test_setup_configures_one_imap_account_without_secret_in_json(tmp_path):
 def test_setup_rejects_mutation_without_csrf(tmp_path):
     write_config(tmp_path, config_payload_v11())
     app = create_app(Config.load(tmp_path)); app.testing = True
-    assert app.test_client().post("/setup", data={}).status_code == 403
+    response = app.test_client().post("/setup", data={})
+    assert response.status_code == 403
+    assert response.content_type.startswith("text/html")
+    assert "sessão de configuração expirou" in response.text
+
+
+def test_configured_microsoft_setup_uses_dedicated_session_csrf(tmp_path):
+    selected = microsoft_config(tmp_path, account="antiga@empresa.test")
+    original_secret = selected.microsoft_client_secret()
+    restarted = []
+    app = create_app(selected, restart_callback=lambda: restarted.append(True)); app.testing = True
+    client = app.test_client()
+
+    page = client.get("/setup")
+    token = page.text.split('name="csrf" value="', 1)[1].split('"', 1)[0]
+    assert token
+    assert 'value="client-test"' in page.text
+    assert 'value="tenant-lakatos"' in page.text
+    assert "antiga@empresa.test" in page.text
+    assert "Não é necessário digitar o e-mail" in page.text
+    result = client.post("/setup", data={
+        "csrf": token, "provider": "outlook",
+        "clientId": "client-test", "clientSecret": "",
+        "tenantId": "tenant-lakatos",
+    })
+    assert result.status_code == 202
+    assert restarted == [True]
+    configured = Config.load(tmp_path)
+    assert configured.microsoft_account == ""
+    assert configured.microsoft_client_secret() == original_secret
+
+
+def test_store_binds_first_verified_oauth_identity_until_reconfigured(tmp_path):
+    store = Store(tmp_path / "state")
+    first = store.save_identity(
+        "tenant", "subject-1", "primeira@empresa.test", "Primeira",
+        enforce_single_account=True,
+    )
+    rejected = store.save_identity(
+        "tenant", "subject-2", "segunda@empresa.test", "Segunda",
+        enforce_single_account=True,
+    )
+    assert first["email"] == "primeira@empresa.test"
+    assert rejected == {}
+
+    store.reset_oauth_identities()
+    second = store.save_identity(
+        "tenant", "subject-2", "segunda@empresa.test", "Segunda",
+        enforce_single_account=True,
+    )
+    assert second["email"] == "segunda@empresa.test"
 
 
 class FakeOAuthClient:
@@ -194,14 +289,14 @@ class FakeOAuthFactory:
         return client
 
 
-def microsoft_config(tmp_path: Path) -> Config:
+def microsoft_config(tmp_path: Path, account: str = "") -> Config:
     secret = tmp_path / "client-secret.txt"
     secret.write_text("fictitious-test-secret", encoding="utf-8")
-    payload = config_payload("microsoft")
+    payload = config_payload_v11("microsoft")
     payload["microsoft"] = {
-        "clientId": "client-test", "tenantId": "tenant-lakatos",
+        "account": account, "clientId": "client-test", "tenantId": "tenant-lakatos",
         "clientSecretFile": "client-secret.txt",
-        "redirectUri": "http://127.0.0.1:8020/auth/microsoft/callback",
+        "redirectUri": "http://localhost:8020/auth/callback",
     }
     write_config(tmp_path, payload)
     return Config.load(tmp_path)
@@ -219,7 +314,7 @@ def authenticated_client(tmp_path: Path):
     assert login.status_code == 302
     assert factory.clients[0].requested_scopes == list(MAIL_SCOPES)
     assert "offline_access" not in factory.clients[0].requested_scopes
-    callback = client.get("/auth/microsoft/callback?state=state-123&code=fake-code")
+    callback = client.get("/auth/callback?state=state-123&code=fake-code")
     assert callback.status_code == 303
     return selected, service, client
 
@@ -278,10 +373,34 @@ def test_microsoft_login_protects_routes_and_replay(tmp_path):
     client = app.test_client()
     assert client.get("/api/folders").status_code == 401
     assert client.get("/auth/microsoft").status_code == 302
-    assert client.get("/auth/microsoft/callback?state=state-123&code=fake").status_code == 303
+    assert client.get("/auth/callback?state=state-123&code=fake").status_code == 303
     assert client.get("/api/folders").status_code == 200
-    assert client.get("/auth/microsoft/callback?state=state-123&code=replay").status_code == 401
+    assert client.get("/auth/callback?state=state-123&code=replay").status_code == 401
     assert app.test_client().get("/api/folders").status_code == 401
+
+
+def test_microsoft_account_mismatch_renders_recovery_page_and_preserves_api_json(tmp_path):
+    selected = microsoft_config(tmp_path, account="outra@empresa.test")
+    factory = FakeOAuthFactory()
+    store = Store(selected.state_dir)
+    auth = MicrosoftAuthService(selected, store, client_factory=factory)
+    service = MailService(selected, auth=auth, graph_factory=lambda _auth, _identity: FakeMail())
+    app = create_app(selected, service); app.testing = True
+    client = app.test_client()
+
+    assert client.get("/auth/microsoft").status_code == 302
+    callback = client.get("/auth/callback?state=state-123&code=fake")
+    assert callback.status_code == 401
+    assert callback.content_type.startswith("text/html")
+    assert "Conta diferente da configurada" in callback.text
+    assert "Reconfigurar conta" in callback.text
+    assert 'href="/setup"' in callback.text
+    assert client.get_cookie("cmail_oauth_browser", path="/auth/callback") is None
+
+    api_error = app.test_client().get("/api/folders")
+    assert api_error.status_code == 401
+    assert api_error.is_json
+    assert api_error.json["ok"] is False
 
 
 def test_microsoft_session_csrf_logout_and_csp(tmp_path):

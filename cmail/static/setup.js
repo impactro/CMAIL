@@ -9,8 +9,14 @@ function syncProvider() {
   oauth.hidden = isImap;
   imap.hidden = !isImap;
   tenant.hidden = provider !== "outlook";
-  oauth.querySelectorAll("input").forEach(input => { input.required = !isImap && (!input.closest('[data-outlook-only]') || provider === "outlook"); });
-  imap.querySelectorAll("input,select").forEach(input => { input.required = isImap; });
+  oauth.querySelectorAll("input").forEach(input => {
+    const retainedSecret = input.type === "password" && input.dataset.configured === "true";
+    input.required = !isImap && !retainedSecret && (!input.closest('[data-outlook-only]') || provider === "outlook");
+  });
+  imap.querySelectorAll("input,select").forEach(input => {
+    const retainedPassword = input.type === "password" && input.dataset.configured === "true";
+    input.required = isImap && !retainedPassword;
+  });
 }
 choices.forEach(item => item.addEventListener("change", syncProvider));
 syncProvider();

@@ -203,8 +203,10 @@ class GoogleAuthService:
         token["email"] = email
         identity = self.store.save_identity(
             GOOGLE_ISSUER, subject, email, str(userinfo.get("name") or email)[:160],
-            provider="google", scopes=list(GMAIL_SCOPES),
+            provider="google", scopes=list(GMAIL_SCOPES), enforce_single_account=True,
         )
+        if not identity:
+            raise AuthenticationError("A conta Google escolhida não corresponde a esta instância.")
         self._token_file(identity["id"]).save(token)
         session_token, csrf_token = self.store.create_session(
             identity["id"], self.config.session_hours

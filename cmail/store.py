@@ -189,11 +189,24 @@ class Store:
     def save_identity(
         self, tenant_id: str, subject_id: str, email: str, display_name: str,
         *, provider: str = "microsoft", scopes: list[str] | None = None,
+        enforce_single_account: bool = False,
     ) -> dict[str, str]:
         if provider not in {"microsoft", "google"}:
             raise ValueError("Provedor de identidade inválido.")
         now = _now().isoformat()
         with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            if enforce_single_account:
+                bound = db.execute(
+                    """SELECT tenant_id,subject_id FROM auth_identities
+                       WHERE provider=? ORDER BY created_at,id LIMIT 1""",
+                    (provider,),
+                ).fetchone()
+                if bound and (
+                    not secrets.compare_digest(str(bound["tenant_id"]), tenant_id)
+                    or not secrets.compare_digest(str(bound["subject_id"]), subject_id)
+                ):
+                    return {}
             row = db.execute(
                 "SELECT id FROM auth_identities WHERE provider=? AND tenant_id=? AND subject_id=?",
                 (provider, tenant_id, subject_id),
@@ -216,6 +229,21 @@ class Store:
                 ),
             )
         return self.identity(identity_id) or {}
+
+    def bound_identity(self, provider: str) -> dict[str, str] | None:
+        with self.connect() as db:
+            row = db.execute(
+                """SELECT id,provider,tenant_id,subject_id,email,display_name
+                   FROM auth_identities WHERE provider=? ORDER BY created_at,id LIMIT 1""",
+                (provider,),
+            ).fetchone()
+        return dict(row) if row else None
+
+    def reset_oauth_identities(self) -> None:
+        """Revoga sessões e remove o vínculo OAuth ao salvar nova configuração."""
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            db.execute("DELETE FROM auth_identities WHERE provider IN ('microsoft','google')")
 
     def identity(self, identity_id: str) -> dict[str, str] | None:
         with self.connect() as db:

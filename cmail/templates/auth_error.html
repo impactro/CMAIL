@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>CMAIL · {{ title }}</title>
+  <link rel="stylesheet" href="{{ url_for('cmail.static', filename='style.css') }}">
+</head>
+<body class="auth-error-page">
+  <main class="auth-error-shell">
+    <section class="auth-error-card" aria-labelledby="auth-error-title">
+      <div class="brand-mark" aria-hidden="true">C</div>
+      <p class="eyebrow">Autenticação interrompida</p>
+      <div class="auth-error-icon" aria-hidden="true">!</div>
+      <h1 id="auth-error-title">{{ title }}</h1>
+      <p class="auth-error-message">{{ message }}</p>
+      <div class="auth-error-guidance">
+        <strong>Como continuar</strong>
+        <p>Entre novamente com a conta vinculada a esta instância ou abra a configuração para trocar a conta autorizada.</p>
+      </div>
+      <div class="auth-error-actions">
+        <a class="primary-action" href="{{ retry_url }}">Tentar novamente</a>
+        <a class="secondary-action" href="{{ setup_url }}">Reconfigurar conta</a>
+      </div>
+      <p class="privacy-note">Nenhuma caixa de e-mail foi aberta e nenhuma mensagem foi alterada.</p>
+    </section>
+  </main>
+</body>
+</html>
