@@ -2,7 +2,7 @@
 
 `CMAIL` é o nome técnico do módulo independente que reúne webmail, leitura de
 pastas e mensagens, listas de destinatários e disparo controlado de e-mail.
-Versão do componente: `26.9.12a` (pacote Python `26.9.12`).
+Versão do componente: `26.9.12c` (pacote Python `26.9.12.post2`).
 
 O módulo agora é dono da ferramenta Webmail e pode existir de duas formas com
 o mesmo código: aplicação FastAPI standalone ou subaplicação ASGI incorporada por outro
@@ -12,9 +12,10 @@ capacidades.
 
 ## Execução
 
-Cada raiz operacional representa exatamente uma conta. Para manter duas contas,
-crie duas pastas com `.env`/`.bat`, JSON, estado e portas diferentes; o pacote
-Python instalado continua único.
+Cada autoexecução standalone representa exatamente uma conta. Para manter duas
+contas, crie duas pastas operacionais com `.env`/`.bat`, JSON, estado e portas
+diferentes; o pacote Python instalado continua único. O modo standalone não usa
+`workspaceId` para multiplicar caixas dentro do mesmo processo.
 
 O modo inicial `setup` abre um assistente local para escolher Outlook, Gmail ou
 IMAP/SMTP. Depois de salvar, o processo standalone se reinicia. Outlook e Gmail
@@ -68,6 +69,11 @@ marca lida/não lida, move, responde, encaminha e envia. Contatos, calendário,
 download de anexos, proxy de imagens, campanhas e editor HTML rico não fazem
 parte desta fatia porque exigem contratos e permissões adicionais.
 
+No Microsoft Graph, a listagem usa somente propriedades do recurso
+`mailFolder`; o ID da caixa de entrada é resolvido pela rota conhecida
+`/me/mailFolders/inbox`. Isso evita depender de `wellKnownName` dentro do
+`$select`, que o contrato dessa coleção não expõe.
+
 ## Listas e disparo
 
 Uma lista é importada por JSON:
@@ -108,7 +114,9 @@ Python. Veja [API.md](API.md).
 
 A aplicação ASGI é publicada em `crania_agent.component_apps` como
 `cmail.web:create_component_app`. A fábrica segue o contrato comum
-`(agent_root, host_services)`; a autenticação da conta permanece própria. Em composição,
+`(agent_root, host_services)`; a autenticação da conta permanece própria. Somente
+em composição o principal confiável do host permite uma caixa por `workspaceId`;
+isso não altera a cardinalidade unitária da autoexecução local. Em composição,
 `configFile` aponta diretamente para o JSON e evita que o módulo interprete o
 `.env` completo do agente. Um host FastAPI incorpora a mesma interface standalone
 com `app.mount("/cm/cmail", create_app(config))`, preservando assets, OAuth,

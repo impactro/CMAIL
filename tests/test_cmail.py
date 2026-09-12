@@ -11,7 +11,12 @@ import pytest
 from fastapi.testclient import TestClient
 
 from cmail.cm import describe
-from cmail.auth import MAIL_SCOPES, MicrosoftAuthService, build_microsoft_client
+from cmail.auth import (
+    MAIL_SCOPES,
+    AuthenticationError,
+    MicrosoftAuthService,
+    build_microsoft_client,
+)
 from cmail.api import CmailApi
 from cmail.config import Config, ConfigError
 from cmail.graph import MicrosoftGraphProvider
@@ -252,7 +257,7 @@ def test_configured_microsoft_setup_uses_dedicated_session_csrf(tmp_path):
 
 
 def test_store_binds_first_verified_oauth_identity_until_reconfigured(tmp_path):
-    store = Store(tmp_path / "state")
+    store = Store(tmp_path / "instance-a" / "state")
     first = store.save_identity(
         "tenant", "subject-1", "primeira@empresa.test", "Primeira",
         enforce_single_account=True,
@@ -270,6 +275,15 @@ def test_store_binds_first_verified_oauth_identity_until_reconfigured(tmp_path):
         enforce_single_account=True,
     )
     assert second["email"] == "segunda@empresa.test"
+
+    other_instance = Store(tmp_path / "instance-b" / "state")
+    independent = other_instance.save_identity(
+        "tenant", "subject-1", "primeira@empresa.test", "Primeira",
+        enforce_single_account=True,
+    )
+    assert independent["email"] == "primeira@empresa.test"
+    assert store.bound_identity("microsoft")["email"] == "segunda@empresa.test"
+    assert other_instance.bound_identity("microsoft")["email"] == "primeira@empresa.test"
 
 
 class FakeOAuthClient:
@@ -391,6 +405,97 @@ def test_microsoft_login_protects_routes_and_replay(tmp_path):
     assert TestClient(app, follow_redirects=False).get("/api/folders").status_code == 401
 
 
+def test_embedded_mode_isolates_mailboxes_and_local_state_by_workspace(tmp_path):
+    selected = microsoft_config(tmp_path)
+
+    class WorkspaceOAuthClient(FakeOAuthClient):
+        def __init__(self, path, tenant, sequence):
+            super().__init__(path, tenant)
+            self.sequence = sequence
+
+        def acquire_token_by_auth_code_flow(self, flow, auth_response):
+            result = super().acquire_token_by_auth_code_flow(flow, auth_response)
+            result["id_token_claims"]["oid"] = f"person-{self.sequence}"
+            result["id_token_claims"]["preferred_username"] = (
+                f"pessoa{self.sequence}@empresa.test"
+            )
+            return result
+
+    class WorkspaceOAuthFactory:
+        def __init__(self):
+            self.sequence = 0
+
+        def __call__(self, config, path):
+            self.sequence += 1
+            return WorkspaceOAuthClient(
+                path,
+                config.microsoft_tenant_id,
+                self.sequence,
+            )
+
+    def resolver(request):
+        workspace = str(request.headers.get("X-Test-Workspace") or "")
+        if workspace not in {"workspace-a", "workspace-b"}:
+            raise AuthenticationError("Workspace não autenticado pelo host.")
+        return {
+            "identifier": workspace,
+            "email": f"{workspace}@host.test",
+            "capabilities": ["mail.read", "mail.manage", "mail.send", "lists.manage"],
+        }
+
+    store = Store(selected.state_dir)
+    auth = MicrosoftAuthService(
+        selected,
+        store,
+        client_factory=WorkspaceOAuthFactory(),
+    )
+    service = MailService(
+        selected,
+        auth=auth,
+        graph_factory=lambda _auth, _identity: FakeMail(),
+    )
+    app = create_app(selected, service, principal_resolver=resolver)
+    client_a = TestClient(
+        app,
+        follow_redirects=False,
+        headers={"X-Test-Workspace": "workspace-a"},
+    )
+    client_b = TestClient(
+        app,
+        follow_redirects=False,
+        headers={"X-Test-Workspace": "workspace-b"},
+    )
+
+    assert client_a.get("/").status_code == 200
+    assert client_a.get("/api/folders").status_code == 401
+    assert client_a.get("/health").json()["singleAccount"] is False
+    assert client_a.get("/setup").status_code == 404
+
+    assert client_a.get("/auth/microsoft").status_code == 302
+    assert client_a.get("/auth/callback?state=state-123&code=a").status_code == 303
+    assert client_a.get("/api/folders").status_code == 200
+    assert client_b.get("/api/folders").status_code == 401
+
+    assert client_b.get("/auth/microsoft").status_code == 302
+    assert client_b.get("/auth/callback?state=state-123&code=b").status_code == 303
+    assert client_b.get("/api/folders").status_code == 200
+
+    identity_a = store.bound_identity("microsoft", "workspace-a")
+    identity_b = store.bound_identity("microsoft", "workspace-b")
+    assert identity_a and identity_b and identity_a["id"] != identity_b["id"]
+
+    page_a = client_a.get("/")
+    csrf_a = re.search(r'data-csrf="([^"]+)"', page_a.text).group(1)
+    saved = client_a.post(
+        "/api/lists",
+        headers={"X-CSRF-Token": csrf_a},
+        json={"name": "Equipe A", "recipients": [{"address": "a@example.com"}]},
+    )
+    assert saved.status_code == 200
+    assert len(store.lists("workspace-a")) == 1
+    assert store.lists("workspace-b") == []
+
+
 def test_microsoft_account_mismatch_renders_recovery_page_and_preserves_api_json(tmp_path):
     selected = microsoft_config(tmp_path, account="outra@empresa.test")
     factory = FakeOAuthFactory()
@@ -458,6 +563,8 @@ def test_graph_provider_uses_only_me_routes_and_normalizes_mail():
     calls = []
     def requester(method, path, token, payload, headers):
         calls.append((method, path, token, payload, headers))
+        if path.startswith("/me/mailFolders/inbox?"):
+            return 200, {"id": "folder-1"}
         if "mailFolders?" in path:
             return 200, {"value": [{"id": "folder-1", "displayName": "Entrada", "unreadItemCount": 2}]}
         if "messages?" in path:
@@ -471,7 +578,9 @@ def test_graph_provider_uses_only_me_routes_and_normalizes_mail():
         if path == "/me/sendMail": return 202, {}
         return 200, {}
     selected = MicrosoftGraphProvider(FakeTokenAuth(), "identity-1", requester=requester)
-    assert selected.folders()[0]["unread"] == 2
+    folder = selected.folders()[0]
+    assert folder["unread"] == 2
+    assert folder["wellKnownName"] == "inbox"
     message = selected.messages("folder-1")[0]
     assert message["subject"].startswith("<img")
     assert selected.set_read("message-1", True)["isRead"] is True
@@ -479,6 +588,8 @@ def test_graph_provider_uses_only_me_routes_and_normalizes_mail():
     assert selected.send(["a@example.com"], "Assunto", "Corpo")["accepted"] is True
     assert all(path.startswith("/me/") for _, path, *_ in calls)
     assert all(token == "memory-only-token" for _, _, token, *_ in calls)
+    list_path = next(path for _, path, *_ in calls if "/me/mailFolders?" in path)
+    assert "wellKnownName" not in list_path
 
 
 def test_capability_is_required_before_provider_access(tmp_path):

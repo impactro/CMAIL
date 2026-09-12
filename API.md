@@ -42,6 +42,12 @@ descritor CM 2 e operar a conta autenticada sem instalar o CA completo. O host
 é dono da validação de sua assertion; CMAIL é dono do vínculo local da
 identidade, do provedor e das capacidades exigidas por operação.
 
+No executável standalone, uma raiz de configuração/estado representa uma única
+conta e o `owner_id` permanece vazio. Duas contas exigem duas raízes e duas
+portas. O preenchimento de `owner_id` é reservado à composição por um host que
+derive esse valor de uma identidade confiável, como o `workspaceId` autenticado
+do CA; ele nunca é um seletor livre de conta na interface standalone.
+
 Envio comum continua em duas etapas:
 
 ```python

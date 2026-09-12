@@ -16,11 +16,11 @@
       <p class="auth-error-message">{{ message }}</p>
       <div class="auth-error-guidance">
         <strong>Como continuar</strong>
-        <p>Entre novamente com a conta vinculada a esta instância ou abra a configuração para trocar a conta autorizada.</p>
+        <p>{{ 'Entre novamente com a conta vinculada ao seu workspace ou desconecte a caixa antes de trocar a conta autorizada.' if embedded else 'Entre novamente com a conta vinculada a esta instância ou abra a configuração para trocar a conta autorizada.' }}</p>
       </div>
       <div class="auth-error-actions">
         <a class="primary-action" href="{{ retry_url }}">Tentar novamente</a>
-        <a class="secondary-action" href="{{ setup_url }}">Reconfigurar conta</a>
+        {% if not embedded %}<a class="secondary-action" href="{{ setup_url }}">Reconfigurar conta</a>{% endif %}
       </div>
       <p class="privacy-note">Nenhuma caixa de e-mail foi aberta e nenhuma mensagem foi alterada.</p>
     </section>

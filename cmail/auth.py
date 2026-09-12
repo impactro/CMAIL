@@ -98,7 +98,7 @@ class MicrosoftAuthService:
             item = self._pending.pop(state)
             Path(item["cachePath"]).unlink(missing_ok=True)
 
-    def begin(self) -> tuple[str, str]:
+    def begin(self, owner_id: str = "") -> tuple[str, str]:
         if not self.required:
             raise AuthenticationError("Login Microsoft não está habilitado.")
         cache_key = secrets.token_urlsafe(18)
@@ -124,10 +124,16 @@ class MicrosoftAuthService:
                 "flow": flow,
                 "cachePath": cache_path,
                 "browserHash": hashlib.sha256(browser_nonce.encode()).hexdigest(),
+                "ownerId": str(owner_id or "").strip(),
             }
         return url, browser_nonce
 
-    def complete(self, response: dict[str, str], browser_nonce: str) -> tuple[str, str, dict[str, str]]:
+    def complete(
+        self,
+        response: dict[str, str],
+        browser_nonce: str,
+        owner_id: str = "",
+    ) -> tuple[str, str, dict[str, str]]:
         state = str(response.get("state") or "").strip()
         with self._lock:
             self._prune()
@@ -135,6 +141,12 @@ class MicrosoftAuthService:
         if pending is None:
             raise AuthenticationError("Login ausente ou expirado.")
         cache_path = Path(pending["cachePath"])
+        owner = str(owner_id or "").strip()
+        if not secrets.compare_digest(str(pending.get("ownerId") or ""), owner):
+            cache_path.unlink(missing_ok=True)
+            raise AuthenticationError(
+                "O workspace que iniciou o login não corresponde ao retorno."
+            )
         browser_hash = hashlib.sha256(str(browser_nonce or "").encode()).hexdigest()
         if not secrets.compare_digest(str(pending["browserHash"]), browser_hash):
             cache_path.unlink(missing_ok=True)
@@ -170,6 +182,7 @@ class MicrosoftAuthService:
         identity = self.store.save_identity(
             tenant, subject, email, str(claims.get("name") or email).strip()[:160],
             enforce_single_account=True,
+            owner_id=owner,
         )
         if not identity:
             cache_path.unlink(missing_ok=True)

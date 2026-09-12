@@ -47,7 +47,7 @@ class Store:
           CREATE TABLE IF NOT EXISTS auth_identities(
             id TEXT PRIMARY KEY, provider TEXT NOT NULL, tenant_id TEXT NOT NULL,
             subject_id TEXT NOT NULL, email TEXT NOT NULL, display_name TEXT NOT NULL,
-            created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+            owner_id TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
             UNIQUE(provider,tenant_id,subject_id));
           CREATE TABLE IF NOT EXISTS mail_connections(
             identity_id TEXT PRIMARY KEY, status TEXT NOT NULL, scopes_json TEXT NOT NULL,
@@ -65,31 +65,40 @@ class Store:
     @staticmethod
     def _migrate_legacy(db: sqlite3.Connection) -> None:
         version = int(db.execute("PRAGMA user_version").fetchone()[0])
-        if version >= 2:
-            return
         names = {
             str(row[0]) for row in db.execute(
                 "SELECT name FROM sqlite_master WHERE type='table'"
             ).fetchall()
         }
-        if {"recipient_lists", "recipients"} <= names:
+        if version < 2 and {"recipient_lists", "recipients"} <= names:
             db.execute(
                 "INSERT OR IGNORE INTO mail_lists(id,owner_id,name,created_at) SELECT id,'',name,created_at FROM recipient_lists"
             )
             db.execute(
                 "INSERT OR IGNORE INTO mail_recipients(list_id,address,name) SELECT list_id,address,name FROM recipients"
             )
-        if "drafts" in names:
+        if version < 2 and "drafts" in names:
             db.execute(
                 """INSERT OR IGNORE INTO mail_drafts(id,created_at,expires_at,payload_json,confirmation_hash,status,result_json,owner_id)
                    SELECT id,created_at,expires_at,payload_json,confirmation_hash,status,result_json,'' FROM drafts"""
             )
-        if "audit_events" in names:
+        if version < 2 and "audit_events" in names:
             db.execute(
                 """INSERT OR IGNORE INTO mail_audit_events(id,created_at,action,status,detail_json,owner_id)
                    SELECT id,created_at,action,status,detail_json,'' FROM audit_events"""
             )
-        db.execute("PRAGMA user_version=2")
+        columns = {
+            str(row[1]) for row in db.execute("PRAGMA table_info(auth_identities)")
+        }
+        if "owner_id" not in columns:
+            db.execute(
+                "ALTER TABLE auth_identities ADD COLUMN owner_id TEXT NOT NULL DEFAULT ''"
+            )
+        db.execute(
+            """CREATE UNIQUE INDEX IF NOT EXISTS idx_auth_identity_provider_owner
+               ON auth_identities(provider,owner_id) WHERE owner_id <> ''"""
+        )
+        db.execute("PRAGMA user_version=3")
         db.commit()
 
     def status(self, owner_id: str = "") -> dict[str, object]:
@@ -189,35 +198,50 @@ class Store:
     def save_identity(
         self, tenant_id: str, subject_id: str, email: str, display_name: str,
         *, provider: str = "microsoft", scopes: list[str] | None = None,
-        enforce_single_account: bool = False,
+        enforce_single_account: bool = False, owner_id: str = "",
     ) -> dict[str, str]:
         if provider not in {"microsoft", "google"}:
             raise ValueError("Provedor de identidade inválido.")
+        owner = str(owner_id or "").strip()[:256]
         now = _now().isoformat()
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             if enforce_single_account:
-                bound = db.execute(
-                    """SELECT tenant_id,subject_id FROM auth_identities
-                       WHERE provider=? ORDER BY created_at,id LIMIT 1""",
-                    (provider,),
-                ).fetchone()
+                if owner:
+                    bound = db.execute(
+                        """SELECT tenant_id,subject_id FROM auth_identities
+                           WHERE provider=? AND owner_id=? ORDER BY created_at,id LIMIT 1""",
+                        (provider, owner),
+                    ).fetchone()
+                else:
+                    bound = db.execute(
+                        """SELECT tenant_id,subject_id FROM auth_identities
+                           WHERE provider=? AND owner_id='' ORDER BY created_at,id LIMIT 1""",
+                        (provider,),
+                    ).fetchone()
                 if bound and (
                     not secrets.compare_digest(str(bound["tenant_id"]), tenant_id)
                     or not secrets.compare_digest(str(bound["subject_id"]), subject_id)
                 ):
                     return {}
             row = db.execute(
-                "SELECT id FROM auth_identities WHERE provider=? AND tenant_id=? AND subject_id=?",
+                """SELECT id,owner_id FROM auth_identities
+                   WHERE provider=? AND tenant_id=? AND subject_id=?""",
                 (provider, tenant_id, subject_id),
             ).fetchone()
+            if row and not secrets.compare_digest(str(row["owner_id"]), owner):
+                return {}
             identity_id = str(row[0]) if row else secrets.token_urlsafe(18)
             db.execute(
-                """INSERT INTO auth_identities(id,provider,tenant_id,subject_id,email,display_name,created_at,updated_at)
-                   VALUES(?,?,?,?,?,?,?,?)
+                """INSERT INTO auth_identities(
+                     id,provider,tenant_id,subject_id,email,display_name,owner_id,created_at,updated_at)
+                   VALUES(?,?,?,?,?,?,?,?,?)
                    ON CONFLICT(provider,tenant_id,subject_id) DO UPDATE SET
                      email=excluded.email,display_name=excluded.display_name,updated_at=excluded.updated_at""",
-                (identity_id, provider, tenant_id, subject_id, email, display_name, now, now),
+                (
+                    identity_id, provider, tenant_id, subject_id, email,
+                    display_name, owner, now, now,
+                ),
             )
             db.execute(
                 """INSERT INTO mail_connections(identity_id,status,scopes_json,updated_at)
@@ -230,12 +254,13 @@ class Store:
             )
         return self.identity(identity_id) or {}
 
-    def bound_identity(self, provider: str) -> dict[str, str] | None:
+    def bound_identity(self, provider: str, owner_id: str = "") -> dict[str, str] | None:
         with self.connect() as db:
             row = db.execute(
-                """SELECT id,provider,tenant_id,subject_id,email,display_name
-                   FROM auth_identities WHERE provider=? ORDER BY created_at,id LIMIT 1""",
-                (provider,),
+                """SELECT id,provider,tenant_id,subject_id,email,display_name,owner_id
+                   FROM auth_identities WHERE provider=? AND owner_id=?
+                   ORDER BY created_at,id LIMIT 1""",
+                (provider, str(owner_id or "").strip()),
             ).fetchone()
         return dict(row) if row else None
 
@@ -248,7 +273,8 @@ class Store:
     def identity(self, identity_id: str) -> dict[str, str] | None:
         with self.connect() as db:
             row = db.execute(
-                "SELECT id,provider,tenant_id,subject_id,email,display_name FROM auth_identities WHERE id=?",
+                """SELECT id,provider,tenant_id,subject_id,email,display_name,owner_id
+                   FROM auth_identities WHERE id=?""",
                 (identity_id,),
             ).fetchone()
         return dict(row) if row else None
@@ -270,7 +296,8 @@ class Store:
         digest = hashlib.sha256(token.encode()).hexdigest()
         with self.connect() as db:
             row = db.execute(
-                """SELECT s.token_hash,s.csrf_hash,s.expires_at,i.id,i.provider,i.tenant_id,i.subject_id,i.email,i.display_name
+                """SELECT s.token_hash,s.csrf_hash,s.expires_at,i.id,i.provider,i.tenant_id,
+                          i.subject_id,i.email,i.display_name,i.owner_id
                    FROM web_sessions s JOIN auth_identities i ON i.id=s.identity_id
                    WHERE s.token_hash=? AND s.revoked_at IS NULL""", (digest,),
             ).fetchone()

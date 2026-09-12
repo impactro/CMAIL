@@ -28,6 +28,15 @@ lista de mensagens, painel de leitura e composição separada. Valores externos
 são inseridos no DOM apenas por `textContent`; corpo de e-mail é solicitado ao
 Graph como texto. A tela distingue demonstração, desconectado e conectado.
 
+No standalone, a raiz operacional e seu estado aceitam uma única identidade:
+duas contas exigem duas pastas, dois JSONs/estados e duas portas. Não existe
+seleção de conta nem multiplexação por `workspaceId` dentro de uma autoexecução.
+Quando incorporado, o host entrega um
+principal autenticado e o CMAIL vincula no máximo uma caixa por `workspaceId`,
+isolando também listas, rascunhos e auditoria pelo mesmo dono. O assistente de
+configuração local não é exposto nessa composição. O host nunca recebe token
+OAuth e o módulo nunca confia em `workspaceId` enviado pelo navegador.
+
 ## Segurança
 
 - interface somente em loopback;

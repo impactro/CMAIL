@@ -125,7 +125,7 @@ class GoogleAuthService:
             if float(item["created"]) >= cutoff
         }
 
-    def begin(self) -> tuple[str, str]:
+    def begin(self, owner_id: str = "") -> tuple[str, str]:
         if self.config.mode != "gmail":
             raise AuthenticationError("Login Google não está habilitado.")
         state = secrets.token_urlsafe(32)
@@ -137,6 +137,7 @@ class GoogleAuthService:
             self._pending[state] = {
                 "created": self.clock(),
                 "browserHash": hashlib.sha256(browser_nonce.encode()).hexdigest(),
+                "ownerId": str(owner_id or "").strip(),
             }
         parameters = {
             "client_id": self.config.google_client_id,
@@ -152,13 +153,23 @@ class GoogleAuthService:
             parameters["login_hint"] = self.config.google_account
         return GOOGLE_AUTH + "?" + urllib.parse.urlencode(parameters), browser_nonce
 
-    def complete(self, response: dict[str, str], browser_nonce: str) -> tuple[str, str, dict[str, str]]:
+    def complete(
+        self,
+        response: dict[str, str],
+        browser_nonce: str,
+        owner_id: str = "",
+    ) -> tuple[str, str, dict[str, str]]:
         state = str(response.get("state") or "")
         with self._lock:
             self._prune()
             pending = self._pending.pop(state, None)
         if not pending:
             raise AuthenticationError("Login Google ausente ou expirado.")
+        owner = str(owner_id or "").strip()
+        if not secrets.compare_digest(str(pending.get("ownerId") or ""), owner):
+            raise AuthenticationError(
+                "O workspace que iniciou o login não corresponde ao retorno."
+            )
         supplied = hashlib.sha256(str(browser_nonce or "").encode()).hexdigest()
         if not secrets.compare_digest(str(pending["browserHash"]), supplied):
             raise AuthenticationError("O navegador que iniciou o login não corresponde ao retorno.")
@@ -204,6 +215,7 @@ class GoogleAuthService:
         identity = self.store.save_identity(
             GOOGLE_ISSUER, subject, email, str(userinfo.get("name") or email)[:160],
             provider="google", scopes=list(GMAIL_SCOPES), enforce_single_account=True,
+            owner_id=owner,
         )
         if not identity:
             raise AuthenticationError("A conta Google escolhida não corresponde a esta instância.")

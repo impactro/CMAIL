@@ -7,7 +7,7 @@ import secrets
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -26,6 +26,7 @@ BROWSER_COOKIE = "cmail_oauth_browser"
 PACKAGE_ROOT = Path(__file__).resolve().parent
 TEMPLATES = Jinja2Templates(directory=str(PACKAGE_ROOT / "templates"))
 LOGGER = logging.getLogger(__name__)
+HostPrincipalResolver = Callable[[Request], Mapping[str, object]]
 
 
 def _base_path(request: Request) -> str:
@@ -37,7 +38,34 @@ def _cookie_path(request: Request, suffix: str = "/") -> str:
     return f"{prefix}{suffix}" or "/"
 
 
-def _web_principal(service: MailService, request: Request) -> Principal | None:
+def _web_principal(
+    service: MailService,
+    request: Request,
+    resolver: HostPrincipalResolver | None = None,
+) -> Principal | None:
+    if resolver is not None:
+        raw = resolver(request)
+        if not isinstance(raw, Mapping):
+            raise AuthenticationError("O host não devolveu uma identidade válida.")
+        owner_id = str(raw.get("identifier") or "").strip()
+        if not owner_id or len(owner_id) > 256:
+            raise AuthenticationError("O host não confirmou o workspace atual.")
+        raw_capabilities = raw.get("capabilities")
+        capabilities = frozenset(
+            str(item).strip()
+            for item in raw_capabilities
+            if str(item).strip() in {READ_MAIL, MANAGE_MAIL, SEND_MAIL, MANAGE_LISTS}
+        ) if isinstance(raw_capabilities, (list, tuple, set, frozenset)) else frozenset()
+        provider_name = (
+            "microsoft" if service.config.mode == "microsoft" else
+            "google" if service.config.mode == "gmail" else ""
+        )
+        bound = service.store.bound_identity(provider_name, owner_id) if provider_name else None
+        identity_id = str((bound or {}).get("id") or "")
+        if identity_id and service.auth and not service.auth.is_connected(identity_id):
+            identity_id = ""
+        email = str((bound or {}).get("email") or raw.get("email") or "").strip()
+        return Principal(identity_id, email, capabilities, owner_id)
     if service.config.mode == "demo":
         return Principal.local_operator()
     if service.config.mode == "imap":
@@ -68,6 +96,7 @@ def _create_module_app(
     service: MailService | None = None,
     *,
     restart_callback: Callable[[], None] | None = None,
+    principal_resolver: HostPrincipalResolver | None = None,
 ) -> FastAPI:
     current = service or MailService(config)
     app = FastAPI(title="CMAIL", docs_url=None, redoc_url=None, openapi_url=None)
@@ -81,7 +110,7 @@ def _create_module_app(
     app.mount("/static", StaticFiles(directory=str(PACKAGE_ROOT / "static")), name="cmail.static")
 
     def csrf(request: Request, principal: Principal | None) -> str:
-        if config.mode in {"demo", "imap", "setup"}:
+        if principal_resolver is not None or config.mode in {"demo", "imap", "setup"}:
             return request.session.setdefault("cmail_csrf", secrets.token_urlsafe(24))
         return str(request.cookies.get(CSRF_COOKIE) or "") if principal else ""
 
@@ -133,14 +162,16 @@ def _create_module_app(
         )
 
     def require_principal(request: Request) -> Principal:
-        principal = _web_principal(current, request)
-        if principal is None:
+        principal = _web_principal(current, request, principal_resolver)
+        if principal is None or (
+            config.mode in {"microsoft", "gmail"} and not principal.identity_id
+        ):
             raise AuthenticationError("Autentique a conta de e-mail desta instância.")
         return principal
 
     def require_csrf(request: Request, principal: Principal) -> None:
         supplied = str(request.headers.get("X-CSRF-Token") or "")
-        if config.mode in {"demo", "imap", "setup"}:
+        if principal_resolver is not None or config.mode in {"demo", "imap", "setup"}:
             if not supplied or not secrets.compare_digest(supplied, csrf(request, principal)):
                 raise PermissionError("CSRF_INVALID")
             return
@@ -152,22 +183,26 @@ def _create_module_app(
     async def index(request: Request):
         if config.mode == "setup":
             return RedirectResponse(str(request.url_for("cmail.setup")), status_code=303)
-        principal = _web_principal(current, request)
-        if config.mode == "microsoft" and principal is None:
+        principal = _web_principal(current, request, principal_resolver)
+        connected = bool(
+            principal
+            and (config.mode not in {"microsoft", "gmail"} or principal.identity_id)
+        )
+        if principal_resolver is None and config.mode == "microsoft" and not connected:
             return RedirectResponse(str(request.url_for("cmail.microsoft_login")), status_code=303)
-        if config.mode == "gmail" and principal is None:
+        if principal_resolver is None and config.mode == "gmail" and not connected:
             return RedirectResponse(str(request.url_for("cmail.google_login")), status_code=303)
-        auth_state = "demo" if config.mode == "demo" else "connected" if principal else "disconnected"
-        if config.mode in {"microsoft", "gmail"} and principal is None and current.auth:
+        auth_state = "demo" if config.mode == "demo" else "connected" if connected else "disconnected"
+        if principal_resolver is None and config.mode in {"microsoft", "gmail"} and not connected and current.auth:
             if current.auth.session_identity(str(request.cookies.get(SESSION_COOKIE) or "")):
                 auth_state = "reauthorize"
         return TEMPLATES.TemplateResponse(
             request=request, name="index.html",
             context={
-                "csrf": csrf(request, principal), "authenticated": principal is not None,
+                "csrf": csrf(request, principal), "authenticated": connected,
                 "identity": {"email": principal.email} if principal else None,
                 "mode": config.mode, "auth_state": auth_state,
-                "base_path": _base_path(request),
+                "base_path": _base_path(request), "embedded": principal_resolver is not None,
             },
         )
 
@@ -175,23 +210,34 @@ def _create_module_app(
     async def health():
         return {
             "ok": True, "component": "cmail", "mode": config.mode,
-            "configured": config.mode != "setup", "singleAccount": True,
+            "configured": config.mode != "setup",
+            "singleAccount": principal_resolver is None,
+            "workspaceIsolated": principal_resolver is not None,
             "version": __version__, "framework": "fastapi",
         }
 
     @app.get("/api/auth/status")
     async def auth_status(request: Request):
-        principal = _web_principal(current, request)
+        principal = _web_principal(current, request, principal_resolver)
+        connected = bool(
+            principal
+            and (config.mode not in {"microsoft", "gmail"} or principal.identity_id)
+        )
         return {
             "ok": True, "required": config.mode in {"microsoft", "gmail"},
-            "authenticated": principal is not None,
+            "authenticated": connected,
             "identity": {"email": principal.email} if principal else None,
         }
 
     def begin_oauth(request: Request, provider: str):
         if config.mode != provider or current.auth is None:
             raise AuthenticationError("Login OAuth não está habilitado.")
-        url, browser_nonce = current.auth.begin()
+        host_principal = (
+            _web_principal(current, request, principal_resolver)
+            if principal_resolver is not None else None
+        )
+        owner_id = host_principal.storage_owner if host_principal else ""
+        url, browser_nonce = current.auth.begin(owner_id)
         response = RedirectResponse(url, status_code=302)
         callback = "/auth/callback" if provider == "microsoft" else "/auth/google/callback"
         response.set_cookie(
@@ -212,19 +258,27 @@ def _create_module_app(
         if current.auth is None:
             raise AuthenticationError("Login OAuth não está habilitado.")
         response_values = {key: str(value) for key, value in request.query_params.items()}
+        host_principal = (
+            _web_principal(current, request, principal_resolver)
+            if principal_resolver is not None else None
+        )
+        owner_id = host_principal.storage_owner if host_principal else ""
         session_token, csrf_token, _identity = current.auth.complete(
-            response_values, str(request.cookies.get(BROWSER_COOKIE) or "")
+            response_values,
+            str(request.cookies.get(BROWSER_COOKIE) or ""),
+            owner_id,
         )
         response = RedirectResponse(str(request.url_for("cmail.index")), status_code=303)
         root = _cookie_path(request)
-        response.set_cookie(
-            SESSION_COOKIE, session_token, httponly=True, secure=config.cookie_secure,
-            samesite="lax", max_age=config.session_hours * 3600, path=root,
-        )
-        response.set_cookie(
-            CSRF_COOKIE, csrf_token, httponly=False, secure=config.cookie_secure,
-            samesite="strict", max_age=config.session_hours * 3600, path=root,
-        )
+        if principal_resolver is None:
+            response.set_cookie(
+                SESSION_COOKIE, session_token, httponly=True, secure=config.cookie_secure,
+                samesite="lax", max_age=config.session_hours * 3600, path=root,
+            )
+            response.set_cookie(
+                CSRF_COOKIE, csrf_token, httponly=False, secure=config.cookie_secure,
+                samesite="strict", max_age=config.session_hours * 3600, path=root,
+            )
         response.delete_cookie(BROWSER_COOKIE, path=_cookie_path(request, callback))
         return response
 
@@ -242,10 +296,14 @@ def _create_module_app(
 
     @app.get("/setup", response_class=HTMLResponse, name="cmail.setup")
     async def setup_page(request: Request):
+        if principal_resolver is not None:
+            raise HTTPException(404, "Página não encontrada.")
         return render_setup(request, str(request.query_params.get("error") or ""))
 
     @app.post("/setup", response_class=HTMLResponse, name="cmail.setup_save")
     async def setup_save(request: Request):
+        if principal_resolver is not None:
+            raise HTTPException(404, "Página não encontrada.")
         form = await request.form()
         supplied = str(form.get("csrf") or "")
         if not supplied or not secrets.compare_digest(supplied, setup_csrf(request)):
@@ -407,6 +465,7 @@ def _create_module_app(
                 "title": "Conta diferente da configurada" if account_mismatch else "Não foi possível entrar",
                 "message": message, "retry_url": f"{base}{retry_path}",
                 "setup_url": f"{base}/setup", "base_path": base,
+                "embedded": principal_resolver is not None,
             },
         )
         callback = "/auth/callback" if config.mode == "microsoft" else "/auth/google/callback" if config.mode == "gmail" else "/"
@@ -438,9 +497,15 @@ def create_app(
     *,
     url_prefix: str = "",
     restart_callback: Callable[[], None] | None = None,
+    principal_resolver: HostPrincipalResolver | None = None,
 ) -> FastAPI:
     """Create a mountable CMAIL ASGI app or a prefixed standalone host."""
-    module = _create_module_app(config, service, restart_callback=restart_callback)
+    module = _create_module_app(
+        config,
+        service,
+        restart_callback=restart_callback,
+        principal_resolver=principal_resolver,
+    )
     prefix = "/" + str(url_prefix or "").strip("/") if str(url_prefix or "").strip("/") else ""
     if not prefix:
         return module
@@ -461,4 +526,11 @@ def create_component_app(
         if config_file is not None
         else Config.load(Path(agent_root))
     )
-    return create_app(config)
+    resolvers = services.get("principalResolvers")
+    resolver = (
+        resolvers.get("cmail")
+        if isinstance(resolvers, Mapping) else services.get("principalResolver")
+    )
+    if resolver is not None and not callable(resolver):
+        raise ValueError("principalResolver do CMAIL deve ser chamável.")
+    return create_app(config, principal_resolver=resolver)

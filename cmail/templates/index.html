@@ -13,12 +13,12 @@
       <div class="brand-mark" aria-hidden="true">C</div>
       <p class="eyebrow">CrânIA Module</p>
       <h1 id="signin-title">{{ 'Reconecte o CMAIL' if auth_state == 'reauthorize' else 'Entre no CMAIL' }}</h1>
-      <p class="signin-copy">{{ 'Sua autorização expirou ou foi revogada. Entre novamente para continuar.' if auth_state == 'reauthorize' else 'Sua conta Microsoft autentica o acesso e abre somente a sua própria caixa de e-mail.' }}</p>
-      <a class="microsoft-login" href="{{ base_path }}/auth/microsoft">
+      <p class="signin-copy">{{ 'Sua autorização expirou ou foi revogada. Entre novamente para continuar.' if auth_state == 'reauthorize' else ('Sua conta Google autoriza somente esta caixa do Gmail.' if mode == 'gmail' else 'Sua conta Microsoft autoriza somente esta caixa do Outlook.') }}</p>
+      <a class="microsoft-login" href="{{ base_path }}{{ '/auth/google' if mode == 'gmail' else '/auth/microsoft' }}">
         <span class="microsoft-grid" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-        Continuar com Microsoft
+        Continuar com {{ 'Google' if mode == 'gmail' else 'Microsoft' }}
       </a>
-      <p class="privacy-note">O CMAIL não reutiliza sessões nem tokens do CraniaAgent.</p>
+      <p class="privacy-note">{{ 'O host confirma seu workspace; o CMAIL mantém a autorização da caixa isolada.' if embedded else 'Esta instância mantém uma única conta local.' }}</p>
     </section>
   </main>
 {% else %}
@@ -28,8 +28,8 @@
       <div class="topbar-actions">
         <span id="modeBadge" class="mode-badge">{{ 'Demonstração · nenhum envio real' if mode == 'demo' else 'Gmail conectado' if mode == 'gmail' else 'Outlook conectado' if mode == 'microsoft' else 'IMAP local' }}</span>
         <span class="account">{{ identity.email if identity else '' }}</span>
-        <a class="quiet-button setup-link" href="{{ base_path }}/setup">Configuração</a>
-        {% if mode in ['microsoft', 'gmail'] %}<button id="logout" class="quiet-button" type="button">Sair</button>{% endif %}
+        {% if not embedded %}<a class="quiet-button setup-link" href="{{ base_path }}/setup">Configuração</a>{% endif %}
+        {% if not embedded and mode in ['microsoft', 'gmail'] %}<button id="logout" class="quiet-button" type="button">Sair</button>{% endif %}
       </div>
     </header>
 

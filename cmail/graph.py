@@ -138,16 +138,23 @@ class MicrosoftGraphProvider(Provider):
     def folders(self) -> list[dict[str, object]]:
         query = urllib.parse.urlencode({
             "$top": "100",
-            "$select": "id,displayName,totalItemCount,unreadItemCount,wellKnownName",
+            "$select": "id,displayName,totalItemCount,unreadItemCount",
             "includeHiddenFolders": "false",
         })
         result = self._call("GET", f"/me/mailFolders?{query}")
         values = result.get("value") if isinstance(result, dict) else []
+        try:
+            inbox = self._call("GET", "/me/mailFolders/inbox?%24select=id")
+        except MailError:
+            inbox = {}
+        inbox_id = str(inbox.get("id") or "") if isinstance(inbox, dict) else ""
         return [
             {
                 "id": str(item.get("id") or ""),
                 "name": str(item.get("displayName") or "")[:200],
-                "wellKnownName": str(item.get("wellKnownName") or ""),
+                "wellKnownName": (
+                    "inbox" if inbox_id and str(item.get("id") or "") == inbox_id else ""
+                ),
                 "total": int(item.get("totalItemCount") or 0),
                 "unread": int(item.get("unreadItemCount") or 0),
             }

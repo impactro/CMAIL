@@ -26,6 +26,11 @@ class Principal:
     identity_id: str
     email: str
     capabilities: frozenset[str]
+    owner_id: str = ""
+
+    @property
+    def storage_owner(self) -> str:
+        return self.owner_id or self.identity_id
 
     def require(self, capability: str) -> None:
         if capability not in self.capabilities:
@@ -79,7 +84,7 @@ class MailService:
         return self.gmail_factory(self.auth, principal.identity_id)  # type: ignore[arg-type]
 
     def status(self, live: bool = False, principal: Principal | None = None) -> dict[str, object]:
-        owner = principal.identity_id if principal else ""
+        owner = principal.storage_owner if principal else ""
         result = {"config": self.config.public(), "state": self.store.status(owner)}
         if live:
             selected = principal or Principal.local_operator()
@@ -101,30 +106,35 @@ class MailService:
 
     def lists(self, principal: Principal) -> list[dict[str, object]]:
         principal.require(MANAGE_LISTS)
-        return self.store.lists(principal.identity_id)
+        return self.store.lists(principal.storage_owner)
 
     def save_list(self, principal: Principal, name: str, recipients: list[dict[str, str]]) -> dict[str, object]:
         principal.require(MANAGE_LISTS)
-        return self.store.save_list(name, recipients, principal.identity_id)
+        return self.store.save_list(name, recipients, principal.storage_owner)
 
     def prepare(self, payload: dict[str, object], principal: Principal | None = None) -> dict[str, object]:
         selected = principal or Principal.local_operator()
         selected.require(SEND_MAIL)
-        return self.store.prepare(payload, selected.identity_id)
+        return self.store.prepare(payload, selected.storage_owner)
 
     def execute(self, identifier: str, token: str, principal: Principal | None = None) -> dict[str, object]:
         selected = principal or Principal.local_operator()
         selected.require(SEND_MAIL)
-        payload = self.store.claim(identifier, token, selected.identity_id)
+        payload = self.store.claim(identifier, token, selected.storage_owner)
         recipients = list(payload["recipients"])
         try:
             result = self.provider_for(selected).send(recipients, str(payload["subject"]), str(payload["body"]))
         except Exception as exc:
             uncertain = {"accepted": False, "uncertain": True, "error": str(exc)[:240],
                          "recipientCount": len(recipients)}
-            self.store.finish(identifier, "uncertain", uncertain, selected.identity_id)
+            self.store.finish(identifier, "uncertain", uncertain, selected.storage_owner)
             raise
-        self.store.finish(identifier, "sent" if result.get("accepted") else "demo", result, selected.identity_id)
+        self.store.finish(
+            identifier,
+            "sent" if result.get("accepted") else "demo",
+            result,
+            selected.storage_owner,
+        )
         return {"draftId": identifier, **result}
 
     def set_read(self, principal: Principal, identifier: str, is_read: bool) -> dict[str, object]:
