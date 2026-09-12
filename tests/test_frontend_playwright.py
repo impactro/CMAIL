@@ -1,12 +1,25 @@
 import json
+import socket
 import threading
 from pathlib import Path
 
 import pytest
-from werkzeug.serving import make_server
+import uvicorn
 
 from cmail.config import Config
 from cmail.web import create_app
+
+
+def _server(app):
+    listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    listener.bind(("127.0.0.1", 0))
+    listener.listen(2048)
+    port = listener.getsockname()[1]
+    server = uvicorn.Server(uvicorn.Config(app, log_level="error", lifespan="off"))
+    thread = threading.Thread(target=lambda: server.run(sockets=[listener]), daemon=True)
+    thread.start()
+    return server, thread, port
 
 
 def _demo_config(tmp_path: Path) -> Config:
@@ -55,9 +68,7 @@ def _assert_inside_viewport(page, selector: str) -> None:
 
 def test_demo_webmail_remains_accessible_at_supported_viewports(tmp_path):
     sync_playwright = pytest.importorskip("playwright.sync_api").sync_playwright
-    server = make_server("127.0.0.1", 0, create_app(_demo_config(tmp_path)))
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
+    server, thread, port = _server(create_app(_demo_config(tmp_path)))
     try:
         with sync_playwright() as playwright:
             try:
@@ -68,7 +79,7 @@ def test_demo_webmail_remains_accessible_at_supported_viewports(tmp_path):
                 page = browser.new_page()
                 for width, height in ((1440, 900), (768, 1024), (390, 844)):
                     page.set_viewport_size({"width": width, "height": height})
-                    page.goto(f"http://127.0.0.1:{server.server_port}/", wait_until="networkidle")
+                    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
 
                     badge = page.locator("#modeBadge")
                     assert badge.is_visible()
@@ -87,15 +98,13 @@ def test_demo_webmail_remains_accessible_at_supported_viewports(tmp_path):
             finally:
                 browser.close()
     finally:
-        server.shutdown()
+        server.should_exit = True
         thread.join(timeout=5)
 
 
 def test_single_account_setup_is_responsive_and_switches_provider_fields(tmp_path):
     sync_playwright = pytest.importorskip("playwright.sync_api").sync_playwright
-    server = make_server("127.0.0.1", 0, create_app(_setup_config(tmp_path)))
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
+    server, thread, port = _server(create_app(_setup_config(tmp_path)))
     try:
         with sync_playwright() as playwright:
             try:
@@ -106,7 +115,7 @@ def test_single_account_setup_is_responsive_and_switches_provider_fields(tmp_pat
                 page = browser.new_page()
                 for width, height in ((1440, 900), (768, 1024), (390, 844)):
                     page.set_viewport_size({"width": width, "height": height})
-                    page.goto(f"http://127.0.0.1:{server.server_port}/", wait_until="networkidle")
+                    page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
                     assert page.locator("h1").inner_text() == "Configurar CMAIL"
                     assert page.locator('input[value="outlook"]').is_checked()
                     assert page.locator('[data-provider-panel="oauth"]').is_visible()
@@ -121,5 +130,5 @@ def test_single_account_setup_is_responsive_and_switches_provider_fields(tmp_pat
             finally:
                 browser.close()
     finally:
-        server.shutdown()
+        server.should_exit = True
         thread.join(timeout=5)

@@ -1,8 +1,14 @@
 {
   "schemaVersion": "1.0",
-  "version": "26.9.11c",
-  "packageVersion": "26.9.11.post2",
+  "version": "26.9.12a",
+  "packageVersion": "26.9.12",
   "owner": "CMAIL",
+  "componentApp": {
+    "entryPointGroup": "crania_agent.component_apps",
+    "entryPoint": "cmail.web:create_component_app",
+    "protocol": "asgi",
+    "framework": "fastapi"
+  },
   "capabilities": [
     {
       "id": "cmail.webmail",

@@ -149,6 +149,18 @@ class Config:
         base = Path(root or Path.cwd()).resolve()
         pointer = Path(parse_env_pointer(base / ".env"))
         config_file = pointer.resolve() if pointer.is_absolute() else (base / pointer).resolve()
+        return cls.from_file(config_file, root=base)
+
+    @classmethod
+    def from_file(
+        cls,
+        path: str | Path,
+        *,
+        root: str | Path | None = None,
+    ) -> "Config":
+        """Load the JSON directly when an embedding host owns the agent .env."""
+        config_file = Path(path).expanduser().resolve()
+        execution_root = Path(root).resolve() if root is not None else config_file.parent
         if not config_file.is_file():
             raise ConfigError("O JSON indicado por CMAIL_CONFIG_FILE não foi encontrado.")
         if config_file.stat().st_size > 512 * 1024:
@@ -199,7 +211,7 @@ class Config:
         )
         state_dir = _path(config_root, state["directory"], "state.directory", required=True)
         config = cls(
-            root=base, config_file=config_file, schema_version=schema_version,
+            root=execution_root, config_file=config_file, schema_version=schema_version,
             mode=mode, state_dir=state_dir,
             host=host, port=_integer(server["port"], "server.port", 1, 65535),
             open_browser=_boolean(server["openBrowser"], "server.openBrowser"),

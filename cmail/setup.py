@@ -221,7 +221,7 @@ class SetupService:
             )
             os.replace(temporary, self.config.config_file)
             try:
-                Config.load(self.config.root)
+                Config.from_file(self.config.config_file, root=self.config.root)
                 Store(state).reset_oauth_identities()
             except Exception:
                 shutil.copy2(backup, self.config.config_file)

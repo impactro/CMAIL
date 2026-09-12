@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Configurar CMAIL</title>
-  <link rel="stylesheet" href="{{ url_for('cmail.static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ base_path }}/static/style.css">
 </head>
 <body class="setup-page">
   <main class="setup-shell">
@@ -14,7 +14,7 @@
     </header>
     <p>Escolha a única conta desta pasta. Para outra conta, crie outra pasta operacional e use outra porta.</p>
     {% if error %}<p class="setup-error" role="alert">{{ error }}</p>{% endif %}
-    <form method="post" action="{{ url_for('cmail.setup_save') }}" class="setup-form">
+    <form method="post" action="{{ base_path }}/setup" class="setup-form">
       <input type="hidden" name="csrf" value="{{ csrf }}">
       <fieldset class="provider-options">
         <legend>Tipo da conta</legend>
@@ -52,6 +52,6 @@
       <button class="setup-submit" type="submit">Salvar esta conta</button>
     </form>
   </main>
-  <script src="{{ url_for('cmail.static', filename='setup.js') }}" defer></script>
+  <script src="{{ base_path }}/static/setup.js" defer></script>
 </body>
 </html>

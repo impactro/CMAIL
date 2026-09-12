@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>CMAIL · Webmail</title>
-  <link rel="stylesheet" href="{{ url_for('cmail.static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ base_path }}/static/style.css">
 </head>
-<body data-base="{{ url_for('cmail.index').rstrip('/') }}" data-csrf="{{ csrf }}" data-authenticated="{{ 'true' if authenticated else 'false' }}" data-mode="{{ mode }}">
+<body data-base="{{ base_path }}" data-csrf="{{ csrf }}" data-authenticated="{{ 'true' if authenticated else 'false' }}" data-mode="{{ mode }}">
 {% if not authenticated %}
   <main class="signin-shell">
     <section class="signin-card" aria-labelledby="signin-title">
@@ -14,7 +14,7 @@
       <p class="eyebrow">CrânIA Module</p>
       <h1 id="signin-title">{{ 'Reconecte o CMAIL' if auth_state == 'reauthorize' else 'Entre no CMAIL' }}</h1>
       <p class="signin-copy">{{ 'Sua autorização expirou ou foi revogada. Entre novamente para continuar.' if auth_state == 'reauthorize' else 'Sua conta Microsoft autentica o acesso e abre somente a sua própria caixa de e-mail.' }}</p>
-      <a class="microsoft-login" href="{{ url_for('cmail.microsoft_login') }}">
+      <a class="microsoft-login" href="{{ base_path }}/auth/microsoft">
         <span class="microsoft-grid" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
         Continuar com Microsoft
       </a>
@@ -28,7 +28,7 @@
       <div class="topbar-actions">
         <span id="modeBadge" class="mode-badge">{{ 'Demonstração · nenhum envio real' if mode == 'demo' else 'Gmail conectado' if mode == 'gmail' else 'Outlook conectado' if mode == 'microsoft' else 'IMAP local' }}</span>
         <span class="account">{{ identity.email if identity else '' }}</span>
-        <a class="quiet-button setup-link" href="{{ url_for('cmail.setup_page') }}">Configuração</a>
+        <a class="quiet-button setup-link" href="{{ base_path }}/setup">Configuração</a>
         {% if mode in ['microsoft', 'gmail'] %}<button id="logout" class="quiet-button" type="button">Sair</button>{% endif %}
       </div>
     </header>
@@ -87,6 +87,6 @@
     <div class="dialog-actions"><button id="execute" type="button">Confirmar e enviar</button><button id="cancel" class="quiet-button" type="button">Cancelar</button></div>
   </dialog>
 {% endif %}
-<script src="{{ url_for('cmail.static', filename='app.js') }}" defer></script>
+<script src="{{ base_path }}/static/app.js" defer></script>
 </body>
 </html>

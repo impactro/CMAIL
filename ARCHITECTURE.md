@@ -1,7 +1,7 @@
 # Arquitetura CMAIL
 
 ```text
-Flask standalone / Blueprint / API Python / Component Manager
+FastAPI standalone / subaplicação ASGI / API Python / Component Manager
              -> MicrosoftAuthService / GoogleAuthService -> OAuth + DPAPI
              -> MailService + Principal/capabilities
              -> Microsoft Graph, Gmail API ou IMAP/SMTP
@@ -10,14 +10,18 @@ Flask standalone / Blueprint / API Python / Component Manager
 
 `config.py` aceita no `.env` somente `CMAIL_CONFIG_FILE`, valida o JSON fechado
 de schema `1.1` (e lê `1.0` para rollback) e resolve caminhos relativos à pasta
-desse JSON. Segredos e
+desse JSON. Esse é o contrato standalone; em composição o host entrega
+`configFile` e o módulo carrega o mesmo JSON diretamente, sem interpretar o
+`.env` completo do agente. Segredos e
 senhas nunca ficam no JSON: somente referências para arquivos externos.
 `auth.py` mantém Microsoft SSO; `gmail.py`, Google OAuth e Gmail API; `setup.py`,
 a configuração local unitária. `mail.py` isola demo/IMAP/SMTP; `graph.py`, o
 Microsoft Graph. `store.py` é dono
 de identidades, sessões, listas, rascunhos e journal isolados por principal.
 `service.py` aplica capacidades e impede repetição de rascunho consumido.
-`api.py`, CLI e `web.py` reutilizam os mesmos casos de uso.
+`api.py`, CLI e `web.py` reutilizam os mesmos casos de uso. `component.py`
+entrega o par API Python + aplicação FastAPI, e o entry point
+`crania_agent.component_apps` permite descoberta sem importar `ca.*`.
 
 A UI é clara, responsiva e organizada como webmail: navegação por pastas,
 lista de mensagens, painel de leitura e composição separada. Valores externos

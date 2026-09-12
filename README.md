@@ -2,10 +2,10 @@
 
 `CMAIL` é o nome técnico do módulo independente que reúne webmail, leitura de
 pastas e mensagens, listas de destinatários e disparo controlado de e-mail.
-Versão do componente: `26.9.11c` (pacote Python `26.9.11.post2`).
+Versão do componente: `26.9.12a` (pacote Python `26.9.12`).
 
 O módulo agora é dono da ferramenta Webmail e pode existir de duas formas com
-o mesmo código: aplicação Flask standalone ou componente incorporado por outro
+o mesmo código: aplicação FastAPI standalone ou subaplicação ASGI incorporada por outro
 runtime. Ele não importa `ca.*`, não reutiliza banco, sessão ou token do
 CraniaAgent e oferece uma API Python pública baseada em identidade e
 capacidades.
@@ -50,7 +50,7 @@ python -m cmail list-messages --folder INBOX --limit 50
 python -m cmail serve
 ```
 
-Dependências declaradas: Flask 3.x e Waitress 3.x. Para validar o checkout e
+Dependências web declaradas: FastAPI, Starlette/Jinja e Uvicorn. Para validar o checkout e
 construir o wheel sem instalar no host:
 
 ```powershell
@@ -58,7 +58,7 @@ python -m pytest -q
 python -m pip wheel . --no-deps --wheel-dir dist
 ```
 
-`serve` usa Waitress e abre `http://127.0.0.1:7420/`. A versão aceita
+`serve` usa Uvicorn e abre `http://127.0.0.1:7420/`. A versão aceita
 IMAP/SMTP com SSL ou STARTTLS. Corpos HTML são convertidos em texto antes de
 chegar à interface; imagens remotas não são carregadas. Anexos são apenas
 inventariados nesta primeira ejeção.
@@ -105,6 +105,14 @@ de validar sua própria assertion e concede
 capacidades explícitas (`mail.read`, `mail.manage`, `mail.send` e
 `lists.manage`). Cookies e tokens web nunca são usados como autorização da API
 Python. Veja [API.md](API.md).
+
+A aplicação ASGI é publicada em `crania_agent.component_apps` como
+`cmail.web:create_component_app`. A fábrica segue o contrato comum
+`(agent_root, host_services)`; a autenticação da conta permanece própria. Em composição,
+`configFile` aponta diretamente para o JSON e evita que o módulo interprete o
+`.env` completo do agente. Um host FastAPI incorpora a mesma interface standalone
+com `app.mount("/cm/cmail", create_app(config))`, preservando assets, OAuth,
+CSRF e rotas sob o prefixo montado.
 
 Estado e dados pessoais ficam em `state.directory/cmail.sqlite3`. Tokens MSAL
 e Google ficam em binários DPAPI sob `state.directory/security`. O JSON contém

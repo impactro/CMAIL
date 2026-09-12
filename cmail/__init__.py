@@ -1,13 +1,14 @@
 """CMAIL: rotinas independentes de e-mail."""
 
-__version__ = "26.9.11c"
+__version__ = "26.9.12a"
 
 from .config import Config
 from .api import CmailApi, create_api
 from .service import MailService, Principal
-from .web import create_app, create_blueprint
+from .web import create_app
+from .component import CmailComponent, create_component
 
 __all__ = [
     "CmailApi", "Config", "MailService", "Principal", "create_api",
-    "create_app", "create_blueprint", "__version__",
+    "CmailComponent", "create_app", "create_component", "__version__",
 ]

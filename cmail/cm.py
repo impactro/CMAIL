@@ -29,6 +29,6 @@ def describe() -> dict[str, object]:
             "lists": {"description": "Lista ou atualiza listas locais de destinatários.", "argv": ["lists"], "effects": ["read-files", "write-files"]},
             "send-prepare": {"description": "Cria prévia e confirmação de envio, sem enviar.", "argv": ["send-prepare"], "effects": ["read-files", "write-files"]},
             "send-execute": {"description": "Envia um rascunho confirmado e não repete falha incerta.", "argv": ["send-execute"], "effects": ["read-files", "write-files", "network-and-external-write-with-execute"]},
-            "serve": {"description": "Abre webmail Flask exclusivamente local.", "argv": ["serve"], "effects": ["network-listen:loopback", "read-files", "write-files", "network-read", "external-write-with-confirmation"]},
+            "serve": {"description": "Abre webmail FastAPI exclusivamente local.", "argv": ["serve"], "effects": ["network-listen:loopback", "read-files", "write-files", "network-read", "external-write-with-confirmation"]},
         },
     }

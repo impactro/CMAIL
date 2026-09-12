@@ -9,11 +9,17 @@ import webbrowser
 from pathlib import Path
 from typing import Callable
 
-from waitress import create_server
+import uvicorn
 
 from .config import Config
 from .service import MailService, Principal
 from .web import create_app
+
+
+def create_server(app, *, host: str, port: int, threads: int = 4):
+    """Build the canonical ASGI server; ``threads`` is kept for test factories."""
+    del threads
+    return uvicorn.Server(uvicorn.Config(app, host=host, port=port, log_level="info"))
 
 
 def parser() -> argparse.ArgumentParser:
@@ -60,7 +66,12 @@ def _serve(
             restart_requested.set()
 
             def stop_listener() -> None:
-                server_holder["server"].close()  # type: ignore[attr-defined]
+                server = server_holder["server"]
+                close = getattr(server, "close", None)
+                if callable(close):
+                    close()
+                else:
+                    server.should_exit = True  # type: ignore[attr-defined]
 
             timer = timer_factory(1.0, stop_listener)
             timer.daemon = True

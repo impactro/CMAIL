@@ -8,6 +8,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from fastapi.testclient import TestClient
 
 from cmail.cm import describe
 from cmail.auth import MAIL_SCOPES, MicrosoftAuthService, build_microsoft_client
@@ -17,7 +18,7 @@ from cmail.graph import MicrosoftGraphProvider
 from cmail.gmail import GMAIL_SCOPES, GoogleAuthService
 from cmail.service import MANAGE_LISTS, READ_MAIL, MailService, Principal
 from cmail.store import Store
-from cmail.web import create_app
+from cmail.web import create_app, create_component_app
 from cmail.__main__ import _serve
 
 
@@ -75,6 +76,20 @@ def test_lists_and_confirmed_send(tmp_path):
     assert len(fake.sent) == 1
     with pytest.raises(ValueError):
         service.execute(preview["draftId"], preview["confirmationToken"])
+
+
+def test_component_app_uses_host_config_file_without_parsing_agent_env(tmp_path):
+    config_file = tmp_path / "module" / "cmail.json"
+    config_file.parent.mkdir()
+    config_file.write_text(json.dumps(config_payload()), encoding="utf-8")
+    (tmp_path / ".env").write_text(
+        "AI_TYPE=codex\nCMAIL_CONFIG_FILE=module/cmail.json\n",
+        encoding="utf-8",
+    )
+    app = create_component_app(tmp_path, {"configFile": config_file})
+    response = TestClient(app).get("/health")
+    assert response.status_code == 200
+    assert response.json()["framework"] == "fastapi"
 
 
 def test_component_descriptor_uses_packaged_skills():
@@ -157,15 +172,14 @@ def test_standalone_server_reloads_config_without_replacing_process():
 def test_web_requires_csrf(tmp_path):
     selected = config(tmp_path)
     app = create_app(selected, MailService(selected, FakeMail()))
-    app.testing = True
-    client = app.test_client()
-    assert client.get("/health").json["ok"] is True
+    client = TestClient(app, follow_redirects=False)
+    assert client.get("/health").json()["ok"] is True
     assert client.post("/api/send/prepare", json={}).status_code == 403
     page = client.get("/")
     token = page.text.split('data-csrf="', 1)[1].split('"', 1)[0]
     response = client.post("/api/send/prepare", headers={"X-CSRF-Token": token},
                            json={"recipients": ["a@example.com"], "subject": "A", "body": "B"})
-    assert response.json["ok"] is True
+    assert response.json()["ok"] is True
 
 
 def test_setup_configures_one_imap_account_without_secret_in_json(tmp_path):
@@ -175,8 +189,7 @@ def test_setup_configures_one_imap_account_without_secret_in_json(tmp_path):
         MailService(selected).folders(Principal.local_operator())
     restarted = []
     app = create_app(selected, restart_callback=lambda: restarted.append(True))
-    app.testing = True
-    client = app.test_client()
+    client = TestClient(app, follow_redirects=False)
     assert client.get("/").headers["location"].endswith("/setup")
     page = client.get("/setup")
     csrf = page.text.split('name="csrf" value="', 1)[1].split('"', 1)[0]
@@ -197,8 +210,7 @@ def test_setup_configures_one_imap_account_without_secret_in_json(tmp_path):
     assert "senha-de-teste" not in raw
     assert configured.public()["singleAccount"] is True
     webmail = create_app(configured, MailService(configured, FakeMail()))
-    webmail.testing = True
-    imap_client = webmail.test_client()
+    imap_client = TestClient(webmail, follow_redirects=False)
     assert imap_client.get("/").status_code == 200
     assert imap_client.get("/api/folders").status_code == 200
     assert imap_client.get("/setup").status_code == 200
@@ -206,10 +218,10 @@ def test_setup_configures_one_imap_account_without_secret_in_json(tmp_path):
 
 def test_setup_rejects_mutation_without_csrf(tmp_path):
     write_config(tmp_path, config_payload_v11())
-    app = create_app(Config.load(tmp_path)); app.testing = True
-    response = app.test_client().post("/setup", data={})
+    app = create_app(Config.load(tmp_path))
+    response = TestClient(app, follow_redirects=False).post("/setup", data={})
     assert response.status_code == 403
-    assert response.content_type.startswith("text/html")
+    assert response.headers["content-type"].startswith("text/html")
     assert "sessão de configuração expirou" in response.text
 
 
@@ -217,8 +229,8 @@ def test_configured_microsoft_setup_uses_dedicated_session_csrf(tmp_path):
     selected = microsoft_config(tmp_path, account="antiga@empresa.test")
     original_secret = selected.microsoft_client_secret()
     restarted = []
-    app = create_app(selected, restart_callback=lambda: restarted.append(True)); app.testing = True
-    client = app.test_client()
+    app = create_app(selected, restart_callback=lambda: restarted.append(True))
+    client = TestClient(app, follow_redirects=False)
 
     page = client.get("/setup")
     token = page.text.split('name="csrf" value="', 1)[1].split('"', 1)[0]
@@ -308,8 +320,8 @@ def authenticated_client(tmp_path: Path):
     store = Store(selected.state_dir)
     auth = MicrosoftAuthService(selected, store, client_factory=factory)
     service = MailService(selected, auth=auth, graph_factory=lambda _auth, _identity: FakeMail())
-    app = create_app(selected, service); app.testing = True
-    client = app.test_client()
+    app = create_app(selected, service)
+    client = TestClient(app, follow_redirects=False)
     login = client.get("/auth/microsoft")
     assert login.status_code == 302
     assert factory.clients[0].requested_scopes == list(MAIL_SCOPES)
@@ -348,8 +360,8 @@ def test_gmail_oauth_is_mandatory_and_bound_to_single_account(tmp_path):
     selected = gmail_config(tmp_path)
     auth = GoogleAuthService(selected, Store(selected.state_dir), requester=requester)
     service = MailService(selected, auth=auth)
-    app = create_app(selected, service); app.testing = True
-    client = app.test_client()
+    app = create_app(selected, service)
+    client = TestClient(app, follow_redirects=False)
     assert client.get("/").headers["location"].endswith("/auth/google")
     login = client.get("/auth/google")
     assert login.status_code == 302
@@ -359,7 +371,7 @@ def test_gmail_oauth_is_mandatory_and_bound_to_single_account(tmp_path):
     assert set(query["scope"][0].split()) == set(GMAIL_SCOPES)
     callback = client.get(f"/auth/google/callback?state={query['state'][0]}&code=fake")
     assert callback.status_code == 303
-    assert client.get("/api/folders").json["folders"][0]["id"] == "INBOX"
+    assert client.get("/api/folders").json()["folders"][0]["id"] == "INBOX"
     assert all("pessoa@gmail.test" not in str(body) for method, url, headers, body in calls if url.endswith("/token"))
 
 
@@ -369,14 +381,14 @@ def test_microsoft_login_protects_routes_and_replay(tmp_path):
     store = Store(selected.state_dir)
     auth = MicrosoftAuthService(selected, store, client_factory=factory)
     service = MailService(selected, auth=auth, graph_factory=lambda _auth, _identity: FakeMail())
-    app = create_app(selected, service); app.testing = True
-    client = app.test_client()
+    app = create_app(selected, service)
+    client = TestClient(app, follow_redirects=False)
     assert client.get("/api/folders").status_code == 401
     assert client.get("/auth/microsoft").status_code == 302
     assert client.get("/auth/callback?state=state-123&code=fake").status_code == 303
     assert client.get("/api/folders").status_code == 200
     assert client.get("/auth/callback?state=state-123&code=replay").status_code == 401
-    assert app.test_client().get("/api/folders").status_code == 401
+    assert TestClient(app, follow_redirects=False).get("/api/folders").status_code == 401
 
 
 def test_microsoft_account_mismatch_renders_recovery_page_and_preserves_api_json(tmp_path):
@@ -385,22 +397,22 @@ def test_microsoft_account_mismatch_renders_recovery_page_and_preserves_api_json
     store = Store(selected.state_dir)
     auth = MicrosoftAuthService(selected, store, client_factory=factory)
     service = MailService(selected, auth=auth, graph_factory=lambda _auth, _identity: FakeMail())
-    app = create_app(selected, service); app.testing = True
-    client = app.test_client()
+    app = create_app(selected, service)
+    client = TestClient(app, follow_redirects=False)
 
     assert client.get("/auth/microsoft").status_code == 302
     callback = client.get("/auth/callback?state=state-123&code=fake")
     assert callback.status_code == 401
-    assert callback.content_type.startswith("text/html")
+    assert callback.headers["content-type"].startswith("text/html")
     assert "Conta diferente da configurada" in callback.text
     assert "Reconfigurar conta" in callback.text
     assert 'href="/setup"' in callback.text
-    assert client.get_cookie("cmail_oauth_browser", path="/auth/callback") is None
+    assert client.cookies.get("cmail_oauth_browser") is None
 
-    api_error = app.test_client().get("/api/folders")
+    api_error = TestClient(app, follow_redirects=False).get("/api/folders")
     assert api_error.status_code == 401
-    assert api_error.is_json
-    assert api_error.json["ok"] is False
+    assert api_error.headers["content-type"].startswith("application/json")
+    assert api_error.json()["ok"] is False
 
 
 def test_microsoft_session_csrf_logout_and_csp(tmp_path):
@@ -409,7 +421,7 @@ def test_microsoft_session_csrf_logout_and_csp(tmp_path):
     assert "pessoa@empresa.test" in page.text
     assert "default-src 'self'" in page.headers["Content-Security-Policy"]
     assert client.post("/api/lists", json={}).status_code == 403
-    csrf = client.get_cookie("cmail_csrf").value
+    csrf = client.cookies.get("cmail_csrf")
     saved = client.post("/api/lists", headers={"X-CSRF-Token": csrf}, json={
         "name": "Equipe", "recipients": [{"address": "a@example.com"}]
     })
@@ -487,15 +499,15 @@ def test_reply_and_forward_require_explicit_confirmation(tmp_path):
         service.forward(principal, "message-1", ["a@example.com"], "Encaminhando")
 
 
-def test_blueprint_can_be_mounted_under_host_prefix(tmp_path):
+def test_fastapi_app_can_be_mounted_under_host_prefix(tmp_path):
     selected = config(tmp_path)
     app = create_app(selected, MailService(selected, FakeMail()), url_prefix="/tools/mail")
-    app.testing = True
-    client = app.test_client()
+    client = TestClient(app, follow_redirects=False)
     page = client.get("/tools/mail/")
     assert page.status_code == 200
     assert 'data-base="/tools/mail"' in page.text
     assert client.get("/tools/mail/static/style.css").status_code == 200
+    assert client.get("/tools/mail/health").json()["framework"] == "fastapi"
 
 
 def test_config_is_closed_and_env_contains_only_pointer(tmp_path):
