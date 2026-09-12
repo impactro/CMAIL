@@ -111,6 +111,39 @@ class Store:
             ).fetchone()
         return {"lists": lists, "drafts": drafts, "lastAction": dict(last) if last else None}
 
+    def history(self, owner_id: str = "", limit: int = 50) -> list[dict[str, object]]:
+        selected_limit = max(1, min(int(limit), 200))
+        with self.connect() as db:
+            rows = db.execute(
+                """SELECT created_at,action,status,detail_json
+                   FROM mail_audit_events WHERE owner_id=?
+                   ORDER BY id DESC LIMIT ?""",
+                (owner_id, selected_limit),
+            ).fetchall()
+        result: list[dict[str, object]] = []
+        for row in rows:
+            try:
+                detail = json.loads(str(row["detail_json"] or "{}"))
+            except json.JSONDecodeError:
+                detail = {}
+            result.append({
+                "createdAt": str(row["created_at"]),
+                "action": str(row["action"]),
+                "status": str(row["status"]),
+                "detail": detail if isinstance(detail, dict) else {},
+            })
+        return result
+
+    def record_action(
+        self,
+        action: str,
+        status: str,
+        detail: dict[str, object],
+        owner_id: str = "",
+    ) -> None:
+        with self.connect() as db:
+            self._audit(db, action, status, detail, owner_id)
+
     def lists(self, owner_id: str = "") -> list[dict[str, object]]:
         with self.connect() as db:
             rows = db.execute("""SELECT l.id,l.name,l.created_at,COUNT(r.address) AS recipients

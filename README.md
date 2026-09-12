@@ -2,13 +2,18 @@
 
 `CMAIL` é o nome técnico do módulo independente que reúne webmail, leitura de
 pastas e mensagens, listas de destinatários e disparo controlado de e-mail.
-Versão do componente: `26.9.12c` (pacote Python `26.9.12.post2`).
+Versão do componente: `26.9.12e` (pacote Python `26.9.12.post4`).
 
 O módulo agora é dono da ferramenta Webmail e pode existir de duas formas com
 o mesmo código: aplicação FastAPI standalone ou subaplicação ASGI incorporada por outro
 runtime. Ele não importa `ca.*`, não reutiliza banco, sessão ou token do
 CraniaAgent e oferece uma API Python pública baseada em identidade e
 capacidades.
+
+A API incorporável também é dona do histórico de ações por `ownerId` e da
+consulta de disponibilidade Microsoft. Assim, tools de agentes consultam e
+operam a caixa pelo contrato CMAIL; o host conserva apenas o escopo SSO e as
+confirmações explícitas, sem voltar a implementar Graph, Gmail ou IMAP.
 
 ## Execução
 

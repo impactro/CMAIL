@@ -36,6 +36,9 @@ class FakeMail:
     def send(self, recipients, subject, body):
         self.sent.append((recipients, subject, body))
         return {"accepted": True, "recipientCount": len(recipients)}
+    def availability(self, schedules, start, end, time_zone, interval):
+        return {"schedules": schedules, "count": len(schedules), "timeZone": time_zone,
+                "intervalMinutes": interval, "start": start, "end": end}
 
 
 def config(tmp_path: Path) -> Config:
@@ -139,6 +142,25 @@ def test_component_api_uses_host_config_and_system_sender(tmp_path):
     result = api.system_send("workspace-a", "a@example.com", "Assunto", "Corpo")
     assert result["demo"] is True
     assert api.principal_for_owner("workspace-a").storage_owner == "workspace-a"
+
+
+def test_api_owns_audit_history_and_calendar_availability(tmp_path):
+    selected = config(tmp_path)
+    service = MailService(selected, FakeMail())
+    api = CmailApi(service)
+    principal = Principal(
+        "local", "local@example.com",
+        frozenset({"mail.read", "mail.manage", "mail.send"}), "workspace-a",
+    )
+    availability = api.availability(
+        principal, ["a@example.com"], "2026-09-12T08:00:00",
+        "2026-09-12T09:00:00", "E. South America Standard Time", 30,
+    )
+    assert availability["count"] == 1
+    service.store.record_action("fixture", "completed", {"safe": True}, "workspace-a")
+    history = api.history(principal)
+    assert history[0]["action"] == "fixture"
+    assert history[0]["detail"] == {"safe": True}
 
 
 def test_standalone_server_reloads_config_without_replacing_process():
@@ -586,6 +608,8 @@ def test_graph_provider_uses_only_me_routes_and_normalizes_mail():
         if method == "PATCH": return 200, {"id": "message-1", "isRead": True}
         if path.endswith("/move"): return 200, {"id": "message-2"}
         if path == "/me/sendMail": return 202, {}
+        if path == "/me/calendar/getSchedule":
+            return 200, {"value": [{"scheduleId": "a@example.com", "availabilityView": "0", "scheduleItems": []}]}
         return 200, {}
     selected = MicrosoftGraphProvider(FakeTokenAuth(), "identity-1", requester=requester)
     folder = selected.folders()[0]
@@ -596,6 +620,10 @@ def test_graph_provider_uses_only_me_routes_and_normalizes_mail():
     assert selected.set_read("message-1", True)["isRead"] is True
     assert selected.move("message-1", "folder-2")["moved"] is True
     assert selected.send(["a@example.com"], "Assunto", "Corpo")["accepted"] is True
+    assert selected.availability(
+        ["a@example.com"], "2026-09-12T08:00:00", "2026-09-12T09:00:00",
+        "E. South America Standard Time", 30,
+    )["count"] == 1
     assert all(path.startswith("/me/") for _, path, *_ in calls)
     assert all(token == "memory-only-token" for _, _, token, *_ in calls)
     list_path = next(path for _, path, *_ in calls if "/me/mailFolders?" in path)

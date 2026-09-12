@@ -27,6 +27,7 @@ class CmailApi:
                 "folders": {"capability": "mail.read", "effect": "network-read"},
                 "messages": {"capability": "mail.read", "effect": "network-read"},
                 "message": {"capability": "mail.read", "effect": "network-read"},
+                "history": {"capability": "mail.read", "effect": "read-local"},
                 "set-read": {"capability": "mail.manage", "effect": "external-write"},
                 "move": {"capability": "mail.manage", "effect": "external-write"},
                 "lists": {"capability": "lists.manage", "effect": "read-local"},
@@ -41,6 +42,7 @@ class CmailApi:
                 "directory": {"capability": "mail.read", "effect": "network-read"},
                 "calendars": {"capability": "mail.read", "effect": "network-read"},
                 "calendar-view": {"capability": "mail.read", "effect": "network-read"},
+                "availability": {"capability": "mail.read", "effect": "network-read"},
                 "event": {"capability": "mail.read", "effect": "network-read"},
                 "event-create": {"capability": "mail.manage", "effect": "external-write-confirmed"},
                 "event-update": {"capability": "mail.manage", "effect": "external-write-confirmed"},
@@ -66,6 +68,9 @@ class CmailApi:
 
     def message(self, principal: Principal, folder: str, identifier: str) -> dict[str, object]:
         return self.service.message(principal, folder, identifier)
+
+    def history(self, principal: Principal, limit: int = 50) -> list[dict[str, object]]:
+        return self.service.history(principal, limit)
 
     def set_read(self, principal: Principal, identifier: str, is_read: bool) -> dict[str, object]:
         return self.service.set_read(principal, identifier, is_read)
@@ -125,6 +130,9 @@ class CmailApi:
 
     def calendar_view(self, principal: Principal, start: str, end: str, time_zone: str, *, calendar_id: str = "", limit: int = 100) -> list[dict[str, object]]:
         return self.service.calendar_view(principal, start, end, time_zone, calendar_id=calendar_id, limit=limit)
+
+    def availability(self, principal: Principal, schedules: list[str], start: str, end: str, time_zone: str, interval_minutes: int = 30) -> dict[str, object]:
+        return self.service.availability(principal, schedules, start, end, time_zone, interval_minutes)
 
     def event(self, principal: Principal, identifier: str) -> dict[str, object]:
         return self.service.event(principal, identifier)

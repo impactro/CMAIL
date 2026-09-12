@@ -146,6 +146,10 @@ class MailService:
         principal.require(MANAGE_LISTS)
         return self.store.lists(principal.storage_owner)
 
+    def history(self, principal: Principal, limit: int = 50) -> list[dict[str, object]]:
+        principal.require(READ_MAIL)
+        return self.store.history(principal.storage_owner, limit)
+
     def save_list(self, principal: Principal, name: str, recipients: list[dict[str, str]]) -> dict[str, object]:
         principal.require(MANAGE_LISTS)
         return self.store.save_list(name, recipients, principal.storage_owner)
@@ -180,14 +184,25 @@ class MailService:
         selected = self.provider_for(principal)
         if not hasattr(selected, "set_read"):
             raise NotImplementedError("O provedor atual não permite alterar leitura.")
-        return selected.set_read(identifier, is_read)  # type: ignore[attr-defined]
+        result = selected.set_read(identifier, is_read)  # type: ignore[attr-defined]
+        self.store.record_action(
+            "mark-read" if is_read else "mark-unread", "completed",
+            {"messageId": str(identifier)[:1024]}, principal.storage_owner,
+        )
+        return result
 
     def move(self, principal: Principal, identifier: str, destination_id: str) -> dict[str, object]:
         principal.require(MANAGE_MAIL)
         selected = self.provider_for(principal)
         if not hasattr(selected, "move"):
             raise NotImplementedError("O provedor atual não permite mover mensagens.")
-        return selected.move(identifier, destination_id)  # type: ignore[attr-defined]
+        result = selected.move(identifier, destination_id)  # type: ignore[attr-defined]
+        self.store.record_action(
+            "move", "completed",
+            {"messageId": str(identifier)[:1024], "destinationId": str(destination_id)[:1024]},
+            principal.storage_owner,
+        )
+        return result
 
     def reply(
         self, principal: Principal, identifier: str, comment: str, *,
@@ -201,7 +216,12 @@ class MailService:
         selected = self.provider_for(principal)
         if not hasattr(selected, "reply"):
             raise NotImplementedError("O provedor atual não permite responder mensagens.")
-        return selected.reply(identifier, comment, reply_all=reply_all)  # type: ignore[attr-defined]
+        result = selected.reply(identifier, comment, reply_all=reply_all)  # type: ignore[attr-defined]
+        self.store.record_action(
+            "reply-all" if reply_all else "reply", "completed",
+            {"messageId": str(identifier)[:1024]}, principal.storage_owner,
+        )
+        return result
 
     def forward(
         self, principal: Principal, identifier: str, recipients: list[str], comment: str, *,
@@ -216,7 +236,13 @@ class MailService:
         selected = self.provider_for(principal)
         if not hasattr(selected, "forward"):
             raise NotImplementedError("O provedor atual não permite encaminhar mensagens.")
-        return selected.forward(identifier, clean, comment)  # type: ignore[attr-defined]
+        result = selected.forward(identifier, clean, comment)  # type: ignore[attr-defined]
+        self.store.record_action(
+            "forward", "completed",
+            {"messageId": str(identifier)[:1024], "recipientCount": len(clean)},
+            principal.storage_owner,
+        )
+        return result
 
     def attachments(self, principal: Principal, identifier: str) -> list[dict[str, object]]:
         principal.require(READ_MAIL)
@@ -261,6 +287,23 @@ class MailService:
             raise NotImplementedError("O provedor atual não oferece calendário.")
         return selected.calendar_view(start, end, time_zone, calendar_id, limit)  # type: ignore[attr-defined]
 
+    def availability(
+        self,
+        principal: Principal,
+        schedules: list[str],
+        start: str,
+        end: str,
+        time_zone: str,
+        interval_minutes: int = 30,
+    ) -> dict[str, object]:
+        principal.require(READ_MAIL)
+        selected = self.provider_for(principal)
+        if not hasattr(selected, "availability"):
+            raise NotImplementedError("O provedor atual não oferece disponibilidade.")
+        return selected.availability(  # type: ignore[attr-defined]
+            schedules, start, end, time_zone, interval_minutes,
+        )
+
     def event(self, principal: Principal, identifier: str) -> dict[str, object]:
         principal.require(READ_MAIL)
         selected = self.provider_for(principal)
@@ -275,7 +318,12 @@ class MailService:
         selected = self.provider_for(principal)
         if not hasattr(selected, "create_event"):
             raise NotImplementedError("O provedor atual não oferece calendário.")
-        return selected.create_event(event, calendar_id=calendar_id)  # type: ignore[attr-defined]
+        result = selected.create_event(event, calendar_id=calendar_id)  # type: ignore[attr-defined]
+        self.store.record_action(
+            "calendar-create", "completed",
+            {"calendarId": str(calendar_id)[:1024]}, principal.storage_owner,
+        )
+        return result
 
     def update_event(self, principal: Principal, identifier: str, changes: dict[str, object], *, confirmed: bool = False) -> dict[str, object]:
         principal.require(MANAGE_MAIL)
@@ -284,7 +332,13 @@ class MailService:
         selected = self.provider_for(principal)
         if not hasattr(selected, "update_event"):
             raise NotImplementedError("O provedor atual não oferece calendário.")
-        return selected.update_event(identifier, changes)  # type: ignore[attr-defined]
+        result = selected.update_event(identifier, changes)  # type: ignore[attr-defined]
+        self.store.record_action(
+            "calendar-update", "completed",
+            {"eventId": str(identifier)[:1024], "fields": sorted(str(key) for key in changes)},
+            principal.storage_owner,
+        )
+        return result
 
     def delete_event(self, principal: Principal, identifier: str, *, confirmed: bool = False) -> dict[str, object]:
         principal.require(MANAGE_MAIL)
@@ -293,7 +347,12 @@ class MailService:
         selected = self.provider_for(principal)
         if not hasattr(selected, "delete_event"):
             raise NotImplementedError("O provedor atual não oferece calendário.")
-        return selected.delete_event(identifier)  # type: ignore[attr-defined]
+        result = selected.delete_event(identifier)  # type: ignore[attr-defined]
+        self.store.record_action(
+            "calendar-delete", "completed",
+            {"eventId": str(identifier)[:1024]}, principal.storage_owner,
+        )
+        return result
 
     def respond_event(self, principal: Principal, identifier: str, response: str, *, comment: str = "", send_response: bool = True, confirmed: bool = False) -> dict[str, object]:
         principal.require(MANAGE_MAIL)
@@ -302,4 +361,10 @@ class MailService:
         selected = self.provider_for(principal)
         if not hasattr(selected, "respond_event"):
             raise NotImplementedError("O provedor atual não oferece calendário.")
-        return selected.respond_event(identifier, response, comment, send_response)  # type: ignore[attr-defined]
+        result = selected.respond_event(identifier, response, comment, send_response)  # type: ignore[attr-defined]
+        self.store.record_action(
+            "calendar-respond", "completed",
+            {"eventId": str(identifier)[:1024], "response": str(response)[:32]},
+            principal.storage_owner,
+        )
+        return result

@@ -367,6 +367,54 @@ class MicrosoftGraphProvider(Provider):
         values = result.get("value") if isinstance(result, dict) else []
         return [_event(item) for item in values or []]
 
+    def availability(
+        self,
+        schedules: list[str],
+        start: str,
+        end: str,
+        time_zone: str,
+        interval_minutes: int = 30,
+    ) -> dict[str, object]:
+        selected = list(dict.fromkeys(
+            str(item).strip().casefold() for item in schedules if str(item).strip()
+        ))
+        interval = int(interval_minutes)
+        if not selected or len(selected) > 50:
+            raise MailError("Informe de 1 a 50 agendas.")
+        if not start or not end or not time_zone:
+            raise MailError("Início, fim e fuso são obrigatórios.")
+        if interval < 5 or interval > 1440:
+            raise MailError("Intervalo de disponibilidade inválido.")
+        result = self._call("POST", "/me/calendar/getSchedule", {
+            "schedules": selected,
+            "startTime": {"dateTime": str(start), "timeZone": str(time_zone)[:128]},
+            "endTime": {"dateTime": str(end), "timeZone": str(time_zone)[:128]},
+            "availabilityViewInterval": interval,
+        })
+        values = result.get("value") if isinstance(result, dict) else []
+        rows = []
+        for raw in values or []:
+            item = raw if isinstance(raw, dict) else {}
+            schedule_items = item.get("scheduleItems")
+            rows.append({
+                "schedule": str(item.get("scheduleId") or "")[:320],
+                "availabilityView": str(item.get("availabilityView") or ""),
+                "items": [
+                    {
+                        "status": str(entry.get("status") or ""),
+                        "start": entry.get("start") if isinstance(entry.get("start"), dict) else {},
+                        "end": entry.get("end") if isinstance(entry.get("end"), dict) else {},
+                    }
+                    for entry in schedule_items or [] if isinstance(entry, dict)
+                ] if isinstance(schedule_items, list) else [],
+            })
+        return {
+            "schedules": rows,
+            "count": len(rows),
+            "timeZone": str(time_zone)[:128],
+            "intervalMinutes": interval,
+        }
+
     def event(self, identifier: str) -> dict[str, object]:
         result = self._call("GET", f"/me/events/{_identifier(identifier, 'Evento')}", headers={"Prefer": 'outlook.body-content-type="text"'})
         return _event(result, include_body=True)
