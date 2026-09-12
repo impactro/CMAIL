@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import base64
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -94,6 +95,59 @@ def _summary(item: object, *, include_body: bool = False) -> dict[str, object]:
         "hasAttachments": bool(value.get("hasAttachments")),
         "attachments": attachments if isinstance(attachments, list) else [],
     }
+
+
+def _contact(item: object) -> dict[str, object]:
+    value = item if isinstance(item, dict) else {}
+    emails = []
+    for raw in value.get("emailAddresses") if isinstance(value.get("emailAddresses"), list) else []:
+        row = raw if isinstance(raw, dict) else {}
+        address = str(row.get("address") or "").strip()
+        if address:
+            emails.append({"name": str(row.get("name") or "")[:160], "address": address[:320]})
+    phones = [
+        str(number).strip()[:80]
+        for number in value.get("businessPhones") if isinstance(value.get("businessPhones"), list)
+        if str(number).strip()
+    ]
+    mobile = str(value.get("mobilePhone") or "").strip()
+    if mobile:
+        phones.append(mobile[:80])
+    return {
+        "id": str(value.get("id") or ""),
+        "name": str(value.get("displayName") or "")[:200],
+        "givenName": str(value.get("givenName") or "")[:100],
+        "surname": str(value.get("surname") or "")[:100],
+        "company": str(value.get("companyName") or "")[:200],
+        "jobTitle": str(value.get("jobTitle") or "")[:160],
+        "emails": emails[:10],
+        "phones": list(dict.fromkeys(phones))[:10],
+    }
+
+
+def _event(item: object, *, include_body: bool = False) -> dict[str, object]:
+    value = item if isinstance(item, dict) else {}
+    start = value.get("start") if isinstance(value.get("start"), dict) else {}
+    end = value.get("end") if isinstance(value.get("end"), dict) else {}
+    location = value.get("location") if isinstance(value.get("location"), dict) else {}
+    result: dict[str, object] = {
+        "id": str(value.get("id") or ""),
+        "subject": str(value.get("subject") or "(sem assunto)")[:500],
+        "start": {"dateTime": str(start.get("dateTime") or ""), "timeZone": str(start.get("timeZone") or "")},
+        "end": {"dateTime": str(end.get("dateTime") or ""), "timeZone": str(end.get("timeZone") or "")},
+        "location": str(location.get("displayName") or "")[:255],
+        "isOrganizer": bool(value.get("isOrganizer")),
+        "isOnlineMeeting": bool(value.get("isOnlineMeeting")),
+        "onlineMeetingUrl": str(value.get("onlineMeetingUrl") or ""),
+        "webLink": str(value.get("webLink") or ""),
+        "attendeeCount": len(value.get("attendees")) if isinstance(value.get("attendees"), list) else 0,
+    }
+    if include_body:
+        body = value.get("body") if isinstance(value.get("body"), dict) else {}
+        result["body"] = str(body.get("content") or "")[:200_000]
+        result["bodyType"] = str(body.get("contentType") or "text")
+        result["attendees"] = value.get("attendees") if isinstance(value.get("attendees"), list) else []
+    return result
 
 
 class MicrosoftGraphProvider(Provider):
@@ -220,3 +274,118 @@ class MicrosoftGraphProvider(Provider):
         }
         self._call("POST", f"/me/messages/{selected}/forward", payload, expected=(202,))
         return {"accepted": True, "action": "forward", "recipientCount": len(recipients)}
+
+    def attachments(self, identifier: str) -> list[dict[str, object]]:
+        selected = _identifier(identifier, "Mensagem")
+        query = urllib.parse.urlencode({"$top": "100", "$select": "id,name,contentType,size,isInline,contentId"})
+        result = self._call("GET", f"/me/messages/{selected}/attachments?{query}")
+        values = result.get("value") if isinstance(result, dict) else []
+        return [
+            {
+                "id": str(item.get("id") or ""), "name": str(item.get("name") or "")[:255],
+                "contentType": str(item.get("contentType") or "application/octet-stream")[:160],
+                "size": int(item.get("size") or 0), "isInline": bool(item.get("isInline")),
+                "contentId": str(item.get("contentId") or "")[:512],
+            }
+            for item in values or [] if isinstance(item, dict) and item.get("id")
+        ]
+
+    def attachment(self, identifier: str, attachment_id: str) -> dict[str, object]:
+        selected = _identifier(identifier, "Mensagem")
+        attachment = _identifier(attachment_id, "Anexo")
+        result = self._call("GET", f"/me/messages/{selected}/attachments/{attachment}")
+        value = result if isinstance(result, dict) else {}
+        encoded = str(value.get("contentBytes") or "")
+        try:
+            size = len(base64.b64decode(encoded, validate=True)) if encoded else 0
+        except ValueError as exc:
+            raise MailError("O Microsoft Graph devolveu um anexo inválido.") from exc
+        if size > 25 * 1024 * 1024:
+            raise MailError("O anexo excede o limite de 25 MiB.")
+        return {
+            "id": str(value.get("id") or attachment_id), "name": str(value.get("name") or "anexo")[:255],
+            "contentType": str(value.get("contentType") or "application/octet-stream")[:160],
+            "size": size, "contentBase64": encoded,
+        }
+
+    def contacts(self, query: str = "", limit: int = 25) -> list[dict[str, object]]:
+        selected_query = " ".join(str(query or "").split())[:100]
+        selected_limit = max(1, min(int(limit), 100))
+        params = urllib.parse.urlencode({
+            "$select": "id,displayName,givenName,surname,companyName,jobTitle,emailAddresses,businessPhones,mobilePhone",
+            "$top": str(100 if selected_query else selected_limit), "$orderby": "displayName",
+        })
+        result = self._call("GET", f"/me/contacts?{params}")
+        values = result.get("value") if isinstance(result, dict) else []
+        contacts = [_contact(item) for item in values or []]
+        if selected_query:
+            needle = selected_query.casefold()
+            contacts = [item for item in contacts if needle in json.dumps(item, ensure_ascii=False).casefold()]
+        return contacts[:selected_limit]
+
+    def directory(self, query: str, limit: int = 20) -> list[dict[str, object]]:
+        selected = " ".join(str(query or "").split())
+        if selected and len(selected) < 2 or len(selected) > 100:
+            raise MailError("A busca no diretório exige zero ou ao menos 2 caracteres.")
+        params: dict[str, str] = {
+            "$select": "id,displayName,mail,userPrincipalName,department,jobTitle",
+            "$top": str(max(1, min(int(limit), 50))),
+        }
+        headers = None
+        if selected:
+            clean = selected.replace('"', "").replace("\\", "")
+            params.update({"$search": f'"displayName:{clean}" OR "mail:{clean}"', "$count": "true"})
+            headers = {"ConsistencyLevel": "eventual"}
+        else:
+            params["$orderby"] = "displayName"
+        result = self._call("GET", "/me/people?" + urllib.parse.urlencode(params), headers=headers)
+        values = result.get("value") if isinstance(result, dict) else []
+        return [
+            {
+                "id": str(item.get("id") or ""), "name": str(item.get("displayName") or "")[:200],
+                "email": str(item.get("mail") or item.get("userPrincipalName") or "")[:320],
+                "department": str(item.get("department") or "")[:160], "jobTitle": str(item.get("jobTitle") or "")[:160],
+            }
+            for item in values or [] if isinstance(item, dict)
+        ]
+
+    def calendars(self) -> list[dict[str, object]]:
+        params = urllib.parse.urlencode({"$top": "50", "$select": "id,name,color,isDefaultCalendar,canEdit,owner"})
+        result = self._call("GET", f"/me/calendars?{params}")
+        values = result.get("value") if isinstance(result, dict) else []
+        return [dict(item) for item in values or [] if isinstance(item, dict)]
+
+    def calendar_view(self, start: str, end: str, time_zone: str, calendar_id: str = "", limit: int = 100) -> list[dict[str, object]]:
+        if not start or not end or not time_zone:
+            raise MailError("Início, fim e fuso são obrigatórios.")
+        prefix = "/me/calendar/calendarView" if not calendar_id else f"/me/calendars/{_identifier(calendar_id, 'Calendário')}/calendarView"
+        params = urllib.parse.urlencode({
+            "startDateTime": start, "endDateTime": end, "$top": str(max(1, min(int(limit), 200))),
+            "$orderby": "start/dateTime",
+        })
+        result = self._call("GET", f"{prefix}?{params}", headers={"Prefer": f'outlook.timezone="{time_zone[:128]}"'})
+        values = result.get("value") if isinstance(result, dict) else []
+        return [_event(item) for item in values or []]
+
+    def event(self, identifier: str) -> dict[str, object]:
+        result = self._call("GET", f"/me/events/{_identifier(identifier, 'Evento')}", headers={"Prefer": 'outlook.body-content-type="text"'})
+        return _event(result, include_body=True)
+
+    def create_event(self, event: dict[str, object], *, calendar_id: str = "") -> dict[str, object]:
+        prefix = "/me/events" if not calendar_id else f"/me/calendars/{_identifier(calendar_id, 'Calendário')}/events"
+        return {"created": True, "event": _event(self._call("POST", prefix, event, expected=(201,)))}
+
+    def update_event(self, identifier: str, changes: dict[str, object]) -> dict[str, object]:
+        result = self._call("PATCH", f"/me/events/{_identifier(identifier, 'Evento')}", changes)
+        return {"updated": True, "event": _event(result)}
+
+    def delete_event(self, identifier: str) -> dict[str, object]:
+        self._call("DELETE", f"/me/events/{_identifier(identifier, 'Evento')}", expected=(204,))
+        return {"deleted": True}
+
+    def respond_event(self, identifier: str, response: str, comment: str = "", send_response: bool = True) -> dict[str, object]:
+        action = {"accept": "accept", "tentative": "tentativelyAccept", "decline": "decline"}.get(str(response).casefold())
+        if not action:
+            raise MailError("Resposta deve ser accept, tentative ou decline.")
+        self._call("POST", f"/me/events/{_identifier(identifier, 'Evento')}/{action}", {"comment": str(comment)[:2000], "sendResponse": bool(send_response)}, expected=(202,))
+        return {"responded": True, "response": str(response).casefold()}

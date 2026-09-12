@@ -14,7 +14,15 @@ from .config import Config
 from .store import Store
 
 
-MAIL_SCOPES = ("Mail.ReadWrite", "Mail.Send", "User.Read", "email")
+MAIL_SCOPES = (
+    "Mail.ReadWrite",
+    "Mail.Send",
+    "Contacts.Read",
+    "Calendars.ReadWrite",
+    "User.ReadBasic.All",
+    "User.Read",
+    "email",
+)
 IDENTITY_SCOPES = ("openid", "profile", "email")
 FLOW_TTL_SECONDS = 10 * 60
 

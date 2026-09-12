@@ -17,7 +17,7 @@ from cmail.auth import (
     MicrosoftAuthService,
     build_microsoft_client,
 )
-from cmail.api import CmailApi
+from cmail.api import CmailApi, create_component_api
 from cmail.config import Config, ConfigError
 from cmail.graph import MicrosoftGraphProvider
 from cmail.gmail import GMAIL_SCOPES, GoogleAuthService
@@ -126,9 +126,19 @@ def test_component_and_python_api_have_separate_entry_points():
     project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))["project"]
     entry_points = project["entry-points"]
     assert entry_points["crania_agent.components"] == {"cmail": "cmail.cm:describe"}
-    assert entry_points["crania_agent.component_apis"] == {"cmail": "cmail.api:create_api"}
+    assert entry_points["crania_agent.component_apis"] == {"cmail": "cmail.api:create_component_api"}
     assert callable(describe)
     assert callable(__import__("cmail.api", fromlist=["create_api"]).create_api)
+
+
+def test_component_api_uses_host_config_and_system_sender(tmp_path):
+    config_file = tmp_path / "module" / "cmail.json"
+    config_file.parent.mkdir()
+    config_file.write_text(json.dumps(config_payload()), encoding="utf-8")
+    api = create_component_api(tmp_path, {"configFile": config_file})
+    result = api.system_send("workspace-a", "a@example.com", "Assunto", "Corpo")
+    assert result["demo"] is True
+    assert api.principal_for_owner("workspace-a").storage_owner == "workspace-a"
 
 
 def test_standalone_server_reloads_config_without_replacing_process():

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "crania-cmail"
-version = "26.9.12.post2"
+version = "26.9.12.post3"
 description = "Componente independente de webmail, listas e disparos controlados"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -25,7 +25,7 @@ cmail = "cmail.__main__:main"
 cmail = "cmail.cm:describe"
 
 [project.entry-points."crania_agent.component_apis"]
-cmail = "cmail.api:create_api"
+cmail = "cmail.api:create_component_api"
 
 [project.entry-points."crania_agent.component_apps"]
 cmail = "cmail.web:create_component_app"

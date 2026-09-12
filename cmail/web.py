@@ -410,6 +410,105 @@ def _create_module_app(
             confirmed=value.get("confirmed") is True,
         )}
 
+    @app.get("/api/messages/{identifier}/attachments")
+    async def message_attachments(identifier: str, request: Request):
+        return {
+            "ok": True,
+            "attachments": current.attachments(require_principal(request), identifier),
+        }
+
+    @app.get("/api/messages/{identifier}/attachments/{attachment_id}")
+    async def message_attachment(identifier: str, attachment_id: str, request: Request):
+        return {
+            "ok": True,
+            "attachment": current.attachment(
+                require_principal(request), identifier, attachment_id
+            ),
+        }
+
+    @app.get("/api/contacts")
+    async def contacts(request: Request):
+        query = str(request.query_params.get("q") or "")
+        limit = min(100, max(1, int(request.query_params.get("limit") or 25)))
+        return {
+            "ok": True,
+            "contacts": current.contacts(require_principal(request), query, limit),
+        }
+
+    @app.get("/api/directory")
+    async def directory(request: Request):
+        query = str(request.query_params.get("q") or "")
+        limit = min(50, max(1, int(request.query_params.get("limit") or 20)))
+        return {
+            "ok": True,
+            "people": current.directory(require_principal(request), query, limit),
+        }
+
+    @app.get("/api/calendars")
+    async def calendars(request: Request):
+        return {"ok": True, "calendars": current.calendars(require_principal(request))}
+
+    @app.get("/api/calendar-view")
+    async def calendar_view(request: Request):
+        return {
+            "ok": True,
+            "events": current.calendar_view(
+                require_principal(request),
+                str(request.query_params.get("start") or ""),
+                str(request.query_params.get("end") or ""),
+                str(request.query_params.get("timeZone") or "UTC"),
+                calendar_id=str(request.query_params.get("calendarId") or ""),
+                limit=min(200, max(1, int(request.query_params.get("limit") or 100))),
+            ),
+        }
+
+    @app.get("/api/events/{identifier}")
+    async def event(identifier: str, request: Request):
+        return {"ok": True, "event": current.event(require_principal(request), identifier)}
+
+    @app.post("/api/events")
+    async def event_create(request: Request):
+        principal = require_principal(request)
+        require_csrf(request, principal)
+        value = await _payload(request)
+        event_value = value.get("event") if isinstance(value.get("event"), dict) else {}
+        return {"ok": True, **current.create_event(
+            principal, event_value,
+            calendar_id=str(value.get("calendarId") or ""),
+            confirmed=value.get("confirmed") is True,
+        )}
+
+    @app.patch("/api/events/{identifier}")
+    async def event_update(identifier: str, request: Request):
+        principal = require_principal(request)
+        require_csrf(request, principal)
+        value = await _payload(request)
+        changes = value.get("changes") if isinstance(value.get("changes"), dict) else {}
+        return {"ok": True, **current.update_event(
+            principal, identifier, changes, confirmed=value.get("confirmed") is True,
+        )}
+
+    @app.delete("/api/events/{identifier}")
+    async def event_delete(identifier: str, request: Request):
+        principal = require_principal(request)
+        require_csrf(request, principal)
+        value = await _payload(request)
+        return {"ok": True, **current.delete_event(
+            principal, identifier, confirmed=value.get("confirmed") is True,
+        )}
+
+    @app.post("/api/events/{identifier}/respond")
+    async def event_respond(identifier: str, request: Request):
+        principal = require_principal(request)
+        require_csrf(request, principal)
+        value = await _payload(request)
+        return {"ok": True, **current.respond_event(
+            principal, identifier, str(value.get("response") or ""),
+            comment=str(value.get("comment") or ""),
+            send_response=value.get("sendResponse") is not False,
+            confirmed=value.get("confirmed") is True,
+        )}
+
     @app.get("/api/lists")
     async def lists(request: Request):
         return {"ok": True, "lists": current.lists(require_principal(request))}

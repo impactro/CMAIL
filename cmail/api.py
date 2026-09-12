@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+from typing import Mapping
+
 from .config import Config
 from .service import MailService, Principal
 
@@ -32,6 +35,19 @@ class CmailApi:
                 "execute-send": {"capability": "mail.send", "effect": "external-write-confirmed"},
                 "reply": {"capability": "mail.send", "effect": "external-write-confirmed"},
                 "forward": {"capability": "mail.send", "effect": "external-write-confirmed"},
+                "attachments": {"capability": "mail.read", "effect": "network-read"},
+                "attachment": {"capability": "mail.read", "effect": "network-read"},
+                "contacts": {"capability": "mail.read", "effect": "network-read"},
+                "directory": {"capability": "mail.read", "effect": "network-read"},
+                "calendars": {"capability": "mail.read", "effect": "network-read"},
+                "calendar-view": {"capability": "mail.read", "effect": "network-read"},
+                "event": {"capability": "mail.read", "effect": "network-read"},
+                "event-create": {"capability": "mail.manage", "effect": "external-write-confirmed"},
+                "event-update": {"capability": "mail.manage", "effect": "external-write-confirmed"},
+                "event-delete": {"capability": "mail.manage", "effect": "external-write-confirmed"},
+                "event-respond": {"capability": "mail.manage", "effect": "external-write-confirmed"},
+                "owner-invalidate": {"capability": "host.security", "effect": "credential-revoke"},
+                "system-send": {"capability": "host.recovery", "effect": "external-write"},
             },
         }
 
@@ -81,6 +97,64 @@ class CmailApi:
     ) -> dict[str, object]:
         return self.service.forward(principal, identifier, recipients, comment, confirmed=confirmed)
 
+    def principal_for_owner(self, owner_id: str, capabilities: frozenset[str] | None = None) -> Principal:
+        return self.service.principal_for_owner(owner_id, capabilities)
+
+    def invalidate_owner(self, owner_id: str) -> None:
+        self.service.invalidate_owner(owner_id)
+
+    def system_send(self, owner_id: str, recipient: str, subject: str, body: str) -> dict[str, object]:
+        principal = self.service.principal_for_owner(owner_id, frozenset({"mail.send"}))
+        draft = self.service.prepare({"recipients": [recipient], "subject": subject, "body": body}, principal)
+        return self.service.execute(str(draft["draftId"]), str(draft["confirmationToken"]), principal)
+
+    def attachments(self, principal: Principal, identifier: str) -> list[dict[str, object]]:
+        return self.service.attachments(principal, identifier)
+
+    def attachment(self, principal: Principal, identifier: str, attachment_id: str) -> dict[str, object]:
+        return self.service.attachment(principal, identifier, attachment_id)
+
+    def contacts(self, principal: Principal, query: str = "", limit: int = 25) -> list[dict[str, object]]:
+        return self.service.contacts(principal, query, limit)
+
+    def directory(self, principal: Principal, query: str = "", limit: int = 20) -> list[dict[str, object]]:
+        return self.service.directory(principal, query, limit)
+
+    def calendars(self, principal: Principal) -> list[dict[str, object]]:
+        return self.service.calendars(principal)
+
+    def calendar_view(self, principal: Principal, start: str, end: str, time_zone: str, *, calendar_id: str = "", limit: int = 100) -> list[dict[str, object]]:
+        return self.service.calendar_view(principal, start, end, time_zone, calendar_id=calendar_id, limit=limit)
+
+    def event(self, principal: Principal, identifier: str) -> dict[str, object]:
+        return self.service.event(principal, identifier)
+
+    def create_event(self, principal: Principal, event: dict[str, object], *, calendar_id: str = "", confirmed: bool = False) -> dict[str, object]:
+        return self.service.create_event(principal, event, calendar_id=calendar_id, confirmed=confirmed)
+
+    def update_event(self, principal: Principal, identifier: str, changes: dict[str, object], *, confirmed: bool = False) -> dict[str, object]:
+        return self.service.update_event(principal, identifier, changes, confirmed=confirmed)
+
+    def delete_event(self, principal: Principal, identifier: str, *, confirmed: bool = False) -> dict[str, object]:
+        return self.service.delete_event(principal, identifier, confirmed=confirmed)
+
+    def respond_event(self, principal: Principal, identifier: str, response: str, *, comment: str = "", send_response: bool = True, confirmed: bool = False) -> dict[str, object]:
+        return self.service.respond_event(principal, identifier, response, comment=comment, send_response=send_response, confirmed=confirmed)
+
 
 def create_api(config: Config) -> CmailApi:
     return CmailApi.from_config(config)
+
+
+def create_component_api(
+    agent_root: str | Path,
+    host_services: Mapping[str, object] | None = None,
+) -> CmailApi:
+    services = dict(host_services or {})
+    config_file = services.get("configFile")
+    config = (
+        Config.from_file(Path(config_file), root=agent_root)
+        if config_file is not None
+        else Config.load(Path(agent_root))
+    )
+    return create_api(config)

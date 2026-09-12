@@ -128,3 +128,8 @@ somente referências para segredo/senha; esses valores nunca ficam no JSON.
 Nenhum banco,
 usuário, prompt ou regra departamental da LIA foi copiado para o componente.
 Veja [ARCHITECTURE.md](ARCHITECTURE.md).
+Além de mensagens, a API Python e a aplicação montável expõem anexos, contatos,
+diretório e calendário. Alterações externas continuam exigindo confirmação.
+Os métodos `system_send` e `invalidate_owner` existem exclusivamente para o host
+implementar recuperação de acesso e revogação de credenciais sem manter um
+segundo armazenamento de tokens no runtime consumidor.
