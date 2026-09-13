@@ -9,6 +9,7 @@ from types import SimpleNamespace
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from cmail.cm import describe
@@ -145,6 +146,16 @@ def test_embedded_microsoft_registers_authorized_root_callback_and_skips_login_p
     ).get("/")
     assert response.status_code == 303
     assert response.headers["location"].endswith("/auth/microsoft")
+
+    host = FastAPI()
+    host.mount("/cm/cmail", app, name="cm-cmail")
+    mounted = TestClient(
+        host,
+        base_url="https://lia.example.test",
+        follow_redirects=False,
+    ).get("/cm/cmail/")
+    assert mounted.status_code == 303
+    assert mounted.headers["location"] == "/cm/cmail/auth/microsoft"
 
 
 def test_component_descriptor_uses_packaged_skills():

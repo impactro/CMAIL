@@ -2,13 +2,15 @@
 
 `CMAIL` é o nome técnico do módulo independente que reúne webmail, leitura de
 pastas e mensagens, listas de destinatários e disparo controlado de e-mail.
-Versão do componente: `26.9.12f` (pacote Python `26.9.12.post5`).
+Versão do componente: `26.9.12g` (pacote Python `26.9.12.post6`).
 
 Na composição ASGI, a primeira abertura por um principal válido inicia
 diretamente o consentimento Microsoft quando a caixa ainda não está vinculada;
 não há uma segunda tela de entrada do CMAIL. O componente registra no host um
 prefixo exclusivo de `state`, recebe o retorno na própria rota interna e
 continua responsável por nonce, PKCE, tenant, conta e proprietário.
+Redirects internos são derivados do `root_path` ASGI, portanto conservam o
+prefixo montado sem depender do nome de rota escolhido pelo host.
 
 O módulo agora é dono da ferramenta Webmail e pode existir de duas formas com
 o mesmo código: aplicação FastAPI standalone ou subaplicação ASGI incorporada por outro

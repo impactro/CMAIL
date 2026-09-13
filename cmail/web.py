@@ -34,9 +34,12 @@ def _base_path(request: Request) -> str:
     return str(request.scope.get("root_path") or "").rstrip("/")
 
 
+def _module_path(request: Request, suffix: str = "/") -> str:
+    return f"{_base_path(request)}{suffix}" or "/"
+
+
 def _cookie_path(request: Request, suffix: str = "/") -> str:
-    prefix = _base_path(request)
-    return f"{prefix}{suffix}" or "/"
+    return _module_path(request, suffix)
 
 
 def _web_principal(
@@ -183,23 +186,23 @@ def _create_module_app(
     @app.get("/", response_class=HTMLResponse, name="cmail.index")
     async def index(request: Request):
         if config.mode == "setup":
-            return RedirectResponse(str(request.url_for("cmail.setup")), status_code=303)
+            return RedirectResponse(_module_path(request, "/setup"), status_code=303)
         principal = _web_principal(current, request, principal_resolver)
         connected = bool(
             principal
             and (config.mode not in {"microsoft", "gmail"} or principal.identity_id)
         )
         if principal_resolver is None and config.mode == "microsoft" and not connected:
-            return RedirectResponse(str(request.url_for("cmail.microsoft_login")), status_code=303)
+            return RedirectResponse(_module_path(request, "/auth/microsoft"), status_code=303)
         if (
             principal_resolver is not None
             and config.mode == "microsoft"
             and principal is not None
             and not connected
         ):
-            return RedirectResponse(str(request.url_for("cmail.microsoft_login")), status_code=303)
+            return RedirectResponse(_module_path(request, "/auth/microsoft"), status_code=303)
         if principal_resolver is None and config.mode == "gmail" and not connected:
-            return RedirectResponse(str(request.url_for("cmail.google_login")), status_code=303)
+            return RedirectResponse(_module_path(request, "/auth/google"), status_code=303)
         auth_state = "demo" if config.mode == "demo" else "connected" if connected else "disconnected"
         if principal_resolver is None and config.mode in {"microsoft", "gmail"} and not connected and current.auth:
             if current.auth.session_identity(str(request.cookies.get(SESSION_COOKIE) or "")):
@@ -276,7 +279,7 @@ def _create_module_app(
             str(request.cookies.get(BROWSER_COOKIE) or ""),
             owner_id,
         )
-        response = RedirectResponse(str(request.url_for("cmail.index")), status_code=303)
+        response = RedirectResponse(_module_path(request), status_code=303)
         root = _cookie_path(request)
         if principal_resolver is None:
             response.set_cookie(
