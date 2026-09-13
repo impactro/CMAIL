@@ -101,6 +101,7 @@ def _create_module_app(
     *,
     restart_callback: Callable[[], None] | None = None,
     principal_resolver: HostPrincipalResolver | None = None,
+    oauth_success_path: str = "",
 ) -> FastAPI:
     current = service or MailService(config)
     app = FastAPI(title="CMAIL", docs_url=None, redoc_url=None, openapi_url=None)
@@ -171,6 +172,8 @@ def _create_module_app(
             config.mode in {"microsoft", "gmail"} and not principal.identity_id
         ):
             raise AuthenticationError("Autentique a conta de e-mail desta instância.")
+        if principal_resolver is not None and not current.store.webmail_enabled(principal.storage_owner):
+            raise PermissionError("O Webmail está desabilitado para este workspace.")
         return principal
 
     def require_csrf(request: Request, principal: Principal) -> None:
@@ -188,32 +191,34 @@ def _create_module_app(
         if config.mode == "setup":
             return RedirectResponse(_module_path(request, "/setup"), status_code=303)
         principal = _web_principal(current, request, principal_resolver)
+        owner_id = principal.storage_owner if principal else ""
+        webmail_enabled = (
+            current.store.webmail_enabled(owner_id)
+            if principal_resolver is not None and owner_id else True
+        )
         connected = bool(
             principal
             and (config.mode not in {"microsoft", "gmail"} or principal.identity_id)
         )
         if principal_resolver is None and config.mode == "microsoft" and not connected:
             return RedirectResponse(_module_path(request, "/auth/microsoft"), status_code=303)
-        if (
-            principal_resolver is not None
-            and config.mode == "microsoft"
-            and principal is not None
-            and not connected
-        ):
-            return RedirectResponse(_module_path(request, "/auth/microsoft"), status_code=303)
         if principal_resolver is None and config.mode == "gmail" and not connected:
             return RedirectResponse(_module_path(request, "/auth/google"), status_code=303)
         auth_state = "demo" if config.mode == "demo" else "connected" if connected else "disconnected"
-        if principal_resolver is None and config.mode in {"microsoft", "gmail"} and not connected and current.auth:
+        if principal_resolver is not None and principal:
+            auth_state = str(current.connection_status(principal.storage_owner)["state"])
+        elif config.mode in {"microsoft", "gmail"} and not connected and current.auth:
             if current.auth.session_identity(str(request.cookies.get(SESSION_COOKIE) or "")):
                 auth_state = "reauthorize"
         return TEMPLATES.TemplateResponse(
             request=request, name="index.html",
             context={
-                "csrf": csrf(request, principal), "authenticated": connected,
+                "csrf": csrf(request, principal),
+                "authenticated": connected and webmail_enabled,
                 "identity": {"email": principal.email} if principal else None,
                 "mode": config.mode, "auth_state": auth_state,
                 "base_path": _base_path(request), "embedded": principal_resolver is not None,
+                "webmail_enabled": webmail_enabled,
             },
         )
 
@@ -238,6 +243,10 @@ def _create_module_app(
             "ok": True, "required": config.mode in {"microsoft", "gmail"},
             "authenticated": connected,
             "identity": {"email": principal.email} if principal else None,
+            "connection": (
+                current.connection_status(principal.storage_owner)
+                if principal_resolver is not None and principal else None
+            ),
         }
 
     def begin_oauth(request: Request, provider: str):
@@ -279,7 +288,8 @@ def _create_module_app(
             str(request.cookies.get(BROWSER_COOKIE) or ""),
             owner_id,
         )
-        response = RedirectResponse(_module_path(request), status_code=303)
+        destination = oauth_success_path if principal_resolver is not None and oauth_success_path else _module_path(request)
+        response = RedirectResponse(destination, status_code=303)
         root = _cookie_path(request)
         if principal_resolver is None:
             response.set_cookie(
@@ -608,6 +618,7 @@ def create_app(
     url_prefix: str = "",
     restart_callback: Callable[[], None] | None = None,
     principal_resolver: HostPrincipalResolver | None = None,
+    oauth_success_path: str = "",
 ) -> FastAPI:
     """Create a mountable CMAIL ASGI app or a prefixed standalone host."""
     module = _create_module_app(
@@ -615,6 +626,7 @@ def create_app(
         service,
         restart_callback=restart_callback,
         principal_resolver=principal_resolver,
+        oauth_success_path=oauth_success_path,
     )
     prefix = "/" + str(url_prefix or "").strip("/") if str(url_prefix or "").strip("/") else ""
     if not prefix:
@@ -657,4 +669,15 @@ def create_component_app(
             state_prefix=MICROSOFT_STATE_PREFIX,
             callback_path="/cm/cmail/auth/callback",
         )
-    return create_app(config, principal_resolver=resolver)
+    oauth_success_path = str(services.get("oauthSuccessPath") or "").strip()
+    parsed_success = urlparse(oauth_success_path)
+    if oauth_success_path and (
+        not oauth_success_path.startswith("/") or oauth_success_path.startswith("//")
+        or parsed_success.scheme or parsed_success.netloc
+    ):
+        raise ValueError("oauthSuccessPath do host deve ser um caminho relativo à origem.")
+    return create_app(
+        config,
+        principal_resolver=resolver,
+        oauth_success_path=oauth_success_path,
+    )

@@ -50,6 +50,18 @@ portas. O preenchimento de `owner_id` é reservado à composição por um host q
 derive esse valor de uma identidade confiável, como o `workspaceId` autenticado
 do CA; ele nunca é um seletor livre de conta na interface standalone.
 
+O host consulta e administra a conexão sem receber tokens:
+
+```python
+state = api.connection_status(workspace_id)
+api.set_webmail_enabled(workspace_id, False)  # só oculta/bloqueia a UI
+api.disconnect_owner(workspace_id)            # revoga a autorização da caixa
+```
+
+`webmailEnabled` não é uma capability de e-mail. A preferência controla apenas
+a interface humana; `Principal` e as capabilities continuam governando o uso
+das operações Python pelo agente.
+
 Envio comum continua em duas etapas:
 
 ```python

@@ -16,8 +16,8 @@ desse JSON. Esse é o contrato standalone; em composição o host entrega
 senhas nunca ficam no JSON: somente referências para arquivos externos.
 `auth.py` mantém Microsoft SSO; `gmail.py`, Google OAuth e Gmail API; `setup.py`,
 a configuração local unitária. `mail.py` isola demo/IMAP/SMTP; `graph.py`, o
-Microsoft Graph. `store.py` é dono
-de identidades, sessões, listas, rascunhos e journal isolados por principal.
+Microsoft Graph. `store.py` é dono de identidades, sessões, preferências da
+interface Webmail, listas, rascunhos e journal isolados por principal.
 `service.py` aplica capacidades e impede repetição de rascunho consumido.
 `api.py`, CLI e `web.py` reutilizam os mesmos casos de uso. `component.py`
 entrega o par API Python + aplicação FastAPI, e o entry point
@@ -26,7 +26,9 @@ entrega o par API Python + aplicação FastAPI, e o entry point
 A UI é clara, responsiva e organizada como webmail: navegação por pastas,
 lista de mensagens, painel de leitura e composição separada. Valores externos
 são inseridos no DOM apenas por `textContent`; corpo de e-mail é solicitado ao
-Graph como texto. A tela distingue demonstração, desconectado e conectado.
+Graph como texto. A tela distingue demonstração, desconectado, reconexão,
+desabilitado e conectado. Em composição, o OAuth sempre sai do `iframe` pela
+janela principal.
 
 No standalone, a raiz operacional e seu estado aceitam uma única identidade:
 duas contas exigem duas pastas, dois JSONs/estados e duas portas. Não existe

@@ -2,11 +2,12 @@
 
 `CMAIL` é o nome técnico do módulo independente que reúne webmail, leitura de
 pastas e mensagens, listas de destinatários e disparo controlado de e-mail.
-Versão do componente: `26.9.12g` (pacote Python `26.9.12.post6`).
+Versão do componente: `26.9.13a` (pacote Python `26.9.13`).
 
-Na composição ASGI, a primeira abertura por um principal válido inicia
-diretamente o consentimento Microsoft quando a caixa ainda não está vinculada;
-não há uma segunda tela de entrada do CMAIL. O componente registra no host um
+Na composição ASGI, uma caixa ainda não vinculada apresenta uma ação simples,
+mas nunca tenta carregar Microsoft ou Google dentro do `iframe`. O link promove
+o OAuth para a janela principal e o host pode devolver o navegador diretamente
+ao Webmail por `oauthSuccessPath`. O componente registra no host um
 prefixo exclusivo de `state`, recebe o retorno na própria rota interna e
 continua responsável por nonce, PKCE, tenant, conta e proprietário.
 Redirects internos são derivados do `root_path` ASGI, portanto conservam o
@@ -22,6 +23,9 @@ A API incorporável também é dona do histórico de ações por `ownerId` e da
 consulta de disponibilidade Microsoft. Assim, tools de agentes consultam e
 operam a caixa pelo contrato CMAIL; o host conserva apenas o escopo SSO e as
 confirmações explícitas, sem voltar a implementar Graph, Gmail ou IMAP.
+O estado público de conexão e a preferência `webmailEnabled` também pertencem
+ao módulo e são isolados por `ownerId`: desligar a interface Webmail não revoga
+a autorização usada pelas rotinas permitidas do agente.
 
 ## Execução
 
@@ -145,6 +149,8 @@ com `app.mount("/cm/cmail", create_app(config))`, preservando assets, OAuth,
 CSRF e rotas sob o prefixo montado. Se o redirect Microsoft termina na raiz
 `/auth/callback`, o host deve oferecer `registerOAuthCallback`; o CMAIL registra
 `cmail.` e a rota interna `/cm/cmail/auth/callback` durante a composição.
+O serviço opcional `oauthSuccessPath` deve ser um caminho da mesma origem; URLs
+absolutas e caminhos `//` são recusados.
 
 Estado e dados pessoais ficam em `state.directory/cmail.sqlite3`. Tokens MSAL
 e Google ficam em binários DPAPI sob `state.directory/security`. O JSON contém
@@ -154,7 +160,8 @@ usuário, prompt ou regra departamental da LIA foi copiado para o componente.
 Veja [ARCHITECTURE.md](ARCHITECTURE.md).
 Além de mensagens, a API Python e a aplicação montável expõem anexos, contatos,
 diretório e calendário. Alterações externas continuam exigindo confirmação.
-Os métodos `system_send` e `invalidate_owner` existem exclusivamente para o host
+Os métodos `connection_status`, `set_webmail_enabled`, `disconnect_owner`,
+`system_send` e `invalidate_owner` existem exclusivamente para o host
 implementar recuperação de acesso e revogação de credenciais sem manter um
 segundo armazenamento de tokens no runtime consumidor.
 

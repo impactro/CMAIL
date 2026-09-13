@@ -121,6 +121,68 @@ class MailService:
         if identity and self.auth is not None:
             self.auth.disconnect(str(identity["id"]))
 
+    def connection_status(self, owner_id: str) -> dict[str, object]:
+        """Expõe somente o estado público da conexão e da interface Webmail."""
+        owner = str(owner_id or "").strip()
+        if not owner or len(owner) > 256:
+            raise ValueError("O proprietário do CMAIL é inválido.")
+        provider_name = (
+            "outlook" if self.config.mode == "microsoft" else
+            "gmail" if self.config.mode == "gmail" else self.config.mode
+        )
+        webmail_enabled = self.store.webmail_enabled(owner)
+        if self.config.mode in {"demo", "imap"}:
+            return {
+                "provider": provider_name,
+                "state": "connected",
+                "authorized": True,
+                "requiresReconnect": False,
+                "email": self.config.account,
+                "webmailEnabled": webmail_enabled,
+                "canAuthorize": False,
+            }
+        if self.config.mode == "setup":
+            return {
+                "provider": provider_name,
+                "state": "unconfigured",
+                "authorized": False,
+                "requiresReconnect": False,
+                "email": "",
+                "webmailEnabled": webmail_enabled,
+                "canAuthorize": False,
+            }
+        provider_key = "microsoft" if self.config.mode == "microsoft" else "google"
+        identity = self.store.bound_identity(provider_key, owner)
+        identity_id = str((identity or {}).get("id") or "")
+        connection = self.store.connection(identity_id) if identity_id else None
+        stored_state = str((connection or {}).get("status") or "")
+        authorized = bool(identity_id and self.auth and self.auth.is_connected(identity_id))
+        if authorized:
+            state = "connected"
+        elif stored_state == "reauthorize" or (identity_id and stored_state == "authorized"):
+            state = "reauthorize"
+        elif stored_state == "revoked":
+            state = "disabled"
+        else:
+            state = "disconnected"
+        return {
+            "provider": provider_name,
+            "state": state,
+            "authorized": authorized,
+            "requiresReconnect": state == "reauthorize",
+            "email": str((identity or {}).get("email") or ""),
+            "webmailEnabled": webmail_enabled,
+            "canAuthorize": True,
+        }
+
+    def set_webmail_enabled(self, owner_id: str, enabled: bool) -> dict[str, object]:
+        self.store.set_webmail_enabled(owner_id, enabled)
+        return self.connection_status(owner_id)
+
+    def disconnect_owner(self, owner_id: str) -> dict[str, object]:
+        self.invalidate_owner(owner_id)
+        return self.connection_status(owner_id)
+
     def status(self, live: bool = False, principal: Principal | None = None) -> dict[str, object]:
         owner = principal.storage_owner if principal else ""
         result = {"config": self.config.public(), "state": self.store.status(owner)}

@@ -57,6 +57,11 @@ class Store:
             token_hash TEXT PRIMARY KEY, identity_id TEXT NOT NULL, csrf_hash TEXT NOT NULL,
             created_at TEXT NOT NULL, expires_at TEXT NOT NULL, revoked_at TEXT,
             FOREIGN KEY(identity_id) REFERENCES auth_identities(id) ON DELETE CASCADE);
+          CREATE TABLE IF NOT EXISTS owner_preferences(
+            owner_id TEXT PRIMARY KEY,
+            webmail_enabled INTEGER NOT NULL DEFAULT 1 CHECK(webmail_enabled IN (0,1)),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL);
           CREATE INDEX IF NOT EXISTS idx_web_sessions_identity ON web_sessions(identity_id);
         """)
         self._migrate_legacy(db)
@@ -98,8 +103,34 @@ class Store:
             """CREATE UNIQUE INDEX IF NOT EXISTS idx_auth_identity_provider_owner
                ON auth_identities(provider,owner_id) WHERE owner_id <> ''"""
         )
-        db.execute("PRAGMA user_version=3")
+        db.execute("PRAGMA user_version=4")
         db.commit()
+
+    def webmail_enabled(self, owner_id: str = "") -> bool:
+        owner = str(owner_id or "").strip()
+        with self.connect() as db:
+            row = db.execute(
+                "SELECT webmail_enabled FROM owner_preferences WHERE owner_id=?",
+                (owner,),
+            ).fetchone()
+        return True if row is None else bool(row["webmail_enabled"])
+
+    def set_webmail_enabled(self, owner_id: str, enabled: bool) -> bool:
+        owner = str(owner_id or "").strip()
+        if not owner or len(owner) > 256:
+            raise ValueError("O proprietário do Webmail é inválido.")
+        timestamp = _now().isoformat()
+        with self.connect() as db:
+            db.execute(
+                """INSERT INTO owner_preferences(
+                       owner_id,webmail_enabled,created_at,updated_at
+                   ) VALUES(?,?,?,?)
+                   ON CONFLICT(owner_id) DO UPDATE SET
+                       webmail_enabled=excluded.webmail_enabled,
+                       updated_at=excluded.updated_at""",
+                (owner, 1 if enabled else 0, timestamp, timestamp),
+            )
+        return bool(enabled)
 
     def status(self, owner_id: str = "") -> dict[str, object]:
         with self.connect() as db:

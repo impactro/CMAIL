@@ -49,6 +49,9 @@ class CmailApi:
                 "event-delete": {"capability": "mail.manage", "effect": "external-write-confirmed"},
                 "event-respond": {"capability": "mail.manage", "effect": "external-write-confirmed"},
                 "owner-invalidate": {"capability": "host.security", "effect": "credential-revoke"},
+                "owner-connection-status": {"capability": "host.identity", "effect": "read-local"},
+                "owner-webmail-preference": {"capability": "host.identity", "effect": "write-local"},
+                "owner-disconnect": {"capability": "host.security", "effect": "credential-revoke"},
                 "system-send": {"capability": "host.recovery", "effect": "external-write"},
             },
         }
@@ -107,6 +110,15 @@ class CmailApi:
 
     def invalidate_owner(self, owner_id: str) -> None:
         self.service.invalidate_owner(owner_id)
+
+    def connection_status(self, owner_id: str) -> dict[str, object]:
+        return self.service.connection_status(owner_id)
+
+    def set_webmail_enabled(self, owner_id: str, enabled: bool) -> dict[str, object]:
+        return self.service.set_webmail_enabled(owner_id, enabled)
+
+    def disconnect_owner(self, owner_id: str) -> dict[str, object]:
+        return self.service.disconnect_owner(owner_id)
 
     def system_send(self, owner_id: str, recipient: str, subject: str, body: str) -> dict[str, object]:
         principal = self.service.principal_for_owner(owner_id, frozenset({"mail.send"}))

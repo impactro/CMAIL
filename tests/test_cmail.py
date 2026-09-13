@@ -106,7 +106,7 @@ def test_component_app_uses_host_config_file_without_parsing_agent_env(tmp_path)
     assert response.json()["framework"] == "fastapi"
 
 
-def test_embedded_microsoft_registers_authorized_root_callback_and_skips_login_page(tmp_path):
+def test_embedded_microsoft_registers_callback_and_keeps_oauth_out_of_iframe(tmp_path):
     secret = tmp_path / "module" / "client-secret.txt"
     secret.parent.mkdir()
     secret.write_text("fictitious-test-secret", encoding="utf-8")
@@ -148,8 +148,9 @@ def test_embedded_microsoft_registers_authorized_root_callback_and_skips_login_p
         base_url="https://lia.example.test",
         follow_redirects=False,
     ).get("/")
-    assert response.status_code == 303
-    assert response.headers["location"].endswith("/auth/microsoft")
+    assert response.status_code == 200
+    assert 'target="_top"' in response.text
+    assert "/auth/microsoft" in response.text
 
     host = FastAPI()
     host.mount("/cm/cmail", app, name="cm-cmail")
@@ -158,8 +159,8 @@ def test_embedded_microsoft_registers_authorized_root_callback_and_skips_login_p
         base_url="https://lia.example.test",
         follow_redirects=False,
     ).get("/cm/cmail/")
-    assert mounted.status_code == 303
-    assert mounted.headers["location"] == "/cm/cmail/auth/microsoft"
+    assert mounted.status_code == 200
+    assert 'href="/cm/cmail/auth/microsoft" target="_top"' in mounted.text
 
 
 def test_component_descriptor_uses_packaged_skills():
@@ -573,8 +574,8 @@ def test_embedded_mode_isolates_mailboxes_and_local_state_by_workspace(tmp_path)
     )
 
     first_page = client_a.get("/")
-    assert first_page.status_code == 303
-    assert first_page.headers["location"].endswith("/auth/microsoft")
+    assert first_page.status_code == 200
+    assert 'target="_top"' in first_page.text
     assert client_a.get("/api/folders").status_code == 401
     assert client_a.get("/health").json()["singleAccount"] is False
     assert client_a.get("/setup").status_code == 404
@@ -604,6 +605,90 @@ def test_embedded_mode_isolates_mailboxes_and_local_state_by_workspace(tmp_path)
     assert saved.status_code == 200
     assert len(store.lists("workspace-a")) == 1
     assert store.lists("workspace-b") == []
+    api = CmailApi(service)
+    assert api.connection_status("workspace-a")["state"] == "connected"
+    disconnected = api.disconnect_owner("workspace-a")
+    assert disconnected["state"] == "disabled"
+    assert disconnected["authorized"] is False
+    assert client_a.get("/api/folders").status_code == 401
+
+
+def test_owner_connection_status_and_webmail_preference_are_independent(tmp_path):
+    selected = microsoft_config(tmp_path)
+    store = Store(selected.state_dir)
+    auth = MicrosoftAuthService(selected, store, client_factory=FakeOAuthFactory())
+    service = MailService(selected, auth=auth, graph_factory=lambda _auth, _identity: FakeMail())
+    api = CmailApi(service)
+
+    initial = api.connection_status("workspace-a")
+    assert initial == {
+        "provider": "outlook", "state": "disconnected", "authorized": False,
+        "requiresReconnect": False, "email": "", "webmailEnabled": True,
+        "canAuthorize": True,
+    }
+    disabled = api.set_webmail_enabled("workspace-a", False)
+    assert disabled["webmailEnabled"] is False
+    assert disabled["state"] == "disconnected"
+    assert Store(selected.state_dir).webmail_enabled("workspace-a") is False
+
+
+def test_embedded_disabled_webmail_blocks_ui_but_not_python_api(tmp_path):
+    selected = config(tmp_path)
+    service = MailService(selected, FakeMail())
+    service.set_webmail_enabled("workspace-a", False)
+
+    def resolver(_request):
+        return {
+            "identifier": "workspace-a", "email": "a@example.com",
+            "capabilities": ["mail.read"],
+        }
+
+    client = TestClient(
+        create_app(selected, service, principal_resolver=resolver),
+        follow_redirects=False,
+    )
+    page = client.get("/")
+    assert page.status_code == 200
+    assert "Webmail desabilitado" in page.text
+    assert client.get("/api/folders").status_code == 403
+    principal = CmailApi(service).principal_for_owner("workspace-a", frozenset({"mail.read"}))
+    assert CmailApi(service).folders(principal)[0]["id"] == "INBOX"
+
+
+def test_embedded_oauth_success_path_is_relative_and_validated(tmp_path):
+    selected = microsoft_config(tmp_path)
+    factory = FakeOAuthFactory()
+    service = MailService(
+        selected,
+        auth=MicrosoftAuthService(selected, Store(selected.state_dir), client_factory=factory),
+        graph_factory=lambda _auth, _identity: FakeMail(),
+    )
+
+    def resolver(_request):
+        return {"identifier": "workspace-a", "email": "a@example.com", "capabilities": ["mail.read"]}
+
+    client = TestClient(
+        create_app(
+            selected, service, principal_resolver=resolver,
+            oauth_success_path="/?embedded=cmail",
+        ),
+        follow_redirects=False,
+    )
+    login = client.get("/auth/microsoft")
+    callback = client.get(f"/auth/callback?state={microsoft_state(login)}&code=fake")
+    assert callback.status_code == 303
+    assert callback.headers["location"] == "/?embedded=cmail"
+
+    config_file = tmp_path / "cmail.json"
+    with pytest.raises(ValueError, match="caminho relativo"):
+        create_component_app(
+            tmp_path,
+            {
+                "configFile": config_file,
+                "principalResolvers": {"cmail": resolver},
+                "oauthSuccessPath": "https://evil.example.test/return",
+            },
+        )
 
 
 def test_microsoft_account_mismatch_renders_recovery_page_and_preserves_api_json(tmp_path):
