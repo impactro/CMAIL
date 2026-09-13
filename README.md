@@ -2,7 +2,13 @@
 
 `CMAIL` é o nome técnico do módulo independente que reúne webmail, leitura de
 pastas e mensagens, listas de destinatários e disparo controlado de e-mail.
-Versão do componente: `26.9.12e` (pacote Python `26.9.12.post4`).
+Versão do componente: `26.9.12f` (pacote Python `26.9.12.post5`).
+
+Na composição ASGI, a primeira abertura por um principal válido inicia
+diretamente o consentimento Microsoft quando a caixa ainda não está vinculada;
+não há uma segunda tela de entrada do CMAIL. O componente registra no host um
+prefixo exclusivo de `state`, recebe o retorno na própria rota interna e
+continua responsável por nonce, PKCE, tenant, conta e proprietário.
 
 O módulo agora é dono da ferramenta Webmail e pode existir de duas formas com
 o mesmo código: aplicação FastAPI standalone ou subaplicação ASGI incorporada por outro
@@ -37,8 +43,10 @@ O `.env` possui somente `CMAIL_CONFIG_FILE=<caminho>`. O JSON indicado segue
 schema fechado `1.1`; chaves ausentes ou desconhecidas são recusadas e caminhos
 relativos partem da pasta desse JSON. Configure nele `microsoft.clientId`,
 `microsoft.tenantId`, `microsoft.clientSecretFile` e
-`microsoft.redirectUri`. O redirect deve usar `localhost` e terminar em
-`/auth/callback`. A aplicação registrada recebe apenas
+`microsoft.redirectUri`. Em execução local, o redirect deve usar `localhost` e
+terminar em `/auth/callback`. Em composição, ele pode apontar para o callback
+raiz já autorizado do host, que encaminha somente estados registrados pelo
+CMAIL. A aplicação registrada recebe apenas
 `openid`, `profile`, `email`, `User.Read`, `Mail.ReadWrite` e `Mail.Send`.
 O MSAL inclui `openid/profile` no protocolo; o CMAIL exclui explicitamente
 `offline_access`, portanto a expiração do token pode exigir novo login.
@@ -125,7 +133,9 @@ isso não altera a cardinalidade unitária da autoexecução local. Em composiç
 `configFile` aponta diretamente para o JSON e evita que o módulo interprete o
 `.env` completo do agente. Um host FastAPI incorpora a mesma interface standalone
 com `app.mount("/cm/cmail", create_app(config))`, preservando assets, OAuth,
-CSRF e rotas sob o prefixo montado.
+CSRF e rotas sob o prefixo montado. Se o redirect Microsoft termina na raiz
+`/auth/callback`, o host deve oferecer `registerOAuthCallback`; o CMAIL registra
+`cmail.` e a rota interna `/cm/cmail/auth/callback` durante a composição.
 
 Estado e dados pessoais ficam em `state.directory/cmail.sqlite3`. Tokens MSAL
 e Google ficam em binários DPAPI sob `state.directory/security`. O JSON contém
@@ -148,7 +158,8 @@ serviço LIA. A porta standalone não participa da aplicação ASGI incorporada.
 
 Cada origem OAuth precisa de um redirect registrado e coerente com a URL que o
 navegador realmente alcança. Uma instância local usa `localhost`; a composição
-no CA usa o DNS público/interno do CA e o prefixo `/cm/cmail`. Quando ambos são
+no CA usa o DNS público/interno e o callback raiz autorizado do CA. O `state`
+identifica o fluxo e o host o encaminha à rota montada do CMAIL. Quando ambos são
 homologados na mesma máquina, use JSONs de instância distintos, ainda que
 referenciem o mesmo cadastro de aplicativo e a mesma área de estado autorizada.
 Pull ou reinstalação nunca substitui esses JSONs nem autorizações.

@@ -6,6 +6,7 @@ import logging
 import secrets
 from pathlib import Path
 from typing import Any, Callable, Mapping
+from urllib.parse import urlparse
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -14,7 +15,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
 from . import __version__
-from .auth import AuthenticationError
+from .auth import AuthenticationError, MICROSOFT_STATE_PREFIX
 from .config import Config
 from .service import MANAGE_LISTS, MANAGE_MAIL, READ_MAIL, SEND_MAIL, MailService, Principal
 from .setup import SetupError, SetupService
@@ -189,6 +190,13 @@ def _create_module_app(
             and (config.mode not in {"microsoft", "gmail"} or principal.identity_id)
         )
         if principal_resolver is None and config.mode == "microsoft" and not connected:
+            return RedirectResponse(str(request.url_for("cmail.microsoft_login")), status_code=303)
+        if (
+            principal_resolver is not None
+            and config.mode == "microsoft"
+            and principal is not None
+            and not connected
+        ):
             return RedirectResponse(str(request.url_for("cmail.microsoft_login")), status_code=303)
         if principal_resolver is None and config.mode == "gmail" and not connected:
             return RedirectResponse(str(request.url_for("cmail.google_login")), status_code=303)
@@ -632,4 +640,18 @@ def create_component_app(
     )
     if resolver is not None and not callable(resolver):
         raise ValueError("principalResolver do CMAIL deve ser chamável.")
+    callback_registrar = services.get("registerOAuthCallback")
+    if callback_registrar is not None and not callable(callback_registrar):
+        raise ValueError("registerOAuthCallback do host deve ser chamável.")
+    if (
+        callable(callback_registrar)
+        and resolver is not None
+        and config.mode == "microsoft"
+        and urlparse(config.microsoft_redirect_uri).path == "/auth/callback"
+    ):
+        callback_registrar(
+            component_id="cmail",
+            state_prefix=MICROSOFT_STATE_PREFIX,
+            callback_path="/cm/cmail/auth/callback",
+        )
     return create_app(config, principal_resolver=resolver)

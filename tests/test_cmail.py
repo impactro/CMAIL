@@ -6,6 +6,7 @@ import tomllib
 import types
 from pathlib import Path
 from types import SimpleNamespace
+from urllib.parse import parse_qs, urlsplit
 
 import pytest
 from fastapi.testclient import TestClient
@@ -98,6 +99,52 @@ def test_component_app_uses_host_config_file_without_parsing_agent_env(tmp_path)
     response = TestClient(app).get("/health")
     assert response.status_code == 200
     assert response.json()["framework"] == "fastapi"
+
+
+def test_embedded_microsoft_registers_authorized_root_callback_and_skips_login_page(tmp_path):
+    secret = tmp_path / "module" / "client-secret.txt"
+    secret.parent.mkdir()
+    secret.write_text("fictitious-test-secret", encoding="utf-8")
+    payload = config_payload_v11("microsoft")
+    payload["server"]["cookieSecure"] = True
+    payload["microsoft"] = {
+        "account": "",
+        "clientId": "client-test",
+        "tenantId": "tenant-lakatos",
+        "clientSecretFile": "client-secret.txt",
+        "redirectUri": "https://lia.example.test/auth/callback",
+    }
+    config_file = tmp_path / "module" / "cmail.json"
+    config_file.write_text(json.dumps(payload), encoding="utf-8")
+    registered = []
+
+    def resolver(_request):
+        return {
+            "identifier": "workspace-a",
+            "email": "pessoa@empresa.test",
+            "capabilities": ["mail.read"],
+        }
+
+    app = create_component_app(
+        tmp_path,
+        {
+            "configFile": config_file,
+            "principalResolvers": {"cmail": resolver},
+            "registerOAuthCallback": lambda **value: registered.append(value),
+        },
+    )
+    assert registered == [{
+        "component_id": "cmail",
+        "state_prefix": "cmail.",
+        "callback_path": "/cm/cmail/auth/callback",
+    }]
+    response = TestClient(
+        app,
+        base_url="https://lia.example.test",
+        follow_redirects=False,
+    ).get("/")
+    assert response.status_code == 303
+    assert response.headers["location"].endswith("/auth/microsoft")
 
 
 def test_component_descriptor_uses_packaged_skills():
@@ -324,9 +371,14 @@ class FakeOAuthClient:
         self.tenant = tenant
         self.requested_scopes = []
 
-    def initiate_auth_code_flow(self, scopes, redirect_uri):
+    def initiate_auth_code_flow(self, scopes, redirect_uri, state=None):
         self.requested_scopes = list(scopes)
-        return {"state": "state-123", "auth_uri": "https://login.microsoft.test/authorize", "redirect_uri": redirect_uri}
+        selected_state = str(state or "state-123")
+        return {
+            "state": selected_state,
+            "auth_uri": f"https://login.microsoft.test/authorize?state={selected_state}",
+            "redirect_uri": redirect_uri,
+        }
 
     def acquire_token_by_auth_code_flow(self, flow, auth_response):
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -345,6 +397,10 @@ class FakeOAuthFactory:
         client = FakeOAuthClient(path, config.microsoft_tenant_id)
         self.clients.append(client)
         return client
+
+
+def microsoft_state(response) -> str:
+    return parse_qs(urlsplit(response.headers["location"]).query)["state"][0]
 
 
 def microsoft_config(tmp_path: Path, account: str = "") -> Config:
@@ -372,7 +428,7 @@ def authenticated_client(tmp_path: Path):
     assert login.status_code == 302
     assert factory.clients[0].requested_scopes == list(MAIL_SCOPES)
     assert "offline_access" not in factory.clients[0].requested_scopes
-    callback = client.get("/auth/callback?state=state-123&code=fake-code")
+    callback = client.get(f"/auth/callback?state={microsoft_state(login)}&code=fake-code")
     assert callback.status_code == 303
     return selected, service, client
 
@@ -430,10 +486,13 @@ def test_microsoft_login_protects_routes_and_replay(tmp_path):
     app = create_app(selected, service)
     client = TestClient(app, follow_redirects=False)
     assert client.get("/api/folders").status_code == 401
-    assert client.get("/auth/microsoft").status_code == 302
-    assert client.get("/auth/callback?state=state-123&code=fake").status_code == 303
+    login = client.get("/auth/microsoft")
+    assert login.status_code == 302
+    state = microsoft_state(login)
+    assert state.startswith("cmail.")
+    assert client.get(f"/auth/callback?state={state}&code=fake").status_code == 303
     assert client.get("/api/folders").status_code == 200
-    assert client.get("/auth/callback?state=state-123&code=replay").status_code == 401
+    assert client.get(f"/auth/callback?state={state}&code=replay").status_code == 401
     assert TestClient(app, follow_redirects=False).get("/api/folders").status_code == 401
 
 
@@ -498,18 +557,22 @@ def test_embedded_mode_isolates_mailboxes_and_local_state_by_workspace(tmp_path)
         headers={"X-Test-Workspace": "workspace-b"},
     )
 
-    assert client_a.get("/").status_code == 200
+    first_page = client_a.get("/")
+    assert first_page.status_code == 303
+    assert first_page.headers["location"].endswith("/auth/microsoft")
     assert client_a.get("/api/folders").status_code == 401
     assert client_a.get("/health").json()["singleAccount"] is False
     assert client_a.get("/setup").status_code == 404
 
-    assert client_a.get("/auth/microsoft").status_code == 302
-    assert client_a.get("/auth/callback?state=state-123&code=a").status_code == 303
+    login_a = client_a.get("/auth/microsoft")
+    assert login_a.status_code == 302
+    assert client_a.get(f"/auth/callback?state={microsoft_state(login_a)}&code=a").status_code == 303
     assert client_a.get("/api/folders").status_code == 200
     assert client_b.get("/api/folders").status_code == 401
 
-    assert client_b.get("/auth/microsoft").status_code == 302
-    assert client_b.get("/auth/callback?state=state-123&code=b").status_code == 303
+    login_b = client_b.get("/auth/microsoft")
+    assert login_b.status_code == 302
+    assert client_b.get(f"/auth/callback?state={microsoft_state(login_b)}&code=b").status_code == 303
     assert client_b.get("/api/folders").status_code == 200
 
     identity_a = store.bound_identity("microsoft", "workspace-a")
@@ -537,8 +600,9 @@ def test_microsoft_account_mismatch_renders_recovery_page_and_preserves_api_json
     app = create_app(selected, service)
     client = TestClient(app, follow_redirects=False)
 
-    assert client.get("/auth/microsoft").status_code == 302
-    callback = client.get("/auth/callback?state=state-123&code=fake")
+    login = client.get("/auth/microsoft")
+    assert login.status_code == 302
+    callback = client.get(f"/auth/callback?state={microsoft_state(login)}&code=fake")
     assert callback.status_code == 401
     assert callback.headers["content-type"].startswith("text/html")
     assert "Conta diferente da configurada" in callback.text

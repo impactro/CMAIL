@@ -25,6 +25,7 @@ MAIL_SCOPES = (
 )
 IDENTITY_SCOPES = ("openid", "profile", "email")
 FLOW_TTL_SECONDS = 10 * 60
+MICROSOFT_STATE_PREFIX = "cmail."
 
 
 class AuthenticationError(RuntimeError):
@@ -32,7 +33,12 @@ class AuthenticationError(RuntimeError):
 
 
 class OAuthClient(Protocol):
-    def initiate_auth_code_flow(self, scopes: list[str], redirect_uri: str) -> dict[str, object]: ...
+    def initiate_auth_code_flow(
+        self,
+        scopes: list[str],
+        redirect_uri: str,
+        state: str | None = None,
+    ) -> dict[str, object]: ...
     def acquire_token_by_auth_code_flow(
         self, flow: dict[str, object], auth_response: dict[str, str]
     ) -> dict[str, object]: ...
@@ -111,16 +117,18 @@ class MicrosoftAuthService:
             raise AuthenticationError("Login Microsoft não está habilitado.")
         cache_key = secrets.token_urlsafe(18)
         cache_path = self._pending_cache(cache_key)
+        requested_state = MICROSOFT_STATE_PREFIX + secrets.token_urlsafe(24)
         try:
             flow = self.client_factory(self.config, cache_path).initiate_auth_code_flow(
                 scopes=list(MAIL_SCOPES),
                 redirect_uri=self.config.microsoft_redirect_uri,
+                state=requested_state,
             )
         except Exception as exc:
             raise AuthenticationError("Não foi possível iniciar o login Microsoft.") from exc
         state = str(flow.get("state") or "").strip()
         url = str(flow.get("auth_uri") or "").strip()
-        if not state or not url:
+        if not secrets.compare_digest(state, requested_state) or not url:
             raise AuthenticationError("A Microsoft devolveu um fluxo de login inválido.")
         browser_nonce = secrets.token_urlsafe(24)
         with self._lock:
