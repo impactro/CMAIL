@@ -2,7 +2,6 @@ import json
 import re
 import sqlite3
 import sys
-import tomllib
 import types
 from pathlib import Path
 from types import SimpleNamespace
@@ -11,6 +10,11 @@ from urllib.parse import parse_qs, urlsplit
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python 3.10
+    import tomli as tomllib
 
 from cmail.cm import describe
 from cmail.auth import (

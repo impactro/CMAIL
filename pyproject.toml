@@ -7,7 +7,7 @@ name = "crania-cmail"
 version = "26.9.12.post6"
 description = "Componente independente de webmail, listas e disparos controlados"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
   "fastapi>=0.115,<1",
   "itsdangerous>=2.2,<3",
@@ -17,6 +17,9 @@ dependencies = [
   "python-multipart>=0.0.20,<1",
   "uvicorn>=0.34,<1",
 ]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<9", "playwright>=1.55,<2", "tomli>=2,<3; python_version < '3.11'"]
 
 [project.scripts]
 cmail = "cmail.__main__:main"

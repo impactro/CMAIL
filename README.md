@@ -25,6 +25,8 @@ confirmações explícitas, sem voltar a implementar Graph, Gmail ou IMAP.
 
 ## Execução
 
+Requer Python 3.10 ou superior.
+
 Cada autoexecução standalone representa exatamente uma conta. Para manter duas
 contas, crie duas pastas operacionais com `.env`/`.bat`, JSON, estado e portas
 diferentes; o pacote Python instalado continua único. O modo standalone não usa
