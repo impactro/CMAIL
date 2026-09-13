@@ -138,3 +138,17 @@ diretório e calendário. Alterações externas continuam exigindo confirmação
 Os métodos `system_send` e `invalidate_owner` existem exclusivamente para o host
 implementar recuperação de acesso e revogação de credenciais sem manter um
 segundo armazenamento de tokens no runtime consumidor.
+
+## Atualização do checkout e consumidores
+
+`git pull` atualiza somente o fonte. A instância standalone reflete a mudança
+depois de instalar o wheel e reiniciar `python -m cmail serve`; o CA reflete a
+mudança depois de instalar o mesmo wheel no runtime compartilhado e reiniciar o
+serviço LIA. A porta standalone não participa da aplicação ASGI incorporada.
+
+Cada origem OAuth precisa de um redirect registrado e coerente com a URL que o
+navegador realmente alcança. Uma instância local usa `localhost`; a composição
+no CA usa o DNS público/interno do CA e o prefixo `/cm/cmail`. Quando ambos são
+homologados na mesma máquina, use JSONs de instância distintos, ainda que
+referenciem o mesmo cadastro de aplicativo e a mesma área de estado autorizada.
+Pull ou reinstalação nunca substitui esses JSONs nem autorizações.
