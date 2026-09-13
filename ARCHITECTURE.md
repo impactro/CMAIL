@@ -53,9 +53,12 @@ OAuth e o módulo nunca confia em `workspaceId` enviado pelo navegador.
 - falha SMTP após claim é incerta e bloqueia retry automático;
 - auditoria guarda ação, estado e quantidade, não corpo, assunto ou destinatários.
 
-O módulo ainda não implementa download de anexo, proxy de imagem, contatos,
-calendário nem editor HTML. Esses recursos exigem contratos separados e nova
-aprovação das permissões correspondentes.
+O provider Microsoft Graph implementa obtenção de anexos, contatos, diretório,
+calendários, disponibilidade e gestão confirmada de eventos. A fachada comum
+retorna `NotImplementedError` quando o provider selecionado, como Gmail ou
+IMAP, não oferece a capacidade. Proxy de imagem e editor HTML continuam fora
+do módulo; campanhas permanecem uma evolução separada sobre o journal de
+envios.
 
 Logout revoga a sessão CMAIL. Desconectar remove o cache local DPAPI e revoga
 as sessões da identidade; revogação global na Microsoft continua sendo ação da

@@ -50,8 +50,10 @@ relativos partem da pasta desse JSON. Configure nele `microsoft.clientId`,
 `microsoft.redirectUri`. Em execução local, o redirect deve usar `localhost` e
 terminar em `/auth/callback`. Em composição, ele pode apontar para o callback
 raiz já autorizado do host, que encaminha somente estados registrados pelo
-CMAIL. A aplicação registrada recebe apenas
-`openid`, `profile`, `email`, `User.Read`, `Mail.ReadWrite` e `Mail.Send`.
+CMAIL. A aplicação registrada recebe `openid`, `profile` e `email` para
+identidade, além de `User.Read`, `User.ReadBasic.All`, `Mail.ReadWrite`,
+`Mail.Send`, `Contacts.Read` e `Calendars.ReadWrite` para as capacidades
+publicadas pelo módulo.
 O MSAL inclui `openid/profile` no protocolo; o CMAIL exclui explicitamente
 `offline_access`, portanto a expiração do token pode exigir novo login.
 
@@ -79,12 +81,15 @@ python -m pip wheel . --no-deps --wheel-dir dist
 `serve` usa Uvicorn e abre `http://127.0.0.1:7420/`. A versão aceita
 IMAP/SMTP com SSL ou STARTTLS. Corpos HTML são convertidos em texto antes de
 chegar à interface; imagens remotas não são carregadas. Anexos são apenas
-inventariados nesta primeira ejeção.
+inventariados nos provedores que não oferecem obtenção segura; no Microsoft
+Graph, a API também permite obter o conteúdo do anexo autorizado.
 
-No Outlook e no Gmail, a ferramenta lista pastas e mensagens, lê o corpo como texto,
-marca lida/não lida, move, responde, encaminha e envia. Contatos, calendário,
-download de anexos, proxy de imagens, campanhas e editor HTML rico não fazem
-parte desta fatia porque exigem contratos e permissões adicionais.
+No Outlook e no Gmail, a ferramenta lista pastas e mensagens, lê o corpo como
+texto, marca lida/não lida, move, responde, encaminha e envia. O provider
+Microsoft Graph também implementa download de anexos, contatos, diretório,
+calendários, disponibilidade e gestão confirmada de eventos. Gmail e IMAP
+falham explicitamente nas capacidades que seus providers ainda não oferecem.
+Proxy de imagens, campanhas e editor HTML rico continuam fora desta fatia.
 
 No Microsoft Graph, a listagem usa somente propriedades do recurso
 `mailFolder`; o ID da caixa de entrada é resolvido pela rota conhecida

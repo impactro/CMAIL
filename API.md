@@ -32,8 +32,10 @@ messages = api.messages(principal, folders[0]["id"], limit=25)
 
 ## Capacidades
 
-- `mail.read`: status ao vivo, pastas, listagem e leitura;
-- `mail.manage`: marcar leitura e mover mensagens;
+- `mail.read`: status ao vivo, pastas, mensagens, anexos, contatos, diretório,
+  calendários e disponibilidade quando suportados pelo provider;
+- `mail.manage`: marcar leitura, mover mensagens e gerir eventos com confirmação
+  explícita;
 - `mail.send`: preparar, confirmar, responder e encaminhar;
 - `lists.manage`: consultar e manter listas locais da identidade.
 
