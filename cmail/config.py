@@ -13,6 +13,8 @@ class ConfigError(ValueError):
 
 
 ROOT_KEYS_V1 = {"schemaVersion", "mode", "server", "state", "microsoft", "imap"}
+MIN_SESSION_HOURS = 1
+MAX_SESSION_HOURS = 30 * 24
 ROOT_KEYS_V11 = ROOT_KEYS_V1 | {"google"}
 SERVER_KEYS = {"host", "port", "openBrowser", "sessionHours", "cookieSecure"}
 STATE_KEYS = {"directory"}
@@ -215,7 +217,10 @@ class Config:
             mode=mode, state_dir=state_dir,
             host=host, port=_integer(server["port"], "server.port", 1, 65535),
             open_browser=_boolean(server["openBrowser"], "server.openBrowser"),
-            session_hours=_integer(server["sessionHours"], "server.sessionHours", 1, 168),
+            session_hours=_integer(
+                server["sessionHours"], "server.sessionHours",
+                MIN_SESSION_HOURS, MAX_SESSION_HOURS,
+            ),
             cookie_secure=_boolean(server["cookieSecure"], "server.cookieSecure"),
             microsoft_client_id=_text(microsoft["clientId"], "microsoft.clientId"),
             microsoft_tenant_id=_text(microsoft["tenantId"], "microsoft.tenantId"),

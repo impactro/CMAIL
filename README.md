@@ -60,6 +60,9 @@ identidade, além de `User.Read`, `User.ReadBasic.All`, `Mail.ReadWrite`,
 publicadas pelo módulo.
 O MSAL inclui `openid/profile` no protocolo; o CMAIL exclui explicitamente
 `offline_access`, portanto a expiração do token pode exigir novo login.
+`server.sessionHours` controla somente a sessão web local do CMAIL e aceita de
+1 a 720 horas (30 dias); a validade do token OAuth do Microsoft Graph continua
+sendo definida pelo Microsoft Entra/MSAL.
 
 O schema `1.0` anterior continua legível para rollback. O modo `imap` agora
 também abre a interface web, sempre como instância local de uma única conta.

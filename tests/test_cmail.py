@@ -25,7 +25,7 @@ from cmail.auth import (
 )
 from cmail.api import CmailApi, create_component_api
 from cmail.config import Config, ConfigError
-from cmail.graph import MicrosoftGraphProvider
+from cmail.graph import MicrosoftGraphProvider, allowed_graph_route
 from cmail.gmail import GMAIL_SCOPES, GoogleAuthService
 from cmail.service import MANAGE_LISTS, READ_MAIL, MailService, Principal
 from cmail.store import Store
@@ -792,6 +792,40 @@ def test_graph_provider_uses_only_me_routes_and_normalizes_mail():
     assert all(token == "memory-only-token" for _, _, token, *_ in calls)
     list_path = next(path for _, path, *_ in calls if "/me/mailFolders?" in path)
     assert "wellKnownName" not in list_path
+
+
+def test_graph_provider_searches_directory_with_bounded_users_route():
+    calls = []
+
+    def requester(method, path, token, payload, headers):
+        calls.append((method, path, token, payload, headers))
+        assert method == "GET"
+        assert payload is None
+        assert headers == {"ConsistencyLevel": "eventual"}
+        return 200, {"value": [{
+            "id": "user-1", "displayName": "Fábio Souza",
+            "mail": "fabio@example.test", "userPrincipalName": "fabio@example.test",
+        }]}
+
+    selected = MicrosoftGraphProvider(FakeTokenAuth(), "identity-1", requester=requester)
+    people = selected.directory("Fábio Souza", 12)
+
+    assert people == [{
+        "id": "user-1", "name": "Fábio Souza", "email": "fabio@example.test",
+        "department": "", "jobTitle": "",
+    }]
+    assert len(calls) == 1
+    _method, path, token, _payload, _headers = calls[0]
+    assert path.startswith("/users?")
+    query = parse_qs(urlsplit(path).query)
+    assert query["$select"] == ["id,displayName,givenName,surname,mail,userPrincipalName"]
+    assert query["$top"] == ["12"]
+    assert query["$count"] == ["true"]
+    assert query["$search"] == ['"displayName:Fábio Souza" OR "mail:Fábio Souza"']
+    assert token == "memory-only-token"
+    assert allowed_graph_route("GET", path)
+    assert not allowed_graph_route("POST", path)
+    assert not allowed_graph_route("GET", "/users/user-1")
 
 
 def test_capability_is_required_before_provider_access(tmp_path):

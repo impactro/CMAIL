@@ -16,7 +16,10 @@ def describe() -> dict[str, object]:
         "description": "Webmail independente com Microsoft SSO/Graph, API Python, listas e envio confirmado.",
         "skillGroups": [
             {"id": "webmail", "name": "Webmail", "description": "Consulta e gestão de conta, pastas e mensagens.",
-             "skills": [{"path": skill("consultar-email"), "operations": ["check-config", "status", "list-folders", "list-messages", "attachments", "contacts", "calendar", "serve"]}]},
+             "skills": [
+                 {"path": skill("consultar-email"), "operations": ["check-config", "status", "list-folders", "list-messages", "attachments", "calendar", "serve"]},
+                 {"path": skill("consultar-pessoas"), "operations": ["contacts"]},
+             ]},
             {"id": "mailing", "name": "Listas e disparos", "description": "Gestão local de listas e envio com confirmação.",
              "skills": [{"path": skill("gerir-listas-email"), "operations": ["lists"]},
                         {"path": skill("enviar-email"), "operations": ["send-prepare", "send-execute"]}]},

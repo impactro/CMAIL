@@ -17,6 +17,14 @@ GRAPH_ROOT = "https://graph.microsoft.com/v1.0"
 GraphRequester = Callable[[str, str, str, dict[str, object] | None, dict[str, str] | None], tuple[int, object]]
 
 
+def allowed_graph_route(method: str, path: str) -> bool:
+    """Keep the provider constrained to a mailbox or a bounded directory read."""
+
+    return path.startswith("/me/") or (
+        str(method).upper() == "GET" and path.startswith("/users?")
+    )
+
+
 def graph_request(
     method: str,
     path: str,
@@ -24,7 +32,7 @@ def graph_request(
     payload: dict[str, object] | None = None,
     headers: dict[str, str] | None = None,
 ) -> tuple[int, object]:
-    if not path.startswith("/me/"):
+    if not allowed_graph_route(method, path):
         raise MailError("Rota Microsoft Graph não permitida.")
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8") if payload is not None else None
     selected_headers = {
@@ -328,7 +336,7 @@ class MicrosoftGraphProvider(Provider):
         if selected and len(selected) < 2 or len(selected) > 100:
             raise MailError("A busca no diretório exige zero ou ao menos 2 caracteres.")
         params: dict[str, str] = {
-            "$select": "id,displayName,mail,userPrincipalName,department,jobTitle",
+            "$select": "id,displayName,givenName,surname,mail,userPrincipalName",
             "$top": str(max(1, min(int(limit), 50))),
         }
         headers = None
@@ -338,7 +346,7 @@ class MicrosoftGraphProvider(Provider):
             headers = {"ConsistencyLevel": "eventual"}
         else:
             params["$orderby"] = "displayName"
-        result = self._call("GET", "/me/people?" + urllib.parse.urlencode(params), headers=headers)
+        result = self._call("GET", "/users?" + urllib.parse.urlencode(params), headers=headers)
         values = result.get("value") if isinstance(result, dict) else []
         return [
             {
