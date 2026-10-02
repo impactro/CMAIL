@@ -2,7 +2,7 @@
 
 `CMAIL` é o nome técnico do módulo independente que reúne webmail, leitura de
 pastas e mensagens, listas de destinatários e disparo controlado de e-mail.
-Versão do componente: `26.9.13a` (pacote Python `26.9.13`).
+Versão do componente: `26.10.2a` (pacote Python `26.10.2`).
 
 Na composição ASGI, uma caixa ainda não vinculada apresenta uma ação simples,
 mas nunca tenta carregar Microsoft ou Google dentro do `iframe`. O link promove
@@ -182,3 +182,18 @@ identifica o fluxo e o host o encaminha à rota montada do CMAIL. Quando ambos s
 homologados na mesma máquina, use JSONs de instância distintos, ainda que
 referenciem o mesmo cadastro de aplicativo e a mesma área de estado autorizada.
 Pull ou reinstalação nunca substitui esses JSONs nem autorizações.
+
+## Extração de valores em e-mails recentes
+
+`cmail.extraction.find_recent_value` recebe um provider CMAIL, `subject_contains`,
+`pattern` (REGEX), `last_minutes`, `group` opcional e `sender` opcional. Retorna
+`Extraction(message_id, received_at, value)` ou `None`. O título é comparado sem
+acentos e sem distinção de maiúsculas. Datas exigem fuso; a janela dos últimos
+X minutos pode ser intersectada com `after`, como o início de um RPA.
+Somente a mensagem mais recente correspondente é aberta; valores repetidos são
+deduplicados. Valores distintos geram `AmbiguousExtraction`, sem reaproveitar
+código antigo. O módulo não registra tokens nem marca mensagens lidas.
+
+`wait_for_recent_value` acrescenta `poll_seconds` (30), `timeout_seconds` (300)
+e `wait`, callback de espera cancelável fornecido pelo consumidor. As credenciais
+continuam no provider configurado; a biblioteca não procura cofres ou clientes.
