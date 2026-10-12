@@ -223,6 +223,13 @@ class Store:
         if not subject or not body:
             raise ValueError("Assunto e corpo são obrigatórios.")
         clean = {"recipients": recipients, "subject": subject, "body": body}
+        body_html = payload.get("bodyHtml", "")
+        if not isinstance(body_html, str) or len(body_html) > 200_000:
+            raise ValueError("Corpo HTML inválido ou acima do limite.")
+        if payload.get("attachments"):
+            raise ValueError("Anexos de envio ainda não são suportados por esta operação.")
+        if body_html:
+            clean["bodyHtml"] = body_html
         identifier, token = secrets.token_urlsafe(18), secrets.token_urlsafe(32)
         expires = _now() + timedelta(minutes=10)
         with self.connect() as db:
@@ -231,7 +238,8 @@ class Store:
                         hashlib.sha256(token.encode()).hexdigest(), "prepared", owner_id))
             self._audit(db, "send-prepare", "prepared", {"draftId": identifier, "recipientCount": len(recipients)}, owner_id)
         return {"draftId": identifier, "confirmationToken": token, "expiresAt": expires.isoformat(),
-                "recipientCount": len(recipients), "subject": subject, "bodyPreview": body[:240]}
+                "recipientCount": len(recipients), "subject": subject, "bodyPreview": body[:240],
+                "bodyType": "html" if body_html else "text"}
 
     def claim(self, identifier: str, token: str, owner_id: str = "") -> dict[str, object]:
         with self.connect() as db:

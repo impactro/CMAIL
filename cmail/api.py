@@ -22,6 +22,7 @@ class CmailApi:
             "schemaVersion": "1.0",
             "factory": "cmail:create_api",
             "principalType": "cmail:Principal",
+            "sendFormats": {"text": True, "html": True, "attachments": False},
             "operations": {
                 "status": {"capability": "mail.read", "effect": "read-local"},
                 "folders": {"capability": "mail.read", "effect": "network-read"},

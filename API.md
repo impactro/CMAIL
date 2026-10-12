@@ -69,6 +69,7 @@ preview = api.prepare_send(principal, {
     "recipients": ["destinatario@example.com"],
     "subject": "Assunto",
     "body": "Conteúdo",
+    "bodyHtml": "<p>Conteúdo com <strong>formatação</strong>.</p>",
 })
 
 # Execute somente depois da confirmação específica do usuário.
@@ -80,3 +81,10 @@ result = api.execute_send(
 Falha após o claim do rascunho fica `uncertain` e não é repetida
 automaticamente. O caller não deve criar um `Principal` a partir de parâmetros
 livres enviados pelo usuário, nem repassar cookies ou tokens OAuth ao agente.
+
+`bodyHtml` é opcional, com limite de 200.000 caracteres. `body` continua obrigatório
+como alternativa em texto. HTML e texto pertencem ao mesmo rascunho confirmado;
+Gmail/SMTP produzem MIME multipart/alternative e Graph envia body HTML.
+O consumidor renderiza o template antes de preparar e mostra a prévia completa.
+Anexos de envio não estão implementados; a preparação rejeita `attachments` não
+vazio para evitar confirmar uma mensagem que perderia seus documentos.

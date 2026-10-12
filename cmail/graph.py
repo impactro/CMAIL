@@ -246,10 +246,10 @@ class MicrosoftGraphProvider(Provider):
         )
         return _summary(result, include_body=True)
 
-    def send(self, recipients: list[str], subject: str, body: str) -> dict[str, object]:
+    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "") -> dict[str, object]:
         message = {
             "subject": subject[:500],
-            "body": {"contentType": "Text", "content": body[:200_000]},
+            "body": {"contentType": "HTML" if body_html else "Text", "content": (body_html or body)[:200_000]},
             "toRecipients": [
                 {"emailAddress": {"address": address}} for address in recipients
             ],

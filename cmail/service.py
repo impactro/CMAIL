@@ -227,7 +227,10 @@ class MailService:
         payload = self.store.claim(identifier, token, selected.storage_owner)
         recipients = list(payload["recipients"])
         try:
-            result = self.provider_for(selected).send(recipients, str(payload["subject"]), str(payload["body"]))
+            mail_provider = self.provider_for(selected)
+            arguments = (recipients, str(payload["subject"]), str(payload["body"]))
+            result = (mail_provider.send(*arguments, body_html=str(payload["bodyHtml"]))
+                      if payload.get("bodyHtml") else mail_provider.send(*arguments))
         except Exception as exc:
             uncertain = {"accepted": False, "uncertain": True, "error": str(exc)[:240],
                          "recipientCount": len(recipients)}

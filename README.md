@@ -118,6 +118,11 @@ python -m cmail send-execute --draft-id ID --confirmation-token TOKEN --execute
 ```
 
 O JSON de mensagem aceita `recipients` ou `listId`, além de `subject` e `body`.
+`bodyHtml` opcional preserva o template rico no mesmo rascunho confirmado:
+Gmail/SMTP recebem multipart/alternative e Graph recebe conteúdo HTML.
+O consumidor fornece texto alternativo em `body`, renderiza e mostra a prévia
+antes da execução. `CmailApi.describe().sendFormats` permite verificar a
+capacidade no pacote instalado. Anexos de envio ainda são recusados.
 A preparação não envia nada: cria journal e token único com validade de dez
 minutos. A execução consome o token antes do SMTP. Se houver falha depois disso,
 o estado fica incerto e não existe retry automático.
