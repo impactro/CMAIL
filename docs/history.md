@@ -17,3 +17,7 @@ e ponte de mesma origem, fallback neutro e foco/contrastes revisados nos
 quatro temas. Regiões, IDs, ações e autenticação preservados. 44 testes
 focais aprovados e revisão visual no Edge com dados fictícios. Sem envio
 ou consulta adicional às contas reais.
+
+- Contraprova real26.10.14b/post1: itens de mensagem preservam fundo neutro
+  e datas legíveis; não herdam preenchimento de botão de ação. Apenas
+  apresentação, sem abrir, marcar, arquivar ou enviar mensagens.
