@@ -25,5 +25,5 @@
 .cm-page :is(input,textarea)::placeholder { color:var(--ca-ui-muted); opacity:1; }
 .cm-page [hidden] { display:none!important; }
 .cm-page :is(.empty-state,.empty-state>span,.empty-state h2,.sidebar h2,.privacy-note,.lists,.list-row span:last-child,.message-item .date,.message-item .preview,.form-hint,label) { color:var(--ca-ui-muted); }
-.cm-page button.message-item { background:var(--ca-ui-surface); color:var(--ca-ui-text); border-color:var(--ca-ui-border); }
-.cm-page button.message-item:is(.active,.selected,:hover) { background:var(--cm-soft); color:var(--ca-ui-text); }
+.cm-page.cm-webmail button.message-item { background:var(--ca-ui-surface); color:var(--ca-ui-text); border-color:var(--ca-ui-border); }
+.cm-page.cm-webmail button.message-item:is(.active,.selected,:hover) { background:var(--cm-soft); color:var(--ca-ui-text); }
