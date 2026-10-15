@@ -1,0 +1,27 @@
+/* cm-* is the public WebMail presentation namespace; legacy hooks stay intact. */
+:root {
+  --ca-ui-canvas:#f4f5f6; --ca-ui-surface:#fff; --ca-ui-text:#20252b; --ca-ui-muted:#626b75;
+  --ca-ui-border:#d5dae0; --ca-ui-action:#343d48; --ca-ui-focus:#64748b; --ca-ui-danger:#9b2727;
+  --ca-ui-radius:3px; --ca-ui-space:16px; --ca-ui-font:system-ui,"Segoe UI",sans-serif;
+  --blue:var(--ca-ui-action); --blue-soft:var(--cm-soft); --line:var(--ca-ui-border); --muted:var(--ca-ui-muted);
+  --surface:var(--ca-ui-surface); --sidebar:var(--ca-ui-surface); --shadow:none;
+  --cm-soft:color-mix(in srgb,var(--ca-ui-text) 5%,var(--ca-ui-surface));
+  background:var(--ca-ui-canvas); color:var(--ca-ui-text); font-family:var(--ca-ui-font); color-scheme:light;
+}
+.cm-page { background:var(--ca-ui-canvas); color:var(--ca-ui-text); font-family:var(--ca-ui-font); }
+.cm-page :is(.signin-shell,.auth-error-shell) { background:var(--ca-ui-canvas); }
+.cm-page :is(.topbar,.sidebar,.message-column,.reader,.compose-panel,.compose-dialog,.signin-card,.setup-shell,.auth-error-card,.auth-error-guidance,dialog,.attachment,.list-item) { color:var(--ca-ui-text); background:var(--ca-ui-surface); border-color:var(--ca-ui-border); box-shadow:none; }
+.cm-page :is(h1,h2,h3,.message-subject,.message-sender,.reader-body,.account,.quiet-button,.icon-button,.setup-link,.secondary-action,.microsoft-login) { color:var(--ca-ui-text); }
+.cm-page :is(.eyebrow,.privacy-note,.signin-copy,.message-preview,.message-date,.reader-meta,.auth-error-message,.auth-error-guidance p) { color:var(--ca-ui-muted); }
+.cm-page :is(input,select,textarea,.icon-button,.quiet-button,.setup-link,.secondary-action,.microsoft-login) { background:var(--ca-ui-surface); color:var(--ca-ui-text); border-color:var(--ca-ui-border); font-family:inherit; }
+.cm-page :is(button,input,select,textarea,dialog,.signin-card,.auth-error-card,.auth-error-guidance,.setup-shell,.mode-badge,.list-item,.message-item,.brand-mark,.primary-action,.secondary-action,.microsoft-login) { border-radius:var(--ca-ui-radius); box-shadow:none; }
+.cm-page :is(button:not(.quiet-button):not(.icon-button),.compose-button,.primary-action,.brand-mark) { background:var(--ca-ui-action); color:var(--ca-ui-on-action,#fff); }
+.cm-page .sidebar nav button { background:transparent; color:var(--ca-ui-text); }
+.cm-page :is(.sidebar nav button.active,.message-item.selected,.message-item:hover,.message-row.selected,.message-row:hover) { background:var(--cm-soft); color:var(--ca-ui-text); }
+.cm-page :is(.mode-badge,.notice,.reader-toolbar,.section-toolbar,.message-item.unread,.message-row.unread) { background:var(--cm-soft); color:var(--ca-ui-text); border-color:var(--ca-ui-border); }
+.cm-page a { color:var(--ca-ui-action); }
+.cm-page :is(.primary-action,.brand-mark) { color:var(--ca-ui-on-action,#fff); }
+.cm-page :is(button,a,input,select,textarea):focus-visible { outline:2px solid var(--ca-ui-focus); outline-offset:2px; }
+.cm-page :is(input,textarea)::placeholder { color:var(--ca-ui-muted); opacity:1; }
+.cm-page [hidden] { display:none!important; }
+.cm-page :is(.empty-state,.empty-state>span,.empty-state h2,.sidebar h2,.privacy-note,.lists,.list-row span:last-child,.message-item .date,.message-item .preview,.form-hint,label) { color:var(--ca-ui-muted); }

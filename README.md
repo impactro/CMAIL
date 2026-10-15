@@ -202,3 +202,13 @@ código antigo. O módulo não registra tokens nem marca mensagens lidas.
 `wait_for_recent_value` acrescenta `poll_seconds` (30), `timeout_seconds` (300)
 e `wait`, callback de espera cancelável fornecido pelo consumidor. As credenciais
 continuam no provider configurado; a biblioteca não procura cofres ou clientes.
+
+### Apresentação compatível com CA —26.10.14a
+
+A raiz `cm-page` delimita o tema. Classes públicas: cm-shell, cm-header, cm-sidebar, cm-mailbox, cm-message-list, cm-reader, cm-compose, cm-settings.
+A folha `cm-theme.css` e a ponte `cm-theme.js` usam os tokens
+`--ca-ui-*` do ancestral CA acessível na mesma origem. Trocas de tema são
+refletidas sem reconstruir o formulário. Fora do CA, o módulo usa base neutra.
+IDs e classes funcionais antigos permanecem; não sobrescrever seletores
+globais. Extensões compartilhadas podem usar app-*; CSS exclusivo deve ter
+prefixo próprio. Não relaxar CSP, sandbox ou autenticação para herdar cores.

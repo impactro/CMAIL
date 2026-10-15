@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>CMAIL · Webmail</title>
   <link rel="stylesheet" href="{{ base_path }}/static/style.css">
-</head>
-<body data-base="{{ base_path }}" data-csrf="{{ csrf }}" data-authenticated="{{ 'true' if authenticated else 'false' }}" data-mode="{{ mode }}">
+<link rel="stylesheet" href="{{ base_path }}/static/cm-theme.css?v=26.10.14a"><script src="{{ base_path }}/static/cm-theme.js?v=26.10.14a" defer></script></head>
+<body data-base="{{ base_path }}" data-csrf="{{ csrf }}" data-authenticated="{{ 'true' if authenticated else 'false' }}" data-mode="{{ mode }}" class="cm-page cm-webmail">
 {% if not authenticated %}
   <main class="signin-shell">
     <section class="signin-card" aria-labelledby="signin-title">
@@ -22,8 +22,8 @@
     </section>
   </main>
 {% else %}
-  <div class="app-shell">
-    <header class="topbar">
+  <div class="app-shell cm-shell">
+    <header class="topbar cm-header">
       <div class="brand"><span class="brand-mark small" aria-hidden="true">C</span><div><strong>CMAIL</strong><span>Webmail</span></div></div>
       <div class="topbar-actions">
         <span id="modeBadge" class="mode-badge">{{ 'Demonstração · nenhum envio real' if mode == 'demo' else 'Gmail conectado' if mode == 'gmail' else 'Outlook conectado' if mode == 'microsoft' else 'IMAP local' }}</span>
@@ -33,7 +33,7 @@
       </div>
     </header>
 
-    <aside class="sidebar" aria-label="Navegação do webmail">
+    <aside class="sidebar cm-sidebar" aria-label="Navegação do webmail">
       <button id="newMessage" class="compose-button" type="button"><span aria-hidden="true">＋</span> Nova mensagem</button>
       <h2>Pastas</h2>
       <nav id="folders" aria-label="Pastas da caixa"></nav>
@@ -48,17 +48,17 @@
       </form>
     </aside>
 
-    <main class="mailbox">
-      <section class="message-column" aria-labelledby="folderTitle">
-        <div class="section-toolbar">
+    <main class="mailbox cm-mailbox">
+      <section class="message-column cm-message-column" aria-labelledby="folderTitle">
+        <div class="section-toolbar cm-toolbar">
           <div><p class="eyebrow">Caixa de e-mail</p><h1 id="folderTitle">Caixa de entrada</h1></div>
           <button id="refresh" class="icon-button" type="button" aria-label="Atualizar mensagens">↻</button>
         </div>
         <div id="notice" class="notice" role="status" aria-live="polite">Carregando…</div>
-        <div id="messages" class="message-list" aria-label="Mensagens"></div>
+        <div id="messages" class="message-list cm-message-list" aria-label="Mensagens"></div>
       </section>
 
-      <section id="reader" class="reader" aria-live="polite">
+      <section id="reader" class="reader cm-reader" aria-live="polite">
         <div id="readerEmpty" class="empty-state"><span aria-hidden="true">✉</span><h2>Selecione uma mensagem</h2><p>O conteúdo será exibido aqui como texto seguro.</p></div>
         <article id="readerContent" hidden>
           <div class="reader-toolbar"><button id="reply" type="button">Responder</button><button id="replyAll" type="button">Responder a todos</button><button id="forward" type="button">Encaminhar</button><button id="toggleRead" class="quiet-button" type="button">Marcar como não lida</button></div>
@@ -69,7 +69,7 @@
       </section>
 
       <section id="composePane" class="compose-pane" hidden aria-labelledby="composeTitle">
-        <div class="section-toolbar"><h2 id="composeTitle">Nova mensagem</h2><button id="closeCompose" class="icon-button" type="button" aria-label="Fechar composição">×</button></div>
+        <div class="section-toolbar cm-toolbar"><h2 id="composeTitle">Nova mensagem</h2><button id="closeCompose" class="icon-button" type="button" aria-label="Fechar composição">×</button></div>
         <form id="composeForm">
           <label for="listId">Lista opcional</label><select id="listId"><option value="">Nenhuma</option></select>
           <label for="to">Destinatários adicionais</label><input id="to" type="text" autocomplete="off" placeholder="email@dominio.com; outro@dominio.com">
