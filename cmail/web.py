@@ -621,6 +621,8 @@ def create_app(
     oauth_success_path: str = "",
 ) -> FastAPI:
     """Create a mountable CMAIL ASGI app or a prefixed standalone host."""
+    if config.mode == "gmail-file":
+        raise ValueError("gmail-file é headless: use CLI ou API Python local.")
     module = _create_module_app(
         config,
         service,

@@ -2,7 +2,12 @@
 
 `CMAIL` é o nome técnico do módulo independente que reúne webmail, leitura de
 pastas e mensagens, listas de destinatários e disparo controlado de e-mail.
-Versão do componente: `26.10.2a` (pacote Python `26.10.2`).
+Versão candidata do componente: `26.10.19a` (pacote Python `26.10.19`).
+
+Gmail por arquivo `authorized_user`, sem SSO e com consentimento explícito
+opcional, está documentado em [Gmail por arquivo](docs/gmail-file.md).
+[Templates e fachada de envio](docs/email-templates.md) preservam prévia e
+confirmação em duas fases. Esta candidata não foi instalada neste ciclo.
 
 Na composição ASGI, uma caixa ainda não vinculada apresenta uma ação simples,
 mas nunca tenta carregar Microsoft ou Google dentro do `iframe`. O link promove

@@ -1,14 +1,16 @@
 """CMAIL: rotinas independentes de e-mail."""
 
-__version__ = "26.10.14b"
+__version__ = "26.10.19a"
 
 from .config import Config
 from .api import CmailApi, create_api
 from .service import MailService, Principal
 from .web import create_app
 from .component import CmailComponent, create_component
+from .template_render import render_email_template
 
 __all__ = [
     "CmailApi", "Config", "MailService", "Principal", "create_api",
     "CmailComponent", "create_app", "create_component", "__version__",
+    "render_email_template",
 ]

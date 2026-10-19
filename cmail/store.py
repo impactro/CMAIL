@@ -239,7 +239,7 @@ class Store:
             self._audit(db, "send-prepare", "prepared", {"draftId": identifier, "recipientCount": len(recipients)}, owner_id)
         return {"draftId": identifier, "confirmationToken": token, "expiresAt": expires.isoformat(),
                 "recipientCount": len(recipients), "subject": subject, "bodyPreview": body[:240],
-                "bodyType": "html" if body_html else "text"}
+                "bodyType": "html" if body_html else "text", "preview": clean}
 
     def claim(self, identifier: str, token: str, owner_id: str = "") -> dict[str, object]:
         with self.connect() as db:

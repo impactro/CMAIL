@@ -16,6 +16,7 @@ ROOT_KEYS_V1 = {"schemaVersion", "mode", "server", "state", "microsoft", "imap"}
 MIN_SESSION_HOURS = 1
 MAX_SESSION_HOURS = 30 * 24
 ROOT_KEYS_V11 = ROOT_KEYS_V1 | {"google"}
+ROOT_KEYS_V12 = ROOT_KEYS_V11 | {"gmailFile"}
 SERVER_KEYS = {"host", "port", "openBrowser", "sessionHours", "cookieSecure"}
 STATE_KEYS = {"directory"}
 MICROSOFT_KEYS = {"clientId", "tenantId", "clientSecretFile", "redirectUri"}
@@ -145,6 +146,8 @@ class Config:
     smtp_port: int
     smtp_security: str
     sent_folder: str
+    gmail_file_account: str = ""
+    gmail_token_file: Path | None = None
 
     @classmethod
     def load(cls, root: str | Path | None = None) -> "Config":
@@ -174,17 +177,20 @@ class Config:
         if not isinstance(raw, dict):
             raise ConfigError("raiz deve ser um objeto JSON.")
         schema_version = str(raw.get("schemaVersion") or "")
-        if schema_version not in {"1.0", "1.1"}:
-            raise ConfigError("schemaVersion deve ser 1.0 ou 1.1.")
+        if schema_version not in {"1.0", "1.1", "1.2"}:
+            raise ConfigError("schemaVersion deve ser 1.0, 1.1 ou 1.2.")
         value = _object(
-            raw, "raiz", ROOT_KEYS_V1 if schema_version == "1.0" else ROOT_KEYS_V11
+            raw, "raiz", {"1.0": ROOT_KEYS_V1, "1.1": ROOT_KEYS_V11,
+                          "1.2": ROOT_KEYS_V12}[schema_version]
         )
         mode = _text(value["mode"], "mode", required=True).casefold()
         allowed_modes = {"demo", "imap", "microsoft"}
-        if schema_version == "1.1":
+        if schema_version in {"1.1", "1.2"}:
             allowed_modes.update({"setup", "gmail"})
+        if schema_version == "1.2":
+            allowed_modes.add("gmail-file")
         if mode not in allowed_modes:
-            raise ConfigError("mode deve ser setup, demo, imap, microsoft ou gmail.")
+            raise ConfigError("mode deve ser setup, demo, imap, microsoft, gmail ou gmail-file.")
         server = _object(value["server"], "server", SERVER_KEYS)
         state = _object(value["state"], "state", STATE_KEYS)
         microsoft = _object(
@@ -193,10 +199,12 @@ class Config:
         )
         google = (
             _object(value["google"], "google", GOOGLE_KEYS)
-            if schema_version == "1.1"
+            if schema_version != "1.0"
             else {"account": "", "clientId": "", "clientSecretFile": "", "redirectUri": ""}
         )
         imap = _object(value["imap"], "imap", IMAP_KEYS)
+        gmail_file = (_object(value["gmailFile"], "gmailFile", {"account", "tokenFile"})
+                      if schema_version == "1.2" else {"account": "", "tokenFile": ""})
         config_root = config_file.parent
         host = _text(server["host"], "server.host", required=True)
         if host not in {"127.0.0.1", "localhost", "::1"}:
@@ -241,6 +249,8 @@ class Config:
             smtp_port=_integer(imap["smtpPort"], "imap.smtpPort", 1, 65535),
             smtp_security=smtp_security,
             sent_folder=_text(imap["sentFolder"], "imap.sentFolder", required=True),
+            gmail_file_account=_text(gmail_file["account"], "gmailFile.account").casefold(),
+            gmail_token_file=_path(config_root, gmail_file["tokenFile"], "gmailFile.tokenFile"),
         )
         if mode == "imap" and not all((config.account, config.username, config.password_file, config.imap_host, config.smtp_host)):
             raise ConfigError("Modo IMAP exige conta, usuário, passwordFile e hosts IMAP/SMTP.")
@@ -251,6 +261,13 @@ class Config:
             config.google_redirect_uri,
         )):
             raise ConfigError("Modo Gmail exige clientId, clientSecretFile e redirectUri.")
+        if mode == "gmail-file":
+            from .store import EMAIL
+            if (not config.gmail_file_account.isascii() or not EMAIL.fullmatch(config.gmail_file_account)
+                    or config.gmail_token_file is None):
+                raise ConfigError("Modo gmail-file exige gmailFile.account e tokenFile.")
+            if config.open_browser:
+                raise ConfigError("Modo gmail-file exige server.openBrowser=false.")
         return config
 
     def password(self) -> str:
@@ -288,6 +305,7 @@ class Config:
             self.password_file if self.mode == "imap"
             else self.microsoft_client_secret_file if self.mode == "microsoft"
             else self.google_client_secret_file if self.mode == "gmail"
+            else self.gmail_token_file if self.mode == "gmail-file"
             else None
         )
         return {

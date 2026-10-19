@@ -58,6 +58,9 @@ class MailService:
             else GoogleAuthService(config, self.store) if config.mode == "gmail"
             else None
         )
+        if config.mode == "gmail-file" and mail_provider is None:
+            from .gmail_file import GmailFileAuth
+            mail_provider = GmailProvider(GmailFileAuth(config), "")
         self._provider = mail_provider or (
             None if config.mode in {"setup", "microsoft", "gmail"} else provider(config)
         )
@@ -75,6 +78,7 @@ class MailService:
         return self._provider
 
     def provider_for(self, principal: Principal) -> Provider:
+        self._require_file_principal(principal)
         if self.config.mode not in {"microsoft", "gmail"}:
             return self.provider
         if not principal.identity_id or self.auth is None:
@@ -83,12 +87,25 @@ class MailService:
             return self.graph_factory(self.auth, principal.identity_id)  # type: ignore[arg-type]
         return self.gmail_factory(self.auth, principal.identity_id)  # type: ignore[arg-type]
 
+    def _require_file_principal(self, principal: Principal) -> None:
+        if self.config.mode == "gmail-file" and (
+            principal.identity_id or principal.email or principal.owner_id
+        ):
+            raise PermissionError("gmail-file aceita somente o operador local sem owner.")
+
+    def _owner(self, principal: Principal) -> str:
+        self._require_file_principal(principal)
+        return ("gmail-file:" + self.config.gmail_file_account
+                if self.config.mode == "gmail-file" else principal.storage_owner)
+
     def principal_for_owner(
         self,
         owner_id: str,
         capabilities: frozenset[str] | None = None,
     ) -> Principal:
         """Resolve a conta vinculada a um workspace sem aceitar identidade do chamador."""
+        if self.config.mode == "gmail-file":
+            raise PermissionError("gmail-file não vincula contas a workspaces.")
         selected_capabilities = capabilities or frozenset(
             {READ_MAIL, MANAGE_MAIL, SEND_MAIL, MANAGE_LISTS}
         )
@@ -123,6 +140,8 @@ class MailService:
 
     def connection_status(self, owner_id: str) -> dict[str, object]:
         """Expõe somente o estado público da conexão e da interface Webmail."""
+        if self.config.mode == "gmail-file":
+            raise PermissionError("gmail-file não possui conexão web por owner.")
         owner = str(owner_id or "").strip()
         if not owner or len(owner) > 256:
             raise ValueError("O proprietário do CMAIL é inválido.")
@@ -176,6 +195,8 @@ class MailService:
         }
 
     def set_webmail_enabled(self, owner_id: str, enabled: bool) -> dict[str, object]:
+        if self.config.mode == "gmail-file":
+            raise PermissionError("gmail-file não possui preferência web por owner.")
         self.store.set_webmail_enabled(owner_id, enabled)
         return self.connection_status(owner_id)
 
@@ -184,7 +205,7 @@ class MailService:
         return self.connection_status(owner_id)
 
     def status(self, live: bool = False, principal: Principal | None = None) -> dict[str, object]:
-        owner = principal.storage_owner if principal else ""
+        owner = self._owner(principal or Principal.local_operator())
         result = {"config": self.config.public(), "state": self.store.status(owner)}
         if live:
             selected = principal or Principal.local_operator()
@@ -206,25 +227,28 @@ class MailService:
 
     def lists(self, principal: Principal) -> list[dict[str, object]]:
         principal.require(MANAGE_LISTS)
-        return self.store.lists(principal.storage_owner)
+        return self.store.lists(self._owner(principal))
 
     def history(self, principal: Principal, limit: int = 50) -> list[dict[str, object]]:
         principal.require(READ_MAIL)
-        return self.store.history(principal.storage_owner, limit)
+        return self.store.history(self._owner(principal), limit)
 
     def save_list(self, principal: Principal, name: str, recipients: list[dict[str, str]]) -> dict[str, object]:
         principal.require(MANAGE_LISTS)
-        return self.store.save_list(name, recipients, principal.storage_owner)
+        return self.store.save_list(name, recipients, self._owner(principal))
 
     def prepare(self, payload: dict[str, object], principal: Principal | None = None) -> dict[str, object]:
         selected = principal or Principal.local_operator()
         selected.require(SEND_MAIL)
-        return self.store.prepare(payload, selected.storage_owner)
+        result = self.store.prepare(payload, self._owner(selected))
+        return ({**result, "sender": self.config.gmail_file_account}
+                if self.config.mode == "gmail-file" else result)
 
     def execute(self, identifier: str, token: str, principal: Principal | None = None) -> dict[str, object]:
         selected = principal or Principal.local_operator()
         selected.require(SEND_MAIL)
-        payload = self.store.claim(identifier, token, selected.storage_owner)
+        owner = self._owner(selected)
+        payload = self.store.claim(identifier, token, owner)
         recipients = list(payload["recipients"])
         try:
             mail_provider = self.provider_for(selected)
@@ -234,13 +258,13 @@ class MailService:
         except Exception as exc:
             uncertain = {"accepted": False, "uncertain": True, "error": str(exc)[:240],
                          "recipientCount": len(recipients)}
-            self.store.finish(identifier, "uncertain", uncertain, selected.storage_owner)
+            self.store.finish(identifier, "uncertain", uncertain, owner)
             raise
         self.store.finish(
             identifier,
             "sent" if result.get("accepted") else "demo",
             result,
-            selected.storage_owner,
+            owner,
         )
         return {"draftId": identifier, **result}
 
@@ -252,7 +276,7 @@ class MailService:
         result = selected.set_read(identifier, is_read)  # type: ignore[attr-defined]
         self.store.record_action(
             "mark-read" if is_read else "mark-unread", "completed",
-            {"messageId": str(identifier)[:1024]}, principal.storage_owner,
+            {"messageId": str(identifier)[:1024]}, self._owner(principal),
         )
         return result
 
@@ -265,7 +289,7 @@ class MailService:
         self.store.record_action(
             "move", "completed",
             {"messageId": str(identifier)[:1024], "destinationId": str(destination_id)[:1024]},
-            principal.storage_owner,
+            self._owner(principal),
         )
         return result
 
@@ -284,7 +308,7 @@ class MailService:
         result = selected.reply(identifier, comment, reply_all=reply_all)  # type: ignore[attr-defined]
         self.store.record_action(
             "reply-all" if reply_all else "reply", "completed",
-            {"messageId": str(identifier)[:1024]}, principal.storage_owner,
+            {"messageId": str(identifier)[:1024]}, self._owner(principal),
         )
         return result
 
@@ -305,7 +329,7 @@ class MailService:
         self.store.record_action(
             "forward", "completed",
             {"messageId": str(identifier)[:1024], "recipientCount": len(clean)},
-            principal.storage_owner,
+            self._owner(principal),
         )
         return result
 
@@ -386,7 +410,7 @@ class MailService:
         result = selected.create_event(event, calendar_id=calendar_id)  # type: ignore[attr-defined]
         self.store.record_action(
             "calendar-create", "completed",
-            {"calendarId": str(calendar_id)[:1024]}, principal.storage_owner,
+            {"calendarId": str(calendar_id)[:1024]}, self._owner(principal),
         )
         return result
 
@@ -401,7 +425,7 @@ class MailService:
         self.store.record_action(
             "calendar-update", "completed",
             {"eventId": str(identifier)[:1024], "fields": sorted(str(key) for key in changes)},
-            principal.storage_owner,
+            self._owner(principal),
         )
         return result
 
@@ -415,7 +439,7 @@ class MailService:
         result = selected.delete_event(identifier)  # type: ignore[attr-defined]
         self.store.record_action(
             "calendar-delete", "completed",
-            {"eventId": str(identifier)[:1024]}, principal.storage_owner,
+            {"eventId": str(identifier)[:1024]}, self._owner(principal),
         )
         return result
 
@@ -430,6 +454,6 @@ class MailService:
         self.store.record_action(
             "calendar-respond", "completed",
             {"eventId": str(identifier)[:1024], "response": str(response)[:32]},
-            principal.storage_owner,
+            self._owner(principal),
         )
         return result

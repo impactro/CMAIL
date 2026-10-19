@@ -1,5 +1,12 @@
 # API Python do CMAIL
 
+Novo trilho local a partir da distribuição `26.10.19`: schema de configuração
+`1.2`, modo `gmail-file`, `Config.from_file` + `create_api` +
+`Principal.local_operator`. Não aceita owner/identidade web; os modos OAuth
+existentes mantêm seu contrato. Veja [autenticação por arquivo](docs/gmail-file.md).
+`render_email_template(path, *, body, fields=None, html_fields=None)` devolve
+`body`/`bodyHtml` sem preparar/enviar; contrato em [templates](docs/email-templates.md).
+
 `cmail.create_api(config)` entrega a fachada estável para runtimes agentes. A
 mesma factory é descoberta pelo entry point
 `crania_agent.component_apis:cmail`; o descritor CM 2 continua isolado em

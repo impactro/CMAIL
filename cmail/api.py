@@ -178,4 +178,6 @@ def create_component_api(
         if config_file is not None
         else Config.load(Path(agent_root))
     )
+    if config.mode == "gmail-file":
+        raise ValueError("gmail-file exige create_api explícito, não montagem por host.")
     return create_api(config)
