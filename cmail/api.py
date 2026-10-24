@@ -22,7 +22,9 @@ class CmailApi:
             "schemaVersion": "1.0",
             "factory": "cmail:create_api",
             "principalType": "cmail:Principal",
-            "sendFormats": {"text": True, "html": True, "attachments": False},
+            "sendFormats": {"text": True, "html": True, "attachments": False, "inlineImages": True},
+            "inlineImageLimits": {"count": 8, "totalBytes": 2097152,
+                                  "contentTypes": ["image/png", "image/jpeg"]},
             "operations": {
                 "status": {"capability": "mail.read", "effect": "read-local"},
                 "folders": {"capability": "mail.read", "effect": "network-read"},

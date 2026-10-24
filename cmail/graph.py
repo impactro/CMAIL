@@ -246,7 +246,9 @@ class MicrosoftGraphProvider(Provider):
         )
         return _summary(result, include_body=True)
 
-    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "") -> dict[str, object]:
+    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None) -> dict[str, object]:
+        from .inline_images import normalize
+        images = normalize([] if inline_images is None else inline_images, body_html)
         message = {
             "subject": subject[:500],
             "body": {"contentType": "HTML" if body_html else "Text", "content": (body_html or body)[:200_000]},
@@ -254,6 +256,11 @@ class MicrosoftGraphProvider(Provider):
                 {"emailAddress": {"address": address}} for address in recipients
             ],
         }
+        if images:
+            message["attachments"] = [{"@odata.type": "#microsoft.graph.fileAttachment",
+                "name": item["name"], "contentType": item["contentType"],
+                "contentId": item["contentId"], "isInline": True,
+                "contentBytes": item["contentBase64"]} for item in images]
         self._call("POST", "/me/sendMail", {"message": message, "saveToSentItems": True}, expected=(202,))
         return {"accepted": True, "recipientCount": len(recipients)}
 

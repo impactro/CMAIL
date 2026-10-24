@@ -258,8 +258,12 @@ class MailService:
         try:
             mail_provider = self.provider_for(selected)
             arguments = (recipients, str(payload["subject"]), str(payload["body"]))
-            result = (mail_provider.send(*arguments, body_html=str(payload["bodyHtml"]))
-                      if payload.get("bodyHtml") else mail_provider.send(*arguments))
+            options = {}
+            if payload.get("bodyHtml"):
+                options["body_html"] = str(payload["bodyHtml"])
+            if payload.get("inlineImages"):
+                options["inline_images"] = payload["inlineImages"]
+            result = mail_provider.send(*arguments, **options)
         except Exception as exc:
             uncertain = {"accepted": False, "uncertain": True, "error": str(exc)[:240],
                          "recipientCount": len(recipients)}

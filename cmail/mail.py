@@ -15,6 +15,7 @@ from email.utils import getaddresses, parseaddr, parsedate_to_datetime
 from typing import Callable, Protocol
 
 from .config import Config
+from .inline_images import add_body, normalize as normalize_inline_images
 
 
 class MailError(ValueError):
@@ -26,7 +27,7 @@ class Provider(Protocol):
     def folders(self) -> list[dict[str, object]]: ...
     def messages(self, folder: str, limit: int = 50) -> list[dict[str, object]]: ...
     def message(self, folder: str, identifier: str) -> dict[str, object]: ...
-    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "") -> dict[str, object]: ...
+    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None) -> dict[str, object]: ...
 
 
 def _decoded(value: object) -> str:
@@ -100,7 +101,8 @@ class DemoProvider:
     def message(self, folder: str, identifier: str) -> dict[str, object]:
         raise MailError("Mensagem não existe no modo demo.")
 
-    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "") -> dict[str, object]:
+    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None) -> dict[str, object]:
+        normalize_inline_images([] if inline_images is None else inline_images, body_html)
         return {"accepted": False, "demo": True, "recipientCount": len(recipients)}
 
 
@@ -188,7 +190,7 @@ class ImapSmtpProvider:
         finally:
             client.logout()
 
-    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "") -> dict[str, object]:
+    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None) -> dict[str, object]:
         message = EmailMessage()
         message["From"] = self.config.account
         if len(recipients) == 1:
@@ -199,9 +201,7 @@ class ImapSmtpProvider:
             message["To"] = self.config.account
             message["Bcc"] = ", ".join(recipients)
         message["Subject"] = subject[:500]
-        message.set_content(body)
-        if body_html:
-            message.add_alternative(body_html, subtype="html")
+        add_body(message, body, body_html, inline_images)
         password = self.config.password()
         client = self.smtp_ssl_factory(self.config.smtp_host, self.config.smtp_port, timeout=30) if self.config.smtp_security == "ssl" else self.smtp_factory(self.config.smtp_host, self.config.smtp_port, timeout=30)
         try:

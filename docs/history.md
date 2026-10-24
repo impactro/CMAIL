@@ -1,5 +1,21 @@
 # Histórico
 
+## 2026-10-24 — Imagens CID opcionais, somente fonte
+
+- Payload `inlineImages` liga PNG/JPEG ao HTML por `img src="cid:..."`, com
+  oito imagens e dois MiB totais no máximo. Sem caminhos, downloads ou SVG.
+- Corpo e bytes ficam no mesmo snapshot/token confirmado; prévia inclui
+  metadados e hash. MIME related compartilhado por Gmail/SMTP/IMAP; Graph
+  usa imagens inline nativas. Anexos gerais continuam recusados.
+- Principal, autenticação, refresh, TLS, configuração, schema do banco e
+  tratamento de envio incerto não foram alterados. CLI aceita arquivo JSON
+  de imagens somente na preparação, nunca para substituir o rascunho.
+- 48 testes focais e 123 completos aprovados, todos sintéticos; sem envio.
+  Integração privada do consumidor montou MIME com apresentação e assets
+  aprovados, preservando bytes e HTML no roundtrip, sem chamar provider.
+- Fonte não instalada nem publicada; metadados da distribuição anterior
+  permanecem até a geração deliberada de uma candidata. Não afirmar E2E de
+  Gmail, Outlook ou entrega. Contrato: `docs/inline-images.md`.
 ## 2026-10-21 — Gmail SMTP/XOAUTH2 por arquivo
 
 - `26.10.21a`: schema `1.3` com transporte explícito `api`/`smtp`; schemas

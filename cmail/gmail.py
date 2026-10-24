@@ -331,13 +331,12 @@ class GmailProvider:
             raise ValueError("Mensagem Gmail inválida.")
         return self._dto(self._call("GET", f"/messages/{selected}?format=full"), True)
 
-    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "") -> dict[str, object]:
+    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None) -> dict[str, object]:
+        from .inline_images import add_body
         message = EmailMessage()
         message["To"] = ", ".join(recipients)
         message["Subject"] = str(subject)[:500]
-        message.set_content(str(body)[:200_000])
-        if body_html:
-            message.add_alternative(body_html, subtype="html")
+        add_body(message, str(body)[:200_000], body_html, inline_images)
         raw = base64.urlsafe_b64encode(message.as_bytes()).decode("ascii").rstrip("=")
         result = self._call("POST", "/messages/send", {"raw": raw})
         return {"accepted": True, "id": str(result.get("id") or ""), "recipientCount": len(recipients)}

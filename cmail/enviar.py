@@ -7,6 +7,7 @@ from .api import create_api
 from .config import Config
 from .service import Principal
 from .template_render import render_email_template, LIMIT
+from .inline_images import MAX_BYTES, MAX_COUNT
 
 
 def _text_file(filename):
@@ -31,6 +32,21 @@ def _fields(direct, filenames):
     return result
 
 
+def _inline_file(filename):
+    limit = ((MAX_BYTES + 2) // 3) * 4 + MAX_COUNT * 1024
+    try:
+        with Path(filename).open('rb') as stream:
+            raw = stream.read(limit + 1)
+        if len(raw) > limit:
+            raise ValueError()
+        value = json.loads(raw.decode('utf-8-sig'))
+        if not isinstance(value, list):
+            raise ValueError()
+        return value
+    except (OSError, UnicodeError, ValueError):
+        raise ValueError('Arquivo JSON de imagens internas ausente ou inválido.') from None
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Prepare um e-mail; execute somente o rascunho confirmado.")
     parser.add_argument("--gmail", action="store_true", required=True,
@@ -48,6 +64,7 @@ def main(argv=None):
     parser.add_argument("--set-file", action="append", default=[])
     parser.add_argument("--html-field", action="append", default=[])
     parser.add_argument("--html-field-file", action="append", default=[])
+    parser.add_argument("--inline-images-json", help="Lista explícita de imagens base64; somente na preparação.")
     parser.add_argument("--execute", action="store_true")
     parser.add_argument("--draft-id")
     parser.add_argument("--confirmation-token")
@@ -58,7 +75,7 @@ def main(argv=None):
             raise ValueError("--gmail exige configuração gmail-file, não OAuth web.")
         rendering = any((args.to, args.subject is not None, args.body is not None,
             args.body_file, args.html_file, args.template, args.set, args.set_file,
-            args.html_field, args.html_field_file))
+            args.html_field, args.html_field_file, args.inline_images_json))
         if args.execute:
             if rendering or not args.draft_id or not args.confirmation_token:
                 raise ValueError("Execute somente draft-id e confirmation-token, sem novo conteúdo.")
@@ -81,6 +98,8 @@ def main(argv=None):
                 payload["bodyHtml"] = _text_file(args.html_file)
             elif any((args.set, args.set_file, args.html_field, args.html_field_file)):
                 raise ValueError("Campos exigem --template.")
+            if args.inline_images_json:
+                payload['inlineImages'] = _inline_file(args.inline_images_json)
             api = create_api(config)
             result = api.prepare_send(Principal.local_operator(), payload)
         print(json.dumps({"ok": True, "phase": "execute" if args.execute else "preview",

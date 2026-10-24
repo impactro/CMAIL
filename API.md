@@ -7,6 +7,12 @@ existentes mantêm seu contrato. Veja [autenticação por arquivo](docs/gmail-fi
 `render_email_template(path, *, body, fields=None, html_fields=None)` devolve
 `body`/`bodyHtml` sem preparar/enviar; contrato em [templates](docs/email-templates.md).
 
+Extensão aditiva em fonte: `inlineImages` no payload de preparação conserva
+bytes PNG/JPEG junto do HTML confirmado. Verificar primeiro
+`CmailApi.describe().sendFormats.inlineImages`; contrato e limites em
+[imagens internas CID](docs/inline-images.md). Não há acesso a arquivos ou
+downloads no provider, nem alteração da autorização de envio.
+
 `cmail.create_api(config)` entrega a fachada estável para runtimes agentes. A
 mesma factory é descoberta pelo entry point
 `crania_agent.component_apis:cmail`; o descritor CM 2 continua isolado em

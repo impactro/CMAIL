@@ -10,6 +10,8 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from .inline_images import normalize as normalize_inline_images, summaries as inline_summaries
+
 
 EMAIL = re.compile(r"^[^@\s]+@[^@\s]+$")
 
@@ -230,6 +232,9 @@ class Store:
             raise ValueError("Anexos de envio ainda não são suportados por esta operação.")
         if body_html:
             clean["bodyHtml"] = body_html
+        inline_images = normalize_inline_images(payload.get("inlineImages", []), body_html)
+        if inline_images:
+            clean["inlineImages"] = inline_images
         identifier, token = secrets.token_urlsafe(18), secrets.token_urlsafe(32)
         expires = _now() + timedelta(minutes=10)
         with self.connect() as db:
@@ -239,7 +244,8 @@ class Store:
             self._audit(db, "send-prepare", "prepared", {"draftId": identifier, "recipientCount": len(recipients)}, owner_id)
         return {"draftId": identifier, "confirmationToken": token, "expiresAt": expires.isoformat(),
                 "recipientCount": len(recipients), "subject": subject, "bodyPreview": body[:240],
-                "bodyType": "html" if body_html else "text", "preview": clean}
+                "bodyType": "html" if body_html else "text", "preview": clean,
+                "inlineImageSummary": inline_summaries(inline_images)}
 
     def claim(self, identifier: str, token: str, owner_id: str = "") -> dict[str, object]:
         with self.connect() as db:

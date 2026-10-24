@@ -8,6 +8,7 @@ import ssl
 from .auth import AuthenticationError
 from .gmail_file import GmailFileAuth
 from .store import EMAIL
+from .inline_images import add_body
 
 
 class GmailSmtpAuth(GmailFileAuth):
@@ -81,7 +82,7 @@ class GmailSmtpProvider:
     def status(self):
         return {**self.auth.status(), "externalEffects": True}
 
-    def send(self, recipients, subject, body, *, body_html=""):
+    def send(self, recipients, subject, body, *, body_html="", inline_images=None):
         if (not recipients or any(not isinstance(x, str) or not x.isascii()
                 or not EMAIL.fullmatch(x) for x in recipients)):
             raise ValueError("Destinatários inválidos.")
@@ -92,9 +93,7 @@ class GmailSmtpProvider:
         message["Subject"] = subject
         message["Date"] = formatdate(localtime=False, usegmt=True)
         message["Message-ID"] = make_msgid(domain=account.split("@", 1)[1])
-        message.set_content(body)
-        if body_html:
-            message.add_alternative(body_html, subtype="html")
+        add_body(message, body, body_html, inline_images)
         token = self.auth.access_token()
         try:
             with self.auth.connection(token) as client:
