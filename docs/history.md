@@ -1,5 +1,18 @@
 # Histórico
 
+## 2026-10-21 — Gmail SMTP/XOAUTH2 por arquivo
+
+- `26.10.21a`: schema `1.3` com transporte explícito `api`/`smtp`; schemas
+  anteriores preservados. SMTP fixo Google, TLS obrigatório, identidade por
+  AUTH, status sem envio e refresh em memória; sem fallback ou senha de app.
+- Consentimento SMTP opcional usa grant próprio, PKCE e valida a caixa antes
+  de criar arquivo novo. CLI de envio e templates preservam duas fases.
+- Journal isolado por conta/transporte, Bcc e recibo DATA; falhas incertas
+  não são repetidas. SMTP não anuncia leitura, pastas ou webmail.
+- Validação: 100 testes sintéticos de regressão/fonte aprovados; 19 testes
+  SMTP também aprovados a partir do diretório externo ao checkout. A validação
+  de conta e a implantação reais são registradas privadamente no host consumidor.
+
 ## 2026-10-19 — Gmail Por Arquivo E Envio Em Duas Fases
 
 - Candidata `26.10.19a`, distribuição `26.10.19`: modo headless `gmail-file`

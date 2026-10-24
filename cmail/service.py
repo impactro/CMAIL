@@ -59,8 +59,13 @@ class MailService:
             else None
         )
         if config.mode == "gmail-file" and mail_provider is None:
-            from .gmail_file import GmailFileAuth
-            mail_provider = GmailProvider(GmailFileAuth(config), "")
+            from .gmail_file import create_file_auth
+            file_auth = create_file_auth(config)
+            if config.gmail_file_transport == "smtp":
+                from .gmail_smtp import GmailSmtpProvider
+                mail_provider = GmailSmtpProvider(file_auth)
+            else:
+                mail_provider = GmailProvider(file_auth, "")
         self._provider = mail_provider or (
             None if config.mode in {"setup", "microsoft", "gmail"} else provider(config)
         )
@@ -95,7 +100,7 @@ class MailService:
 
     def _owner(self, principal: Principal) -> str:
         self._require_file_principal(principal)
-        return ("gmail-file:" + self.config.gmail_file_account
+        return (("gmail-file-smtp:" if self.config.gmail_file_transport == "smtp" else "gmail-file:") + self.config.gmail_file_account
                 if self.config.mode == "gmail-file" else principal.storage_owner)
 
     def principal_for_owner(

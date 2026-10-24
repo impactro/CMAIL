@@ -2,12 +2,19 @@
 
 `CMAIL` é o nome técnico do módulo independente que reúne webmail, leitura de
 pastas e mensagens, listas de destinatários e disparo controlado de e-mail.
-Versão candidata do componente: `26.10.19a` (pacote Python `26.10.19`).
+Versão do componente: `26.10.21a` (pacote Python `26.10.21`).
+
+Gmail por arquivo também oferece envio SMTP/XOAUTH2 explícito no schema `1.3`,
+com `gmailFile.transport="smtp"`. TLS e confirmação da caixa pelo SMTP Google
+são obrigatórios; não depende da Gmail API e não existe fallback automático.
+Os schemas anteriores continuam usando API. Detalhes em
+[Gmail por arquivo](docs/gmail-file.md).
 
 Gmail por arquivo `authorized_user`, sem SSO e com consentimento explícito
 opcional, está documentado em [Gmail por arquivo](docs/gmail-file.md).
 [Templates e fachada de envio](docs/email-templates.md) preservam prévia e
-confirmação em duas fases. Esta candidata não foi instalada neste ciclo.
+confirmação em duas fases. Instalação e autenticação precisam ser verificadas
+no host consumidor; a atualização do fonte não as comprova.
 
 Na composição ASGI, uma caixa ainda não vinculada apresenta uma ação simples,
 mas nunca tenta carregar Microsoft ou Google dentro do `iframe`. O link promove

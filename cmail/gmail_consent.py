@@ -17,7 +17,11 @@ from .store import EMAIL
 
 
 class GmailFileConsent:
-    def __init__(self, client_file, token_file, account, redirect_uri, *, requester=None):
+    def __init__(self, client_file, token_file, account, redirect_uri, *, requester=None, transport="api"):
+        if transport not in {"api", "smtp"}:
+            raise AuthenticationError("Transporte Gmail inválido.")
+        self.transport = transport
+        self.scopes = ("https://mail.google.com/",) if transport == "smtp" else GMAIL_SCOPES
         self.account = str(account).strip().casefold()
         self.token_file = Path(token_file)
         parsed = urllib.parse.urlsplit(redirect_uri)
@@ -45,7 +49,7 @@ class GmailFileConsent:
         challenge = base64.urlsafe_b64encode(hashlib.sha256(self._verifier.encode()).digest()).decode().rstrip("=")
         return GOOGLE_AUTH + "?" + urllib.parse.urlencode({
             "client_id": self.client_id, "redirect_uri": self.redirect_uri,
-            "response_type": "code", "scope": " ".join(GMAIL_SCOPES),
+            "response_type": "code", "scope": " ".join(self.scopes),
             "access_type": "offline", "prompt": "consent", "state": self._state,
             "login_hint": self.account, "code_challenge": challenge,
             "code_challenge_method": "S256",
@@ -74,15 +78,19 @@ class GmailFileConsent:
                 raise ValueError()
             token, refresh = _field(value, "access_token"), _field(value, "refresh_token")
             expiry = datetime.fromtimestamp(time.time() + _duration(value.get("expires_in", 3600)), timezone.utc)
-            status, profile = self._requester("GET", GMAIL_API + "/profile", {
-                "Authorization": "Bearer " + token, "Accept": "application/json"}, None)
-            if (status != 200 or not isinstance(profile, dict)
-                    or not secrets.compare_digest(str(profile.get("emailAddress", "")).casefold(), self.account)):
-                raise ValueError()
+            if self.transport == "smtp":
+                from .gmail_smtp import GmailSmtpAuth
+                GmailSmtpAuth.validate_account(self.account, token)
+            else:
+                status, profile = self._requester("GET", GMAIL_API + "/profile", {
+                    "Authorization": "Bearer " + token, "Accept": "application/json"}, None)
+                if (status != 200 or not isinstance(profile, dict)
+                        or not secrets.compare_digest(str(profile.get("emailAddress", "")).casefold(), self.account)):
+                    raise ValueError()
             credentials = {"type": "authorized_user", "token": token,
                 "refresh_token": refresh, "client_id": self.client_id,
                 "client_secret": self._secret, "token_uri": GOOGLE_TOKEN,
-                "expiry": expiry.isoformat(), "scopes": list(GMAIL_SCOPES)}
+                "expiry": expiry.isoformat(), "scopes": list(self.scopes)}
             descriptor = os.open(self.token_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
             try:
                 with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
@@ -97,7 +105,7 @@ class GmailFileConsent:
             raise AuthenticationError("Não foi possível concluir o consentimento Gmail.") from None
 
 
-def authorize(client_file, token_file, account, *, timeout=300):
+def authorize(client_file, token_file, account, *, timeout=300, transport="api"):
     if not 1 <= timeout <= 600:
         raise ValueError("Timeout de autenticação inválido.")
     result = {}
@@ -124,7 +132,7 @@ def authorize(client_file, token_file, account, *, timeout=300):
     with HTTPServer(("127.0.0.1", 0), Handler) as server:
         server.timeout = 1
         flow = GmailFileConsent(client_file, token_file, account,
-            f"http://127.0.0.1:{server.server_port}/auth/callback")
+            f"http://127.0.0.1:{server.server_port}/auth/callback", transport=transport)
         print(json.dumps({"authorizationUrl": flow.authorization_url(),
                           "expiresInSeconds": timeout}, ensure_ascii=False), flush=True)
         deadline = time.monotonic() + timeout

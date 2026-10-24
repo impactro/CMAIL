@@ -1,4 +1,54 @@
-# Gmail Por Arquivo — 26.10.19a
+# Gmail Por Arquivo — 26.10.21a
+
+## Transporte SMTP explícito
+
+Schema `1.3`, modo `gmail-file`, mantém os campos do schema `1.2` e exige
+`gmailFile.transport`, com valores `api` ou `smtp`. O schema `1.2` permanece
+inalterado e seleciona API. Exemplo sanitizado: `config.gmail-smtp.example.json`.
+
+```json
+"gmailFile": {
+  "account": "sender@example.com",
+  "tokenFile": "security/google-authorized-user.json",
+  "transport": "smtp"
+}
+```
+
+SMTP conecta exclusivamente a `smtp.gmail.com:587`, exige STARTTLS com validação
+do certificado e autentica a caixa configurada por SASL XOAUTH2. O servidor
+confirma que aquele token pode acessar aquela caixa; não se presume identidade
+pelo conteúdo do arquivo. `status` faz AUTH/NOOP e não transmite mensagem.
+Não usa `/profile`, não precisa habilitar Gmail API e nunca troca de transporte
+após um erro. O token precisa do grant SMTP `https://mail.google.com/`.
+Renovação continua em memória e não reescreve o token legado.
+
+Para consentimento novo, acrescentar `--transport smtp` a `auth`/`init`:
+
+```text
+python -s -B -m cmail.gmail_file auth --transport smtp --client-file security/google-desktop-client.json --token-file security/google-authorized-user.json --account sender@example.com
+python -s -B -m cmail.gmail_file status --config-file cmail.json
+python -s -B -m cmail.gmail_file refresh --config-file cmail.json
+```
+
+O consentimento SMTP pede o grant próprio e valida AUTH antes de criar um arquivo
+novo; PKCE/state/loopback e recusa de sobrescrita permanecem. Não inicia consentimento
+automaticamente em uso normal. Não revoga nem amplia grants existentes.
+
+`cmail.enviar --gmail` conserva a preparação e execução confirmada do mesmo draft.
+O journal separa conta **e transporte**: um draft de API não pode ser consumido
+por SMTP. HTML e texto alternativo são preservados; lista de destinatários usa
+envelope Bcc. Aceitação SMTP significa submissão, não entrega ou leitura.
+Falha/recusa parcial após claim fica incerta e não permite replay. Erro em QUIT
+depois da aceitação de DATA não faz repetir uma mensagem aceita.
+
+Este transporte oferece somente envio. Leitura, pastas, resposta/encaminhamento
+com busca de mensagem e montagem web continuam indisponíveis nesse modo;
+não existe fallback para API/IMAP. O transporte API original conserva suas funções.
+
+Referências oficiais: [SMTP Gmail](https://developers.google.com/workspace/gmail/imap/imap-smtp)
+e [SASL XOAUTH2](https://developers.google.com/workspace/gmail/imap/xoauth2-protocol).
+
+## Transporte API original
 
 Distribuição Python mínima: `crania-cmail>=26.10.19`. Esta é uma candidata em
 fonte; não comprova instalação, consentimento ou envio em uma conta real.
@@ -28,7 +78,7 @@ Além do grant, a Gmail API precisa estar habilitada no projeto Google do client
 Um token que funciona no SMTP legado pode renovar e ainda receber `403
 SERVICE_DISABLED` nessa API. Nesse caso esta candidata bloqueia o uso: não
 omite a conferência de conta nem muda automaticamente para SMTP. Uma opção
-SMTP XOAUTH2 é pendência separada, ainda sem contrato implementado/autorizado.
+SMTP XOAUTH2 exige a seleção explícita descrita acima; não é fallback desta rota.
 
 ## API Local
 

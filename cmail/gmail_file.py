@@ -155,6 +155,14 @@ class GmailFileAuth:
                     self._expires, timezone.utc).isoformat(), "persisted": False}
 
 
+def create_file_auth(config):
+    """Explicit transport only; a REST error never triggers SMTP fallback."""
+    if config.gmail_file_transport == "smtp":
+        from .gmail_smtp import GmailSmtpAuth
+        return GmailSmtpAuth(config)
+    return GmailFileAuth(config)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Gmail por arquivo, sem SSO do CA.")
     actions = parser.add_subparsers(dest="action", required=True)
@@ -165,14 +173,15 @@ def main(argv=None):
     auth.add_argument("--token-file", required=True)
     auth.add_argument("--account", required=True)
     auth.add_argument("--timeout", type=int, default=300)
+    auth.add_argument("--transport", choices=("api", "smtp"), default="api")
     args = parser.parse_args(argv)
     try:
         if args.action in {"auth", "init"}:
             from .gmail_consent import authorize
             result = authorize(Path(args.client_file), Path(args.token_file), args.account,
-                               timeout=args.timeout)
+                               timeout=args.timeout, transport=args.transport)
         else:
-            result = GmailFileAuth(Config.from_file(args.config_file)).status(
+            result = create_file_auth(Config.from_file(args.config_file)).status(
                 refresh=args.action == "refresh")
         print(json.dumps({"ok": True, **result}, ensure_ascii=False))
         return 0
