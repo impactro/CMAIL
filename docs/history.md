@@ -1,5 +1,29 @@
 # Histórico
 
+## 2026-10-28 — Barra contextual e organização do Webmail — 26.10.28a
+
+- Componente `26.10.28a`, distribuição Python `26.10.28`, incluindo as imagens
+  CID da evolução anterior. Instalação e homologação de cada consumidor são
+  verificações operacionais separadas da publicação do fonte.
+
+- Ações da mensagem selecionada passam ao cabeçalho com ícones SVG locais,
+  nomes acessíveis, dicas e navegação anterior/próxima. Pastas recebem ícones
+  e nomes de apresentação; filtro atua somente na lista carregada. Leitor
+  mostra destinatários e inventário de anexos, sem executar HTML externo.
+- Mantidos os IDs funcionais, classes públicas `cm-*`, tokens `--ca-ui-*`,
+  ponte de tema e prefixos ASGI. Base independente e host de teste com frame
+  verificados em claro/escuro e larguras 1440, 1064, 768 e 390 px.
+- Disponibilidade de ações combina provider e capabilities. IMAP passa a
+  marcar leitura, mover por UID e responder/encaminhar com pasta explícita.
+  Encaminhamento IMAP é textual, sem anexos, com limite informado na confirmação.
+  Destinos de arquivo/lixeira são pastas reais; excluir confirma antes de mover.
+- Movimentação IMAP usa MOVE ou COPY/STORE/UID EXPUNGE; nunca expurga a caixa
+  inteira ou repete automaticamente uma falha. Graph resolve IDs de arquivo
+  e lixeira sem depender do idioma. Gmail inclui lixeira e mantém destino e
+  origem coerentes ao restaurar; Enviados/Rascunhos não são destinos manuais.
+- Regressão: 139 testes sintéticos aprovados, incluindo quatro testes de
+  navegador. Conferência visual própria, sem uso de conta real ou envio.
+
 ## 2026-10-24 — Imagens CID opcionais, somente fonte
 
 - Payload `inlineImages` liga PNG/JPEG ao HTML por `img src="cid:..."`, com

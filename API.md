@@ -7,7 +7,7 @@ existentes mantêm seu contrato. Veja [autenticação por arquivo](docs/gmail-fi
 `render_email_template(path, *, body, fields=None, html_fields=None)` devolve
 `body`/`bodyHtml` sem preparar/enviar; contrato em [templates](docs/email-templates.md).
 
-Extensão aditiva em fonte: `inlineImages` no payload de preparação conserva
+Extensão aditiva incluída na distribuição `26.10.28`: `inlineImages` no payload de preparação conserva
 bytes PNG/JPEG junto do HTML confirmado. Verificar primeiro
 `CmailApi.describe().sendFormats.inlineImages`; contrato e limites em
 [imagens internas CID](docs/inline-images.md). Não há acesso a arquivos ou
@@ -56,6 +56,23 @@ Um CAX mínimo pode importar o módulo, descobrir as skills empacotadas pelo
 descritor CM 2 e operar a conta autenticada sem instalar o CA completo. O host
 é dono da validação de sua assertion; CMAIL é dono do vínculo local da
 identidade, do provedor e das capacidades exigidas por operação.
+
+`api.message_actions(principal)` e `GET /api/message-actions` publicam os
+controles disponíveis (`setRead`, `move`, `reply`, `forward`, `send`, `lists`),
+combinando suporte do provider e capacidades concedidas. IMAP consulta suporte
+do servidor a `MOVE`/`UIDPLUS` para oferecer movimentação segura.
+`set_read`, `move`, `reply` e `forward` aceitam `folder="INBOX"` como argumento
+nomeado adicional; em IMAP, o UID pertence necessariamente a essa pasta.
+As rotas web correspondentes aceitam `folder` no JSON. Clientes antigos
+continuam usando INBOX por padrão. Movimentar usa o ID real da pasta de destino;
+a interface oferece arquivo/lixeira somente quando identifica essas pastas,
+e confirma a movimentação para a lixeira. Nenhuma ação faz exclusão permanente
+ou expurgo geral. Resposta/encaminhamento IMAP conservam a confirmação explícita;
+o encaminhamento inclui somente texto, sem anexos.
+Os itens de pasta podem declarar `canMoveTo=false`; a interface exclui esses
+destinos do seletor. Gmail usa isso para Enviados/Rascunhos, cujos marcadores
+de sistema não podem ser aplicados manualmente, conforme o
+[contrato de marcadores Gmail](https://developers.google.com/workspace/gmail/api/guides/labels).
 
 No executável standalone, uma raiz de configuração/estado representa uma única
 conta e o `owner_id` permanece vazio. Duas contas exigem duas raízes e duas

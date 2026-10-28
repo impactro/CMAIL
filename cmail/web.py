@@ -379,6 +379,10 @@ def _create_module_app(
     async def folders(request: Request):
         return {"ok": True, "folders": current.folders(require_principal(request))}
 
+    @app.get("/api/message-actions")
+    async def message_actions(request: Request):
+        return {"ok": True, "actions": current.message_actions(require_principal(request))}
+
     @app.get("/api/messages")
     async def messages(request: Request):
         folder = str(request.query_params.get("folder") or "INBOX")[:512]
@@ -401,14 +405,16 @@ def _create_module_app(
         value = await _payload(request)
         if not isinstance(value.get("isRead"), bool):
             raise ValueError("isRead deve ser booleano.")
-        return {"ok": True, "message": current.set_read(principal, identifier, bool(value["isRead"]))}
+        folder = str(value.get("folder") or "INBOX")[:512]
+        return {"ok": True, "message": current.set_read(principal, identifier, bool(value["isRead"]), folder=folder)}
 
     @app.post("/api/messages/{identifier}/move")
     async def message_move(identifier: str, request: Request):
         principal = require_principal(request)
         require_csrf(request, principal)
         value = await _payload(request)
-        return {"ok": True, "message": current.move(principal, identifier, str(value.get("destinationId") or ""))}
+        folder = str(value.get("folder") or "INBOX")[:512]
+        return {"ok": True, "message": current.move(principal, identifier, str(value.get("destinationId") or ""), folder=folder)}
 
     @app.post("/api/messages/{identifier}/reply")
     async def message_reply(identifier: str, request: Request):
@@ -418,6 +424,7 @@ def _create_module_app(
         return {"ok": True, "result": current.reply(
             principal, identifier, str(value.get("comment") or ""),
             reply_all=value.get("replyAll") is True, confirmed=value.get("confirmed") is True,
+            folder=str(value.get("folder") or "INBOX")[:512],
         )}
 
     @app.post("/api/messages/{identifier}/forward")
@@ -429,6 +436,7 @@ def _create_module_app(
         return {"ok": True, "result": current.forward(
             principal, identifier, recipients, str(value.get("comment") or ""),
             confirmed=value.get("confirmed") is True,
+            folder=str(value.get("folder") or "INBOX")[:512],
         )}
 
     @app.get("/api/messages/{identifier}/attachments")

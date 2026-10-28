@@ -1,3 +1,4 @@
+{% from '_icons.html' import icon, sprite %}
 <!doctype html>
 <html lang="pt-BR">
 <head>
@@ -7,6 +8,7 @@
   <link rel="stylesheet" href="{{ base_path }}/static/style.css">
 <link rel="stylesheet" href="{{ base_path }}/static/cm-theme.css?v=26.10.14b.1"><script src="{{ base_path }}/static/cm-theme.js?v=26.10.14b.1" defer></script></head>
 <body data-base="{{ base_path }}" data-csrf="{{ csrf }}" data-authenticated="{{ 'true' if authenticated else 'false' }}" data-mode="{{ mode }}" class="cm-page cm-webmail">
+{{ sprite() }}
 {% if not authenticated %}
   <main class="signin-shell">
     <section class="signin-card" aria-labelledby="signin-title">
@@ -25,19 +27,34 @@
   <div class="app-shell cm-shell">
     <header class="topbar cm-header">
       <div class="brand"><span class="brand-mark small" aria-hidden="true">C</span><div><strong>CMAIL</strong><span>Webmail</span></div></div>
+      <div class="cm-context-bar" aria-label="Ações da mensagem">
+        <span id="selectionHint" class="cm-selection-hint">{{ icon('mail') }}<span>Selecione uma mensagem</span></span>
+        <div id="messageActions" class="cm-message-actions cm-toolbar" role="toolbar" aria-label="Ações da mensagem selecionada" hidden>
+          <button id="reply" class="icon-button cm-action" type="button" data-capability="reply" title="Responder" aria-label="Responder">{{ icon('reply') }}</button>
+          <button id="replyAll" class="icon-button cm-action" type="button" data-capability="reply" title="Responder a todos" aria-label="Responder a todos">{{ icon('reply-all') }}</button>
+          <button id="forward" class="icon-button cm-action" type="button" data-capability="forward" title="Encaminhar" aria-label="Encaminhar">{{ icon('forward') }}</button>
+          <button id="archiveMessage" class="icon-button cm-action" type="button" data-capability="move" title="Arquivar" aria-label="Arquivar">{{ icon('archive') }}</button>
+          <button id="moveMessage" class="icon-button cm-action" type="button" data-capability="move" title="Mover para outra pasta" aria-label="Mover para outra pasta">{{ icon('move') }}</button>
+          <button id="trashMessage" class="icon-button cm-action cm-action-danger" type="button" data-capability="move" title="Mover para a lixeira" aria-label="Mover para a lixeira">{{ icon('trash') }}</button>
+          <button id="toggleRead" class="icon-button cm-action" type="button" data-capability="setRead" title="Marcar como lida" aria-label="Marcar como lida">{{ icon('open-mail') }}</button>
+          <span class="cm-action-divider" aria-hidden="true"></span>
+          <button id="previousMessage" class="icon-button cm-action" type="button" title="Mensagem anterior" aria-label="Mensagem anterior">{{ icon('previous') }}</button>
+          <button id="nextMessage" class="icon-button cm-action" type="button" title="Próxima mensagem" aria-label="Próxima mensagem">{{ icon('next') }}</button>
+        </div>
+      </div>
       <div class="topbar-actions">
         <span id="modeBadge" class="mode-badge">{{ 'Demonstração · nenhum envio real' if mode == 'demo' else 'Gmail conectado' if mode == 'gmail' else 'Outlook conectado' if mode == 'microsoft' else 'IMAP local' }}</span>
         <span class="account">{{ identity.email if identity else '' }}</span>
-        {% if not embedded %}<a class="quiet-button setup-link" href="{{ base_path }}/setup">Configuração</a>{% endif %}
+        {% if not embedded %}<a class="quiet-button setup-link" href="{{ base_path }}/setup" title="Configuração" aria-label="Configuração">{{ icon('settings') }}<span>Configuração</span></a>{% endif %}
         {% if not embedded and mode in ['microsoft', 'gmail'] %}<button id="logout" class="quiet-button" type="button">Sair</button>{% endif %}
       </div>
     </header>
 
     <aside class="sidebar cm-sidebar" aria-label="Navegação do webmail">
-      <button id="newMessage" class="compose-button" type="button"><span aria-hidden="true">＋</span> Nova mensagem</button>
+      <button id="newMessage" class="compose-button" type="button">{{ icon('drafts') }}<span>Nova mensagem</span></button>
       <h2>Pastas</h2>
       <nav id="folders" aria-label="Pastas da caixa"></nav>
-      <div class="sidebar-heading"><h2>Listas</h2><button id="showListForm" type="button" aria-label="Criar lista">＋</button></div>
+      <div class="sidebar-heading"><h2>Listas</h2><button id="showListForm" class="icon-button" type="button" title="Criar lista" aria-label="Criar lista">{{ icon('plus') }}</button></div>
       <div id="lists" class="lists"></div>
       <form id="listForm" class="compact-form" hidden>
         <label for="listName">Nome da lista</label>
@@ -52,24 +69,26 @@
       <section class="message-column cm-message-column" aria-labelledby="folderTitle">
         <div class="section-toolbar cm-toolbar">
           <div><p class="eyebrow">Caixa de e-mail</p><h1 id="folderTitle">Caixa de entrada</h1></div>
-          <button id="refresh" class="icon-button" type="button" aria-label="Atualizar mensagens">↻</button>
+          <button id="refresh" class="icon-button cm-action" type="button" title="Atualizar mensagens" aria-label="Atualizar mensagens">{{ icon('refresh') }}</button>
         </div>
+        <label class="cm-search" for="messageFilter">{{ icon('search') }}<span class="cm-sr-only">Filtrar mensagens carregadas</span><input id="messageFilter" type="search" placeholder="Filtrar esta lista" autocomplete="off"></label>
         <div id="notice" class="notice" role="status" aria-live="polite">Carregando…</div>
         <div id="messages" class="message-list cm-message-list" aria-label="Mensagens"></div>
       </section>
 
       <section id="reader" class="reader cm-reader" aria-live="polite">
-        <div id="readerEmpty" class="empty-state"><span aria-hidden="true">✉</span><h2>Selecione uma mensagem</h2><p>O conteúdo será exibido aqui como texto seguro.</p></div>
+        <div id="readerEmpty" class="empty-state"><span aria-hidden="true">{{ icon('mail') }}</span><h2>Selecione uma mensagem</h2><p>Leia e organize seus e-mails por aqui.</p></div>
         <article id="readerContent" hidden>
-          <div class="reader-toolbar"><button id="reply" type="button">Responder</button><button id="replyAll" type="button">Responder a todos</button><button id="forward" type="button">Encaminhar</button><button id="toggleRead" class="quiet-button" type="button">Marcar como não lida</button></div>
           <h2 id="readSubject"></h2>
           <div class="message-meta"><strong id="readFrom"></strong><span id="readDate"></span></div>
+          <p id="readRecipients" class="cm-reader-recipients"></p>
+          <div id="readAttachments" class="cm-attachments" aria-label="Anexos da mensagem" hidden></div>
           <pre id="readBody"></pre>
         </article>
       </section>
 
-      <section id="composePane" class="compose-pane" hidden aria-labelledby="composeTitle">
-        <div class="section-toolbar cm-toolbar"><h2 id="composeTitle">Nova mensagem</h2><button id="closeCompose" class="icon-button" type="button" aria-label="Fechar composição">×</button></div>
+      <section id="composePane" class="compose-pane cm-compose" hidden aria-labelledby="composeTitle">
+        <div class="section-toolbar cm-toolbar"><h2 id="composeTitle">Nova mensagem</h2><button id="closeCompose" class="icon-button" type="button" aria-label="Fechar composição">{{ icon('close') }}</button></div>
         <form id="composeForm">
           <label for="listId">Lista opcional</label><select id="listId"><option value="">Nenhuma</option></select>
           <label for="to">Destinatários adicionais</label><input id="to" type="text" autocomplete="off" placeholder="email@dominio.com; outro@dominio.com">
@@ -85,6 +104,21 @@
   <dialog id="confirm" aria-labelledby="confirmTitle">
     <h2 id="confirmTitle">Confirmar envio</h2><p id="confirmText"></p>
     <div class="dialog-actions"><button id="execute" type="button">Confirmar e enviar</button><button id="cancel" class="quiet-button" type="button">Cancelar</button></div>
+  </dialog>
+  <dialog id="moveDialog" class="cm-move-dialog" aria-labelledby="moveTitle">
+    <form id="moveForm">
+      <h2 id="moveTitle">Mover mensagem</h2>
+      <p id="moveSubject" class="cm-dialog-subject"></p>
+      <label for="destinationFolder">Pasta de destino</label>
+      <select id="destinationFolder" required></select>
+      <div class="dialog-actions"><button id="cancelMove" class="quiet-button" type="button">Cancelar</button><button id="confirmMove" type="submit">Mover</button></div>
+    </form>
+  </dialog>
+  <dialog id="trashDialog" aria-labelledby="trashTitle">
+    <h2 id="trashTitle">Mover para a lixeira?</h2>
+    <p id="trashSubject" class="cm-dialog-subject"></p>
+    <p>Você poderá recuperar a mensagem na pasta Lixeira.</p>
+    <div class="dialog-actions"><button id="cancelTrash" class="quiet-button" type="button">Cancelar</button><button id="confirmTrash" class="cm-danger-button" type="button">Mover para a lixeira</button></div>
   </dialog>
 {% endif %}
 <script src="{{ base_path }}/static/app.js" defer></script>

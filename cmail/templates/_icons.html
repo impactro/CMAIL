@@ -1,0 +1,29 @@
+{% macro icon(name) -%}
+<svg class="cm-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#cm-icon-{{ name }}"></use></svg>
+{%- endmacro %}
+{% macro sprite() -%}
+<svg class="cm-icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <symbol id="cm-icon-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 6 9 7 9-7"/></symbol>
+  <symbol id="cm-icon-open-mail" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="m3 10 9 7 9-7M7 7h10v6"/></symbol>
+  <symbol id="cm-icon-inbox" viewBox="0 0 24 24"><path d="m3 13 3-9h12l3 9v6H3zM3 13h5l2 3h4l2-3h5"/></symbol>
+  <symbol id="cm-icon-sent" viewBox="0 0 24 24"><path d="m21 3-7 18-4-7-7-4zM10 14 21 3"/></symbol>
+  <symbol id="cm-icon-drafts" viewBox="0 0 24 24"><path d="M13 3H5v18h14v-8M16 3l5 5-10 10-5 1 1-5z"/></symbol>
+  <symbol id="cm-icon-folder" viewBox="0 0 24 24"><path d="M3 7V5h7l2 3h9v12H3z"/></symbol>
+  <symbol id="cm-icon-move" viewBox="0 0 24 24"><path d="M21 10V8h-9l-2-3H3v15h18v-3M11 14h10m-3-3 3 3-3 3"/></symbol>
+  <symbol id="cm-icon-archive" viewBox="0 0 24 24"><path d="M4 8v13h16V8M3 3h18v5H3zM9 12h6"/></symbol>
+  <symbol id="cm-icon-trash" viewBox="0 0 24 24"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7"/></symbol>
+  <symbol id="cm-icon-junk" viewBox="0 0 24 24"><path d="m12 3 10 18H2zM12 9v5m0 3v.1"/></symbol>
+  <symbol id="cm-icon-reply" viewBox="0 0 24 24"><path d="m9 5-6 6 6 6M3 11h10a8 8 0 0 1 8 8"/></symbol>
+  <symbol id="cm-icon-reply-all" viewBox="0 0 24 24"><path d="m7 5-5 6 5 6m6-12-5 6 5 6M8 11h6a7 7 0 0 1 7 7"/></symbol>
+  <symbol id="cm-icon-forward" viewBox="0 0 24 24"><path d="m15 5 6 6-6 6m6-6H11a8 8 0 0 0-8 8"/></symbol>
+  <symbol id="cm-icon-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2 7M20 4v7h-7"/></symbol>
+  <symbol id="cm-icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="cm-icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  <symbol id="cm-icon-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></symbol>
+  <symbol id="cm-icon-previous" viewBox="0 0 24 24"><path d="m14 6-6 6 6 6"/></symbol>
+  <symbol id="cm-icon-next" viewBox="0 0 24 24"><path d="m10 6 6 6-6 6"/></symbol>
+  <symbol id="cm-icon-attachment" viewBox="0 0 24 24"><path d="m8 13 7-7a3 3 0 0 1 4 4L9 20a5 5 0 0 1-7-7L13 2m-8 14L15 6"/></symbol>
+  <symbol id="cm-icon-list" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M3 6h1m-1 6h1m-1 6h1"/></symbol>
+  <symbol id="cm-icon-settings" viewBox="0 0 24 24"><path d="m10 3-.6 3-2 .9-2.8-.9-2 3.5 2.3 2v2.9l-2.3 2 2 3.5 2.8-.9 2 .9.6 3h4l.6-3 2-.9 2.8.9 2-3.5-2.3-2v-2.9l2.3-2-2-3.5-2.8.9-2-.9L14 3z"/><circle cx="12" cy="13" r="3"/></symbol>
+</svg>
+{%- endmacro %}

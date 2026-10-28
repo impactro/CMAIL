@@ -2,7 +2,7 @@
 
 `CMAIL` é o nome técnico do módulo independente que reúne webmail, leitura de
 pastas e mensagens, listas de destinatários e disparo controlado de e-mail.
-Versão do componente: `26.10.21a` (pacote Python `26.10.21`).
+Versão do componente: `26.10.28a` (pacote Python `26.10.28`).
 
 Gmail por arquivo também oferece envio SMTP/XOAUTH2 explícito no schema `1.3`,
 com `gmailFile.transport="smtp"`. TLS e confirmação da caixa pelo SMTP Google
@@ -103,12 +103,24 @@ chegar à interface; imagens remotas não são carregadas. Anexos são apenas
 inventariados nos provedores que não oferecem obtenção segura; no Microsoft
 Graph, a API também permite obter o conteúdo do anexo autorizado.
 
-No Outlook e no Gmail, a ferramenta lista pastas e mensagens, lê o corpo como
-texto, marca lida/não lida, move, responde, encaminha e envia. O provider
+No Outlook, Gmail e IMAP, a ferramenta lista pastas e mensagens, lê o corpo como
+texto, marca lida/não lida, move, responde, encaminha e envia. No IMAP,
+movimentação exige `MOVE` ou `UIDPLUS`; nunca há expurgo geral da caixa.
+O encaminhamento IMAP/Gmail preserva somente texto, sem anexos, e a confirmação
+da interface explicita esse limite. O provider
 Microsoft Graph também implementa download de anexos, contatos, diretório,
 calendários, disponibilidade e gestão confirmada de eventos. Gmail e IMAP
 falham explicitamente nas capacidades que seus providers ainda não oferecem.
 Proxy de imagens, campanhas e editor HTML rico continuam fora desta fatia.
+
+A interface usa uma barra contextual de ícones no cabeçalho para a mensagem
+selecionada, com rótulos acessíveis, dicas e navegação anterior/próxima. Ações
+dependem das capacidades do principal e do provider; arquivar e excluir usam
+as pastas de arquivo/lixeira disponíveis. Excluir pede confirmação e move para
+a lixeira. Pastas têm ícones e nomes de apresentação, preservando seus IDs.
+O filtro pesquisa somente as mensagens já carregadas. As classes `cm-*` e os
+tokens `--ca-ui-*` mantêm o tema do host quando incorporado e a base neutra
+quando independente, sem depender de assets privados do CA.
 
 No Microsoft Graph, a listagem usa somente propriedades do recurso
 `mailFolder`; o ID da caixa de entrada é resolvido pela rota conhecida
@@ -135,9 +147,9 @@ Gmail/SMTP recebem multipart/alternative e Graph recebe conteúdo HTML.
 O consumidor fornece texto alternativo em `body`, renderiza e mostra a prévia
 antes da execução. `CmailApi.describe().sendFormats` permite verificar a
 capacidade no pacote instalado. Anexos de envio ainda são recusados.
-A fonte posterior à distribuição instalada acrescenta imagens PNG/JPEG por
-CID, opcionais e vinculadas ao mesmo snapshot confirmado; detalhes e limites
-em [imagens internas](docs/inline-images.md). Fonte não comprova instalação.
+A distribuição `26.10.28` inclui imagens PNG/JPEG por CID, opcionais e
+vinculadas ao mesmo snapshot confirmado; detalhes e limites em
+[imagens internas](docs/inline-images.md). Verificar a instalação no consumidor.
 A preparação não envia nada: cria journal e token único com validade de dez
 minutos. A execução consome o token antes do SMTP. Se houver falha depois disso,
 o estado fica incerto e não existe retry automático.

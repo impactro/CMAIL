@@ -31,6 +31,7 @@ class CmailApi:
                 "messages": {"capability": "mail.read", "effect": "network-read"},
                 "message": {"capability": "mail.read", "effect": "network-read"},
                 "history": {"capability": "mail.read", "effect": "read-local"},
+                "message-actions": {"capability": "mail.read", "effect": "network-read"},
                 "set-read": {"capability": "mail.manage", "effect": "external-write"},
                 "move": {"capability": "mail.manage", "effect": "external-write"},
                 "lists": {"capability": "lists.manage", "effect": "read-local"},
@@ -78,11 +79,14 @@ class CmailApi:
     def history(self, principal: Principal, limit: int = 50) -> list[dict[str, object]]:
         return self.service.history(principal, limit)
 
-    def set_read(self, principal: Principal, identifier: str, is_read: bool) -> dict[str, object]:
-        return self.service.set_read(principal, identifier, is_read)
+    def message_actions(self, principal: Principal) -> dict[str, bool]:
+        return self.service.message_actions(principal)
 
-    def move(self, principal: Principal, identifier: str, destination_id: str) -> dict[str, object]:
-        return self.service.move(principal, identifier, destination_id)
+    def set_read(self, principal: Principal, identifier: str, is_read: bool, *, folder: str = "INBOX") -> dict[str, object]:
+        return self.service.set_read(principal, identifier, is_read, folder=folder)
+
+    def move(self, principal: Principal, identifier: str, destination_id: str, *, folder: str = "INBOX") -> dict[str, object]:
+        return self.service.move(principal, identifier, destination_id, folder=folder)
 
     def lists(self, principal: Principal) -> list[dict[str, object]]:
         return self.service.lists(principal)
@@ -98,15 +102,15 @@ class CmailApi:
 
     def reply(
         self, principal: Principal, identifier: str, comment: str, *,
-        reply_all: bool = False, confirmed: bool = False,
+        reply_all: bool = False, confirmed: bool = False, folder: str = "INBOX",
     ) -> dict[str, object]:
-        return self.service.reply(principal, identifier, comment, reply_all=reply_all, confirmed=confirmed)
+        return self.service.reply(principal, identifier, comment, reply_all=reply_all, confirmed=confirmed, folder=folder)
 
     def forward(
         self, principal: Principal, identifier: str, recipients: list[str], comment: str, *,
-        confirmed: bool = False,
+        confirmed: bool = False, folder: str = "INBOX",
     ) -> dict[str, object]:
-        return self.service.forward(principal, identifier, recipients, comment, confirmed=confirmed)
+        return self.service.forward(principal, identifier, recipients, comment, confirmed=confirmed, folder=folder)
 
     def principal_for_owner(self, owner_id: str, capabilities: frozenset[str] | None = None) -> Principal:
         return self.service.principal_for_owner(owner_id, capabilities)

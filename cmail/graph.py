@@ -205,18 +205,19 @@ class MicrosoftGraphProvider(Provider):
         })
         result = self._call("GET", f"/me/mailFolders?{query}")
         values = result.get("value") if isinstance(result, dict) else []
-        try:
-            inbox = self._call("GET", "/me/mailFolders/inbox?%24select=id")
-        except MailError:
-            inbox = {}
-        inbox_id = str(inbox.get("id") or "") if isinstance(inbox, dict) else ""
+        known_folders = {}
+        for alias, role in (("inbox", "inbox"), ("archive", "archive"), ("deleteditems", "trash")):
+            try:
+                known = self._call("GET", f"/me/mailFolders/{alias}?%24select=id")
+            except MailError:
+                continue
+            if isinstance(known, dict) and known.get("id"):
+                known_folders[str(known["id"])] = role
         return [
             {
                 "id": str(item.get("id") or ""),
                 "name": str(item.get("displayName") or "")[:200],
-                "wellKnownName": (
-                    "inbox" if inbox_id and str(item.get("id") or "") == inbox_id else ""
-                ),
+                "wellKnownName": known_folders.get(str(item.get("id") or ""), ""),
                 "total": int(item.get("totalItemCount") or 0),
                 "unread": int(item.get("unreadItemCount") or 0),
             }

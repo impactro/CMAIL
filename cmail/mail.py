@@ -16,10 +16,17 @@ from typing import Callable, Protocol
 
 from .config import Config
 from .inline_images import add_body, normalize as normalize_inline_images
+from .store import EMAIL
 
 
 class MailError(ValueError):
     pass
+
+
+def _mailbox(value: str) -> str:
+    if not value or any(ord(char) < 32 for char in value):
+        raise MailError("Pasta de e-mail inválida.")
+    return '"' + value.replace('\\', '\\\\').replace('"', '\\"') + '"'
 
 
 class Provider(Protocol):
@@ -82,6 +89,8 @@ def _dto(message: Message, identifier: str, include_body: bool, flags: bytes = b
         "id": identifier, "subject": _decoded(message.get("Subject")),
         "from": {"name": sender_name, "address": sender_address},
         "to": _addresses(message.get_all("To", [])), "cc": _addresses(message.get_all("Cc", [])),
+        "replyTo": _addresses(message.get_all("Reply-To", [])),
+        "internetMessageId": str(message.get("Message-ID") or "")[:1024],
         "receivedAt": received, "isRead": b"\\Seen" in flags, "preview": body[:240] if body else "",
         "body": body, "bodyType": "text", "attachments": attachments,
         "hasAttachments": bool(attachments),
@@ -146,9 +155,18 @@ class ImapSmtpProvider:
             result = []
             for raw in rows or []:
                 text = raw.decode("utf-8", errors="replace") if isinstance(raw, bytes) else str(raw)
-                name = text.rsplit('"', 1)[-1].strip().strip('"')
+                match = re.fullmatch(r'\(([^)]*)\)\s+(?:"(?:[^"\\]|\\.)*"|NIL)\s+(.+)', text)
+                if not match or "\\noselect" in match[1].casefold().split():
+                    continue
+                name = match[2].strip()
+                if name.startswith('"') and name.endswith('"'):
+                    name = re.sub(r'\\(["\\])', r'\1', name[1:-1])
+                roles = {"\\inbox": "inbox", "\\sent": "sent", "\\drafts": "drafts",
+                         "\\trash": "trash", "\\junk": "junk", "\\archive": "archive"}
+                role = next((roles[flag.casefold()] for flag in match[1].split()
+                             if flag.casefold() in roles), "inbox" if name.casefold() == "inbox" else "")
                 if name:
-                    result.append({"id": name, "name": name})
+                    result.append({"id": name, "name": name, "wellKnownName": role})
             return result
         finally:
             client.logout()
@@ -156,7 +174,7 @@ class ImapSmtpProvider:
     def messages(self, folder: str, limit: int = 50) -> list[dict[str, object]]:
         client = self._imap()
         try:
-            if client.select(folder, readonly=True)[0] != "OK":
+            if client.select(_mailbox(folder), readonly=True)[0] != "OK":
                 raise MailError("Pasta de e-mail inválida.")
             status, data = client.uid("search", None, "ALL")
             if status != "OK":
@@ -180,7 +198,7 @@ class ImapSmtpProvider:
             raise MailError("Identificador de mensagem inválido.")
         client = self._imap()
         try:
-            if client.select(folder, readonly=True)[0] != "OK":
+            if client.select(_mailbox(folder), readonly=True)[0] != "OK":
                 raise MailError("Pasta de e-mail inválida.")
             status, fetched = client.uid("fetch", identifier, "(RFC822 FLAGS)")
             entry = next((item for item in fetched or [] if isinstance(item, tuple) and isinstance(item[1], bytes)), None)
@@ -190,7 +208,89 @@ class ImapSmtpProvider:
         finally:
             client.logout()
 
-    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None) -> dict[str, object]:
+    def message_actions(self) -> dict[str, bool]:
+        client = self._imap()
+        try:
+            capabilities = {item.decode("ascii") if isinstance(item, bytes) else str(item)
+                            for item in client.capabilities}
+            movable = bool({"MOVE", "UIDPLUS"} & {item.upper() for item in capabilities})
+            return {"setRead": True, "move": movable}
+        finally:
+            client.logout()
+
+    def reply(self, identifier: str, comment: str, *, reply_all: bool = False, folder: str = "INBOX") -> dict[str, object]:
+        original = self.message(folder, identifier)
+        sender = original.get("replyTo") or [original["from"]]
+        recipients = [item["address"] for item in sender]
+        if reply_all:
+            recipients.extend(item["address"] for item in original["to"] + original["cc"])
+        own = {self.config.account.casefold(), self.config.username.casefold()}
+        recipients = list(dict.fromkeys(address.strip().casefold() for address in recipients
+                                        if not reply_all or address.strip().casefold() not in own))
+        if not recipients or any(not EMAIL.fullmatch(address) for address in recipients):
+            raise MailError("A mensagem não possui destinatário de resposta válido.")
+        subject = str(original["subject"])
+        if not subject.casefold().startswith("re:"):
+            subject = "Re: " + subject
+        result = self.send(recipients, subject, comment, reply_message_id=str(original.get("internetMessageId") or ""))
+        return {**result, "action": "replyAll" if reply_all else "reply"}
+
+    def forward(self, identifier: str, recipients: list[str], comment: str, *, folder: str = "INBOX") -> dict[str, object]:
+        original = self.message(folder, identifier)
+        sender = original["from"]
+        body = (f"{comment}\n\n---------- Mensagem encaminhada ----------\n"
+                f"De: {sender['name']} <{sender['address']}>\nAssunto: {original['subject']}\n\n{original['body']}")
+        result = self.send(recipients, "Enc: " + str(original["subject"]), body)
+        return {**result, "action": "forward"}
+
+    @staticmethod
+    def _select_message(client, folder: str, identifier: str) -> None:
+        if not str(identifier).isascii() or not str(identifier).isdigit():
+            raise MailError("Identificador de mensagem inválido.")
+        if client.select(_mailbox(folder), readonly=False)[0] != "OK":
+            raise MailError("Pasta de e-mail inválida.")
+
+    def set_read(self, identifier: str, is_read: bool, *, folder: str = "INBOX") -> dict[str, object]:
+        client = self._imap()
+        try:
+            self._select_message(client, folder, identifier)
+            operation = "+FLAGS.SILENT" if is_read else "-FLAGS.SILENT"
+            if client.uid("STORE", identifier, operation, "(\\Seen)")[0] != "OK":
+                raise MailError("O servidor recusou a alteração de leitura.")
+            return {"id": identifier, "isRead": is_read}
+        finally:
+            client.logout()
+
+    def move(self, identifier: str, destination_id: str, *, folder: str = "INBOX") -> dict[str, object]:
+        if not destination_id or any(ord(char) < 32 for char in destination_id):
+            raise MailError("Pasta de destino inválida.")
+        if destination_id == folder:
+            raise MailError("Escolha uma pasta diferente da atual.")
+        client = self._imap()
+        try:
+            self._select_message(client, folder, identifier)
+            capabilities = {item.decode("ascii").upper() if isinstance(item, bytes) else str(item).upper()
+                            for item in client.capabilities}
+            # Quote mailbox names: names may contain spaces, quotes or backslashes.
+            destination = _mailbox(destination_id)
+            if "MOVE" in capabilities:
+                if client.uid("MOVE", identifier, destination)[0] != "OK":
+                    raise MailError("O servidor recusou a movimentação.")
+            elif "UIDPLUS" in capabilities:
+                if client.uid("COPY", identifier, destination)[0] != "OK":
+                    raise MailError("O servidor recusou a cópia para o destino.")
+                if client.uid("STORE", identifier, "+FLAGS.SILENT", "(\\Deleted)")[0] != "OK":
+                    raise MailError("Mensagem copiada; remoção da origem não confirmada. Atualize antes de tentar novamente.")
+                # Never EXPUNGE the whole mailbox: other messages may be marked deleted.
+                if client.uid("EXPUNGE", identifier)[0] != "OK":
+                    raise MailError("Mensagem copiada; remoção da origem incerta. Atualize antes de tentar novamente.")
+            else:
+                raise MailError("Este servidor não oferece movimentação segura por UID.")
+            return {"id": identifier, "moved": True}
+        finally:
+            client.logout()
+
+    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None, reply_message_id: str = "") -> dict[str, object]:
         message = EmailMessage()
         message["From"] = self.config.account
         if len(recipients) == 1:
@@ -201,6 +301,9 @@ class ImapSmtpProvider:
             message["To"] = self.config.account
             message["Bcc"] = ", ".join(recipients)
         message["Subject"] = subject[:500]
+        if reply_message_id and re.fullmatch(r"<[^<>\s]+>", reply_message_id):
+            message["In-Reply-To"] = reply_message_id
+            message["References"] = reply_message_id
         add_body(message, body, body_html, inline_images)
         password = self.config.password()
         client = self.smtp_ssl_factory(self.config.smtp_host, self.config.smtp_port, timeout=30) if self.config.smtp_security == "ssl" else self.smtp_factory(self.config.smtp_host, self.config.smtp_port, timeout=30)

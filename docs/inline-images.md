@@ -1,4 +1,7 @@
-# Imagens internas por CID — fonte ainda não instalada
+# Imagens internas por CID
+
+Incluídas na distribuição `26.10.28`. A instalação efetiva e o suporte anunciado
+pela API devem ser verificados em cada consumidor.
 
 Extensão opcional de `prepare-send`/`execute-send`. Usa o mesmo Principal,
 capacidade `mail.send`, prévia exata, token unitário e journal por proprietário.

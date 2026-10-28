@@ -311,8 +311,9 @@ class GmailProvider:
     def folders(self) -> list[dict[str, object]]:
         value = self._call("GET", "/labels")
         return [
-            {"id": str(item.get("id") or ""), "name": str(item.get("name") or ""), "unread": int(item.get("messagesUnread") or 0)}
-            for item in value.get("labels", []) if isinstance(item, dict) and item.get("id") != "TRASH"
+            {"id": str(item.get("id") or ""), "name": str(item.get("name") or ""), "unread": int(item.get("messagesUnread") or 0),
+             "canMoveTo": item.get("id") not in {"SENT", "DRAFT", "DRAFTS"}}
+            for item in value.get("labels", []) if isinstance(item, dict)
         ]
 
     def messages(self, folder: str, limit: int = 50) -> list[dict[str, object]]:
@@ -347,12 +348,18 @@ class GmailProvider:
         self._call("POST", f"/messages/{selected}/modify", payload)
         return {"id": identifier, "isRead": bool(is_read)}
 
-    def move(self, identifier: str, destination_id: str) -> dict[str, object]:
+    def move(self, identifier: str, destination_id: str, *, folder: str = "INBOX") -> dict[str, object]:
         selected = urllib.parse.quote(str(identifier or ""), safe="")
         destination = str(destination_id or "").strip()
         if not selected or not destination:
             raise ValueError("Mensagem e destino Gmail são obrigatórios.")
-        self._call("POST", f"/messages/{selected}/modify", {"addLabelIds": [destination], "removeLabelIds": ["INBOX"]})
+        removable = folder in {"INBOX", "TRASH", "SPAM"} or folder.startswith("Label_")
+        remove = [folder] if removable and folder != destination else []
+        payload = {"addLabelIds": [destination], "removeLabelIds": remove}
+        if destination != "TRASH":
+            payload["removeLabelIds"].append("TRASH")
+        payload["removeLabelIds"] = list(dict.fromkeys(payload["removeLabelIds"]))
+        self._call("POST", f"/messages/{selected}/modify", payload)
         return {"id": identifier, "moved": True}
 
     def reply(self, identifier: str, comment: str, *, reply_all: bool = False) -> dict[str, object]:

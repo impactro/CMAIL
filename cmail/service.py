@@ -277,24 +277,41 @@ class MailService:
         )
         return {"draftId": identifier, **result}
 
-    def set_read(self, principal: Principal, identifier: str, is_read: bool) -> dict[str, object]:
+    def message_actions(self, principal: Principal) -> dict[str, bool]:
+        principal.require(READ_MAIL)
+        selected = self.provider_for(principal)
+        actions = {"setRead": hasattr(selected, "set_read"), "move": hasattr(selected, "move"),
+                   "reply": hasattr(selected, "reply"), "forward": hasattr(selected, "forward")}
+        if hasattr(selected, "message_actions"):
+            actions.update(selected.message_actions())
+        for action in ("setRead", "move"):
+            actions[action] = actions[action] and MANAGE_MAIL in principal.capabilities
+        for action in ("reply", "forward"):
+            actions[action] = actions[action] and SEND_MAIL in principal.capabilities
+        actions["send"] = SEND_MAIL in principal.capabilities
+        actions["lists"] = MANAGE_LISTS in principal.capabilities
+        return actions
+
+    def set_read(self, principal: Principal, identifier: str, is_read: bool, *, folder: str = "INBOX") -> dict[str, object]:
         principal.require(MANAGE_MAIL)
         selected = self.provider_for(principal)
         if not hasattr(selected, "set_read"):
             raise NotImplementedError("O provedor atual não permite alterar leitura.")
-        result = selected.set_read(identifier, is_read)  # type: ignore[attr-defined]
+        options = {"folder": folder} if self.config.mode == "imap" else {}
+        result = selected.set_read(identifier, is_read, **options)  # type: ignore[attr-defined]
         self.store.record_action(
             "mark-read" if is_read else "mark-unread", "completed",
             {"messageId": str(identifier)[:1024]}, self._owner(principal),
         )
         return result
 
-    def move(self, principal: Principal, identifier: str, destination_id: str) -> dict[str, object]:
+    def move(self, principal: Principal, identifier: str, destination_id: str, *, folder: str = "INBOX") -> dict[str, object]:
         principal.require(MANAGE_MAIL)
         selected = self.provider_for(principal)
         if not hasattr(selected, "move"):
             raise NotImplementedError("O provedor atual não permite mover mensagens.")
-        result = selected.move(identifier, destination_id)  # type: ignore[attr-defined]
+        options = {"folder": folder} if self.config.mode in {"imap", "gmail", "gmail-file"} else {}
+        result = selected.move(identifier, destination_id, **options)  # type: ignore[attr-defined]
         self.store.record_action(
             "move", "completed",
             {"messageId": str(identifier)[:1024], "destinationId": str(destination_id)[:1024]},
@@ -304,7 +321,7 @@ class MailService:
 
     def reply(
         self, principal: Principal, identifier: str, comment: str, *,
-        reply_all: bool = False, confirmed: bool = False,
+        reply_all: bool = False, confirmed: bool = False, folder: str = "INBOX",
     ) -> dict[str, object]:
         principal.require(SEND_MAIL)
         if not confirmed:
@@ -314,7 +331,8 @@ class MailService:
         selected = self.provider_for(principal)
         if not hasattr(selected, "reply"):
             raise NotImplementedError("O provedor atual não permite responder mensagens.")
-        result = selected.reply(identifier, comment, reply_all=reply_all)  # type: ignore[attr-defined]
+        options = {"folder": folder} if self.config.mode == "imap" else {}
+        result = selected.reply(identifier, comment, reply_all=reply_all, **options)  # type: ignore[attr-defined]
         self.store.record_action(
             "reply-all" if reply_all else "reply", "completed",
             {"messageId": str(identifier)[:1024]}, self._owner(principal),
@@ -323,7 +341,7 @@ class MailService:
 
     def forward(
         self, principal: Principal, identifier: str, recipients: list[str], comment: str, *,
-        confirmed: bool = False,
+        confirmed: bool = False, folder: str = "INBOX",
     ) -> dict[str, object]:
         principal.require(SEND_MAIL)
         if not confirmed:
@@ -334,7 +352,8 @@ class MailService:
         selected = self.provider_for(principal)
         if not hasattr(selected, "forward"):
             raise NotImplementedError("O provedor atual não permite encaminhar mensagens.")
-        result = selected.forward(identifier, clean, comment)  # type: ignore[attr-defined]
+        options = {"folder": folder} if self.config.mode == "imap" else {}
+        result = selected.forward(identifier, clean, comment, **options)  # type: ignore[attr-defined]
         self.store.record_action(
             "forward", "completed",
             {"messageId": str(identifier)[:1024], "recipientCount": len(clean)},

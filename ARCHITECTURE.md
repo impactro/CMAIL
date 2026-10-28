@@ -30,6 +30,15 @@ Graph como texto. A tela distingue demonstração, desconectado, reconexão,
 desabilitado e conectado. Em composição, o OAuth sempre sai do `iframe` pela
 janela principal.
 
+A barra `cm-message-actions` fica no cabeçalho e acompanha a seleção atual.
+Ícones SVG locais usam `currentColor`, nomes acessíveis e os tokens públicos
+do tema; o contrato permanece `cm-*`, sem importar assets privados do host.
+Respostas de leitura antigas são descartadas ao trocar a seleção/pasta. O
+compositor conserva a mensagem de origem ao navegar. A disponibilidade de
+ações vem do serviço, combinando provider e capacidades do principal.
+No IMAP, ações usam UID e pasta explícita. Movimentação usa UID MOVE ou
+COPY/STORE/UID EXPUNGE, sem EXPUNGE geral; falha interrompe sem repetição.
+
 No standalone, a raiz operacional e seu estado aceitam uma única identidade:
 duas contas exigem duas pastas, dois JSONs/estados e duas portas. Não existe
 seleção de conta nem multiplexação por `workspaceId` dentro de uma autoexecução.
