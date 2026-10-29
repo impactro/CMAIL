@@ -317,12 +317,24 @@
   });
   document.querySelector('#cancelMove').addEventListener('click', () => document.querySelector('#moveDialog').close());
   document.querySelector('#archiveMessage').addEventListener('click', () => { const target = targetFolder('archive'); if (target) moveSelected(target.id).catch(showError); });
-  document.querySelector('#trashMessage').addEventListener('click', () => {
+  async function performDeletion(snapshot) {
+    if (busy) return;
+    busy = true; updateActions();
+    try {
+      const action = snapshot.permanent ? 'delete-permanently' : 'trash';
+      const payload = snapshot.permanent ? {folder: snapshot.folder, confirmed: true} : {folder: snapshot.folder};
+      await json(`/api/messages/${encodeURIComponent(snapshot.id)}/${action}`, effect('POST', payload));
+      clearSelection(); await loadFolders(); await loadMessages();
+      setNotice(snapshot.permanent ? 'Mensagem excluída definitivamente.' : 'Mensagem movida para a Lixeira.');
+      document.querySelector('#trashDialog').close();
+    } catch (error) { document.querySelector('#trashDialog').close(); clearSelection(); showError(error); }
+    finally { busy = false; updateActions(); }
+  }
+  document.querySelector('#trashMessage').addEventListener('click', async () => {
     if (!selectedMessage || busy) return;
-    pendingDelete = {id: selectedMessage.id, folder, permanent: inTrash()};
-    document.querySelector('#trashTitle').textContent = pendingDelete.permanent ? 'Excluir definitivamente?' : 'Excluir mensagem?';
-    document.querySelector('#deleteExplanation').textContent = pendingDelete.permanent ? 'Esta mensagem será excluída definitivamente. Não será possível recuperá-la pelo webmail.' : 'A mensagem será movida para a Lixeira e poderá ser recuperada.';
-    document.querySelector('#confirmTrash').textContent = pendingDelete.permanent ? 'Excluir definitivamente' : 'Excluir';
+    const snapshot = {id: selectedMessage.id, folder, permanent: inTrash()};
+    if (!snapshot.permanent) { await performDeletion(snapshot); return; }
+    pendingDelete = snapshot;
     document.querySelector('#trashSubject').textContent = selectedMessage.subject || '(sem assunto)';
     document.querySelector('#trashDialog').showModal(); document.querySelector('#cancelTrash').focus();
   });
@@ -331,15 +343,7 @@
   document.querySelector('#confirmTrash').addEventListener('click', async () => {
     if (busy || !pendingDelete) return;
     const snapshot = pendingDelete; pendingDelete = null;
-    busy = true; updateActions();
-    try {
-      const action = snapshot.permanent ? 'delete-permanently' : 'trash';
-      await json(`/api/messages/${encodeURIComponent(snapshot.id)}/${action}`, effect('POST', {folder: snapshot.folder, confirmed: true}));
-      clearSelection(); await loadFolders(); await loadMessages();
-      setNotice(snapshot.permanent ? 'Mensagem excluída definitivamente.' : 'Mensagem movida para a Lixeira.');
-      document.querySelector('#trashDialog').close();
-    } catch (error) { document.querySelector('#trashDialog').close(); clearSelection(); showError(error); }
-    finally { busy = false; updateActions(); }
+    await performDeletion(snapshot);
   });
   for (const [id, direction] of [['previousMessage', -1], ['nextMessage', 1]]) {
     document.getElementById(id).addEventListener('click', () => {

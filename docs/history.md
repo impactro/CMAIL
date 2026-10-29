@@ -1,5 +1,16 @@
 # Histórico
 
+## 2026-10-29 — Confirmação somente na exclusão definitiva — 26.10.29b
+
+- Componente `26.10.29b`, distribuição `26.10.29.post1`.
+
+- Excluir fora da lixeira move imediatamente, sem modal nem flag de confirmação
+  obrigatória na API. `mail.manage`, CSRF, contexto da pasta e auditoria permanecem.
+- Dentro da lixeira, Excluir mantém confirmação explícita e aviso de exclusão
+  definitiva. Mesmo botão, ícone, cor e operações de API distintas.
+- Testes de navegador verificam POST direto para lixeira sem clique adicional
+  e cancelamento/confirmação da exclusão definitiva apenas dentro dela.
+
 ## 2026-10-29 — Excluir por contexto e APIs distintas — 26.10.29a
 
 - Componente `26.10.29a`, distribuição `26.10.29`; instalação e validação do

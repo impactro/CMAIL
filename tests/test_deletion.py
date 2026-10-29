@@ -15,17 +15,16 @@ from test_cmail import config
 from test_frontend_playwright import ContextMailbox
 
 
-def test_api_trash_and_permanent_delete_are_separate_confirmed_operations(tmp_path):
+def test_api_only_permanent_delete_requires_confirmation(tmp_path):
     mailbox = ContextMailbox()
     service = MailService(config(tmp_path), mailbox)
     api, operator = CmailApi(service), Principal.local_operator()
-    for operation in (api.trash_message, api.delete_permanently):
-        with pytest.raises(ValueError, match="confirmação"):
-            operation(operator, "one", folder="INBOX")
+    with pytest.raises(ValueError, match="confirmação"):
+        api.delete_permanently(operator, "one", folder="Trash")
     with pytest.raises(ValueError, match="lixeira"):
         api.delete_permanently(operator, "one", folder="INBOX", confirmed=True)
     assert mailbox.moves == [] and mailbox.deleted == []
-    assert api.trash_message(operator, "one", confirmed=True)["trashed"]
+    assert api.trash_message(operator, "one")["trashed"]
     assert mailbox.locations["one"] == "Trash" and mailbox.deleted == []
     with pytest.raises(ValueError, match="separada"):
         api.trash_message(operator, "one", folder="Trash", confirmed=True)
@@ -64,7 +63,7 @@ def test_opaque_draft_values_remain_cli_safe_with_leading_hyphen_randomness(tmp_
     assert store.claim(draft["draftId"], draft["confirmationToken"])["body"] == "Synthetic"
 
 
-def test_distinct_http_routes_require_csrf_and_explicit_confirmation(tmp_path):
+def test_http_trash_is_immediate_but_permanent_deletion_requires_confirmation(tmp_path):
     mailbox = ContextMailbox()
     client = TestClient(create_app(config(tmp_path), MailService(config(tmp_path), mailbox)))
     page = client.get("/")
@@ -73,10 +72,10 @@ def test_distinct_http_routes_require_csrf_and_explicit_confirmation(tmp_path):
     for operation in ("trash", "delete-permanently"):
         route = f"/api/messages/one/{operation}"
         assert client.post(route, json={"folder": "Trash", "confirmed": True}).status_code == 403
-        assert client.post(route, headers=headers, json={"folder": "Trash"}).status_code == 400
+    assert client.post("/api/messages/one/delete-permanently", headers=headers, json={"folder": "Trash"}).status_code == 400
     assert client.post("/api/messages/one/delete-permanently", headers=headers, json={"folder": "INBOX", "confirmed": True}).status_code == 400
     assert mailbox.moves == [] and mailbox.deleted == []
-    assert client.post("/api/messages/one/trash", headers=headers, json={"folder": "INBOX", "confirmed": True}).status_code == 200
+    assert client.post("/api/messages/one/trash", headers=headers, json={"folder": "INBOX"}).status_code == 200
     assert mailbox.deleted == []
     assert client.post("/api/messages/one/delete-permanently", headers=headers, json={"folder": "Trash", "confirmed": True}).status_code == 200
     assert mailbox.deleted == ["one"]

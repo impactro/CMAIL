@@ -297,8 +297,7 @@ class MailService:
 
     def trash_message(self, principal: Principal, identifier: str, *, folder: str = "INBOX", confirmed: bool = False) -> dict[str, object]:
         principal.require(MANAGE_MAIL)
-        if not confirmed:
-            raise ValueError("Mover para a lixeira exige confirmação explícita.")
+        # `confirmed` remains accepted for compatibility; recoverable deletion is immediate.
         selected = self.provider_for(principal)
         targets = [item for item in selected.folders() if folder_role(item) == "trash"]
         if not targets:

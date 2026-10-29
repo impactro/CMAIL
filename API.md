@@ -79,18 +79,20 @@ de sistema não podem ser aplicados manualmente, conforme o
 
 | Intenção | API Python | HTTP | Efeito |
 | --- | --- | --- | --- |
-| Mover para a lixeira | `trash_message(principal, id, folder="INBOX", confirmed=True)` | `POST /api/messages/{id}/trash` | Recuperável; nunca exclui definitivamente como fallback |
+| Mover para a lixeira | `trash_message(principal, id, folder="INBOX")` | `POST /api/messages/{id}/trash` | Imediato e recuperável; não exige confirmação |
 | Excluir definitivamente | `delete_permanently(principal, id, folder=TRASH_ID, confirmed=True)` | `POST /api/messages/{id}/delete-permanently` | Exclusão definitiva de uma mensagem já na lixeira |
 
-As rotas recebem `folder` e `confirmed: true` no JSON. Ambas exigem
-`mail.manage`; as rotas web também exigem CSRF. O serviço resolve a lixeira
+Ambas recebem `folder` no JSON; somente a exclusão definitiva exige
+`confirmed: true`. O parâmetro Python legado `confirmed` de `trash_message`
+continua aceito, mas não é necessário. Ambas exigem `mail.manage`; as rotas
+web também exigem CSRF. O serviço resolve a lixeira
 da conta, recusa a exclusão definitiva fora dela e registra ações separadas
 `trash`/`delete-permanently`. Não existe parâmetro genérico que converta uma
 movimentação em exclusão definitiva, nem exclusão definitiva automática quando
 a conta não oferece lixeira.
 
 O botão visual é sempre **Excluir**, com o mesmo ícone e cor. Fora da lixeira,
-sua confirmação explica a recuperação; dentro dela, a confirmação diz **Excluir
+ele move a mensagem imediatamente, sem modal; dentro dela, a confirmação diz **Excluir
 definitivamente** e informa que a mensagem não poderá ser recuperada pelo webmail.
 Existindo lixeira, `trash` é independente do flag genérico `move`. Falta de
 capacidade de exclusão definitiva mantém o botão contextual desabilitado na

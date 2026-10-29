@@ -116,10 +116,10 @@
     </form>
   </dialog>
   <dialog id="trashDialog" aria-labelledby="trashTitle">
-    <h2 id="trashTitle">Excluir mensagem?</h2>
+    <h2 id="trashTitle">Excluir definitivamente?</h2>
     <p id="trashSubject" class="cm-dialog-subject"></p>
-    <p id="deleteExplanation">A mensagem será movida para a Lixeira e poderá ser recuperada.</p>
-    <div class="dialog-actions"><button id="cancelTrash" class="quiet-button" type="button">Cancelar</button><button id="confirmTrash" class="cm-danger-button" type="button">Excluir</button></div>
+    <p id="deleteExplanation">Esta mensagem será excluída definitivamente. Não será possível recuperá-la pelo webmail.</p>
+    <div class="dialog-actions"><button id="cancelTrash" class="quiet-button" type="button">Cancelar</button><button id="confirmTrash" class="cm-danger-button" type="button">Excluir definitivamente</button></div>
   </dialog>
 {% endif %}
 <script src="{{ base_path }}/static/app.js" defer></script>

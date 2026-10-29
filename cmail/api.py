@@ -34,7 +34,7 @@ class CmailApi:
                 "message-actions": {"capability": "mail.read", "effect": "network-read"},
                 "set-read": {"capability": "mail.manage", "effect": "external-write"},
                 "move": {"capability": "mail.manage", "effect": "external-write"},
-                "trash-message": {"capability": "mail.manage", "effect": "external-write-confirmed"},
+                "trash-message": {"capability": "mail.manage", "effect": "external-write"},
                 "delete-permanently": {"capability": "mail.manage", "effect": "irreversible-external-write-confirmed"},
                 "lists": {"capability": "lists.manage", "effect": "read-local"},
                 "save-list": {"capability": "lists.manage", "effect": "write-local"},

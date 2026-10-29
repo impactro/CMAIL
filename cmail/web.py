@@ -434,7 +434,6 @@ def _create_module_app(
         value = await _payload(request)
         return {"ok": True, "message": current.trash_message(
             principal, identifier, folder=str(value.get("folder") or "INBOX")[:512],
-            confirmed=value.get("confirmed") is True,
         )}
 
     @app.post("/api/messages/{identifier}/delete-permanently")

@@ -191,9 +191,6 @@ def test_context_toolbar_selection_mutations_and_responsive_layout(tmp_path):
             page.locator("#toggleRead").click()
             page.get_by_role("button", name="Marcar como não lida", exact=True).wait_for()
             assert mailbox.items[0]["isRead"]
-            page.locator("#trashMessage").click()
-            page.locator("#cancelTrash").click()
-            assert mailbox.moves == []
             page.locator("#moveMessage").click()
             page.locator("#destinationFolder").select_option("Archive")
             page.locator("#confirmMove").click()
@@ -205,8 +202,7 @@ def test_context_toolbar_selection_mutations_and_responsive_layout(tmp_path):
             page.locator(".message-item").click()
             page.locator("#messageActions").wait_for(state="visible")
             page.locator("#trashMessage").click()
-            page.locator("#confirmTrash").click()
-            page.locator("#trashDialog").wait_for(state="hidden")
+            page.locator("#messageActions").wait_for(state="hidden")
             assert mailbox.moves[-1] == ("two", "Trash")
             assert errors == []
             browser.close()
@@ -269,12 +265,10 @@ def test_same_delete_button_trashes_then_permanently_deletes_synthetic_message(t
             expect(remove).to_be_enabled()
             assert page.locator("#moveMessage").is_hidden()
             color = remove.evaluate("node => getComputedStyle(node).color")
-            remove.click()
-            expect(page.locator("#trashTitle")).to_have_text("Excluir mensagem?")
-            page.locator("#cancelTrash").click()
-            assert mailbox.moves == [] and mailbox.deleted == []
-            remove.click()
-            page.locator("#confirmTrash").click()
+            with page.expect_request(lambda request: request.url.endswith('/api/messages/one/trash')) as sent_to_trash:
+                remove.click()
+            assert sent_to_trash.value.post_data_json == {"folder": "INBOX"}
+            expect(page.locator("#messageActions")).not_to_be_visible()
             expect(page.locator("#trashDialog")).not_to_be_visible()
             assert mailbox.locations["one"] == "Trash" and mailbox.deleted == []
             page.locator('.cm-folder[data-id="Trash"]').click()
