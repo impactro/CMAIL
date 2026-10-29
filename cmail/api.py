@@ -34,6 +34,8 @@ class CmailApi:
                 "message-actions": {"capability": "mail.read", "effect": "network-read"},
                 "set-read": {"capability": "mail.manage", "effect": "external-write"},
                 "move": {"capability": "mail.manage", "effect": "external-write"},
+                "trash-message": {"capability": "mail.manage", "effect": "external-write-confirmed"},
+                "delete-permanently": {"capability": "mail.manage", "effect": "irreversible-external-write-confirmed"},
                 "lists": {"capability": "lists.manage", "effect": "read-local"},
                 "save-list": {"capability": "lists.manage", "effect": "write-local"},
                 "prepare-send": {"capability": "mail.send", "effect": "write-local"},
@@ -87,6 +89,12 @@ class CmailApi:
 
     def move(self, principal: Principal, identifier: str, destination_id: str, *, folder: str = "INBOX") -> dict[str, object]:
         return self.service.move(principal, identifier, destination_id, folder=folder)
+
+    def trash_message(self, principal: Principal, identifier: str, *, folder: str = "INBOX", confirmed: bool = False) -> dict[str, object]:
+        return self.service.trash_message(principal, identifier, folder=folder, confirmed=confirmed)
+
+    def delete_permanently(self, principal: Principal, identifier: str, *, folder: str, confirmed: bool = False) -> dict[str, object]:
+        return self.service.delete_permanently(principal, identifier, folder=folder, confirmed=confirmed)
 
     def lists(self, principal: Principal) -> list[dict[str, object]]:
         return self.service.lists(principal)

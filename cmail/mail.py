@@ -17,6 +17,7 @@ from typing import Callable, Protocol
 from .config import Config
 from .inline_images import add_body, normalize as normalize_inline_images
 from .store import EMAIL
+from .folder_roles import folder_role
 
 
 class MailError(ValueError):
@@ -211,12 +212,21 @@ class ImapSmtpProvider:
     def message_actions(self) -> dict[str, bool]:
         client = self._imap()
         try:
-            capabilities = {item.decode("ascii") if isinstance(item, bytes) else str(item)
-                            for item in client.capabilities}
-            movable = bool({"MOVE", "UIDPLUS"} & {item.upper() for item in capabilities})
-            return {"setRead": True, "move": movable}
+            capabilities = self._capabilities(client)
+            movable = bool({"MOVE", "UIDPLUS", "IMAP4REV2"} & capabilities)
+            return {"setRead": True, "move": movable, "trash": True,
+                    "deletePermanently": bool({"UIDPLUS", "IMAP4REV2"} & capabilities)}
         finally:
             client.logout()
+
+    @staticmethod
+    def _capabilities(client) -> set[str]:
+        # imaplib's connection cache can predate LOGIN. Query in AUTH state.
+        status, rows = client.capability()
+        if status != "OK" or not isinstance(rows, (list, tuple)):
+            raise MailError("O servidor não confirmou os recursos IMAP após o login.")
+        return {flag.upper() for row in rows if isinstance(row, (bytes, str))
+                for flag in (row.decode("ascii") if isinstance(row, bytes) else row).split()}
 
     def reply(self, identifier: str, comment: str, *, reply_all: bool = False, folder: str = "INBOX") -> dict[str, object]:
         original = self.message(folder, identifier)
@@ -269,11 +279,10 @@ class ImapSmtpProvider:
         client = self._imap()
         try:
             self._select_message(client, folder, identifier)
-            capabilities = {item.decode("ascii").upper() if isinstance(item, bytes) else str(item).upper()
-                            for item in client.capabilities}
+            capabilities = self._capabilities(client)
             # Quote mailbox names: names may contain spaces, quotes or backslashes.
             destination = _mailbox(destination_id)
-            if "MOVE" in capabilities:
+            if "MOVE" in capabilities or "IMAP4REV2" in capabilities:
                 if client.uid("MOVE", identifier, destination)[0] != "OK":
                     raise MailError("O servidor recusou a movimentação.")
             elif "UIDPLUS" in capabilities:
@@ -287,6 +296,30 @@ class ImapSmtpProvider:
             else:
                 raise MailError("Este servidor não oferece movimentação segura por UID.")
             return {"id": identifier, "moved": True}
+        finally:
+            client.logout()
+
+    def trash(self, identifier: str, destination_id: str, *, folder: str = "INBOX") -> dict[str, object]:
+        targets = {str(item["id"]) for item in self.folders() if folder_role(item) == "trash"}
+        if destination_id not in targets:
+            raise MailError("A pasta de destino não é uma lixeira reconhecida.")
+        return {**self.move(identifier, destination_id, folder=folder), "trashed": True}
+
+    def delete_permanently(self, identifier: str, *, folder: str = "INBOX") -> dict[str, object]:
+        targets = {str(item["id"]) for item in self.folders() if folder_role(item) == "trash"}
+        if folder not in targets:
+            raise MailError("A exclusão definitiva exige uma mensagem na lixeira.")
+        client = self._imap()
+        try:
+            capabilities = self._capabilities(client)
+            if not {"UIDPLUS", "IMAP4REV2"} & capabilities:
+                raise MailError("Este servidor não permite exclusão definitiva isolada por UID.")
+            self._select_message(client, folder, identifier)
+            if client.uid("STORE", identifier, "+FLAGS.SILENT", "(\\Deleted)")[0] != "OK":
+                raise MailError("O servidor recusou a exclusão definitiva.")
+            if client.uid("EXPUNGE", identifier)[0] != "OK":
+                raise MailError("Exclusão definitiva incerta. Atualize antes de tentar novamente.")
+            return {"id": identifier, "deletedPermanently": True}
         finally:
             client.logout()
 

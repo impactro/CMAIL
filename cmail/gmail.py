@@ -125,6 +125,11 @@ class GoogleAuthService:
             if float(item["created"]) >= cutoff
         }
 
+    def granted_scopes(self, identity_id: str) -> set[str]:
+        value = self._token_file(identity_id).load() or {}
+        scopes = value.get("scope", value.get("scopes", []))
+        return set(scopes.split() if isinstance(scopes, str) else scopes) if isinstance(scopes, (str, list, tuple)) else set()
+
     def begin(self, owner_id: str = "") -> tuple[str, str]:
         if self.config.mode != "gmail":
             raise AuthenticationError("Login Google não está habilitado.")
@@ -307,6 +312,32 @@ class GmailProvider:
     def status(self) -> dict[str, object]:
         profile = self._call("GET", "/profile")
         return {"provider": "gmail", "connected": True, "account": str(profile.get("emailAddress") or ""), "externalEffects": True}
+
+    def message_actions(self) -> dict[str, bool]:
+        getter = getattr(self.auth, "granted_scopes", None)
+        scopes = getter(self.identity_id) if callable(getter) else set()
+        return {"trash": True, "deletePermanently": isinstance(scopes, (set, frozenset)) and "https://mail.google.com/" in scopes}
+
+    def trash(self, identifier: str, destination_id: str, *, folder: str = "INBOX") -> dict[str, object]:
+        if destination_id != "TRASH":
+            raise ValueError("A pasta de destino não é a lixeira Gmail.")
+        selected = urllib.parse.quote(str(identifier or ""), safe="")
+        if not selected:
+            raise ValueError("Mensagem Gmail inválida.")
+        self._call("POST", f"/messages/{selected}/trash")
+        return {"id": identifier, "trashed": True}
+
+    def delete_permanently(self, identifier: str, *, folder: str = "INBOX") -> dict[str, object]:
+        if not self.message_actions()["deletePermanently"]:
+            raise PermissionError("A autorização Gmail atual não permite exclusão definitiva; exige https://mail.google.com/.")
+        selected = urllib.parse.quote(str(identifier or ""), safe="")
+        if not selected or folder != "TRASH":
+            raise ValueError("A exclusão definitiva exige uma mensagem na lixeira.")
+        message = self._call("GET", f"/messages/{selected}?format=minimal")
+        if "TRASH" not in message.get("labelIds", []):
+            raise ValueError("A mensagem não está na lixeira.")
+        self._call("DELETE", f"/messages/{selected}", expected=(200, 204))
+        return {"id": identifier, "deletedPermanently": True}
 
     def folders(self) -> list[dict[str, object]]:
         value = self._call("GET", "/labels")

@@ -38,6 +38,12 @@ compositor conserva a mensagem de origem ao navegar. A disponibilidade de
 ações vem do serviço, combinando provider e capacidades do principal.
 No IMAP, ações usam UID e pasta explícita. Movimentação usa UID MOVE ou
 COPY/STORE/UID EXPUNGE, sem EXPUNGE geral; falha interrompe sem repetição.
+CAPABILITY é consultado após autenticar, evitando o cache anterior ao LOGIN.
+`trash_message` e `delete_permanently` são casos de uso distintos, com
+`mail.manage`, confirmação e auditoria próprias. O botão Excluir conserva
+ícone/cor e escolhe a operação pelo contexto da pasta. Exclusão definitiva
+exige lixeira reconhecida no serviço; Graph/Gmail também verificam a pertença
+real da mensagem, e IMAP opera somente no UID da pasta selecionada.
 
 No standalone, a raiz operacional e seu estado aceitam uma única identidade:
 duas contas exigem duas pastas, dois JSONs/estados e duas portas. Não existe

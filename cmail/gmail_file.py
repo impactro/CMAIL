@@ -125,6 +125,12 @@ class GmailFileAuth:
         if status != 200 or not email.isascii() or not secrets.compare_digest(email, self.config.gmail_file_account):
             raise AuthenticationError("O Gmail não confirmou a conta configurada.")
 
+    def granted_scopes(self, identity_id=""):
+        if identity_id:
+            raise AuthenticationError("gmail-file não aceita identidade web.")
+        scopes = self._credentials().get("scopes", [])
+        return set(scopes.split() if isinstance(scopes, str) else scopes) if isinstance(scopes, (str, list, tuple)) else set()
+
     def access_token(self, identity_id="", *, force_refresh=False):
         if identity_id:
             raise AuthenticationError("gmail-file não aceita identidade web.")

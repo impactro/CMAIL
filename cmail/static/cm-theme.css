@@ -49,6 +49,7 @@
 .cm-page.cm-webmail .cm-action:not(:disabled):hover { background:var(--cm-soft); border-color:var(--ca-ui-border); filter:none; }
 .cm-page.cm-webmail .cm-action:disabled { opacity:.35; cursor:default; filter:none; }
 .cm-page.cm-webmail .cm-action-danger { color:var(--ca-ui-danger); }
+.cm-page.cm-webmail #trashMessage:is(:hover,:focus-visible)::after { content:attr(title); }
 .cm-page.cm-webmail .cm-action:not(:disabled):is(:hover,:focus-visible)::after { content:attr(aria-label); position:absolute; top:calc(100% + 8px); left:50%; transform:translateX(-50%); z-index:30; width:max-content; max-width:210px; padding:6px 9px; border:1px solid var(--ca-ui-border); border-radius:var(--ca-ui-radius); background:var(--ca-ui-surface); color:var(--ca-ui-text); font-size:12px; line-height:1.4; font-weight:500; pointer-events:none; box-shadow:0 4px 12px #0002; }
 .cm-page.cm-webmail .cm-action-divider { width:1px; height:20px; margin:0 5px; background:var(--ca-ui-border); }
 .cm-page.cm-webmail .cm-sidebar { min-height:0; padding:18px 12px; }

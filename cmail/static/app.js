@@ -18,6 +18,7 @@
   let composeMessage = null;
   let mailFolders = [], messageItems = [], actions = {};
   let busy = false, readerVersion = 0, listVersion = 0;
+  let pendingDelete = null;
 
   function icon(name) {
     const node = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -42,6 +43,7 @@
   }
   function folderLabel(item) { return folderLabels[folderRole(item)] || item.name || item.id; }
   function targetFolder(role) { return mailFolders.find(item => folderRole(item) === role && item.id !== folder); }
+  function inTrash() { return folderRole(mailFolders.find(item => item.id === folder) || {}) === 'trash'; }
   function updateActions() {
     const selected = Boolean(selectedMessage);
     document.querySelector('#messageActions').hidden = !selected;
@@ -50,7 +52,11 @@
       node.hidden = !actions[node.dataset.capability]; node.disabled = busy;
     });
     document.querySelector('#archiveMessage').hidden = !actions.move || !targetFolder('archive');
-    document.querySelector('#trashMessage').hidden = !actions.move || !targetFolder('trash');
+    const remove = document.querySelector('#trashMessage');
+    remove.hidden = !actions.trash || !mailFolders.some(item => folderRole(item) === 'trash');
+    remove.disabled = busy || (inTrash() && !actions.deletePermanently);
+    remove.title = inTrash() ? (actions.deletePermanently ? 'Excluir definitivamente' : 'Exclusão definitiva indisponível nesta autorização ou servidor') : 'Excluir — mover para a lixeira';
+    document.querySelector('#deleteContext').textContent = remove.title;
     document.querySelector('#moveMessage').disabled = busy || !mailFolders.some(item => item.id !== folder && item.canMoveTo !== false);
     const label = selectedMessage?.isRead ? 'Marcar como não lida' : 'Marcar como lida';
     const read = document.querySelector('#toggleRead');
@@ -312,15 +318,28 @@
   document.querySelector('#cancelMove').addEventListener('click', () => document.querySelector('#moveDialog').close());
   document.querySelector('#archiveMessage').addEventListener('click', () => { const target = targetFolder('archive'); if (target) moveSelected(target.id).catch(showError); });
   document.querySelector('#trashMessage').addEventListener('click', () => {
-    if (!selectedMessage) return;
+    if (!selectedMessage || busy) return;
+    pendingDelete = {id: selectedMessage.id, folder, permanent: inTrash()};
+    document.querySelector('#trashTitle').textContent = pendingDelete.permanent ? 'Excluir definitivamente?' : 'Excluir mensagem?';
+    document.querySelector('#deleteExplanation').textContent = pendingDelete.permanent ? 'Esta mensagem será excluída definitivamente. Não será possível recuperá-la pelo webmail.' : 'A mensagem será movida para a Lixeira e poderá ser recuperada.';
+    document.querySelector('#confirmTrash').textContent = pendingDelete.permanent ? 'Excluir definitivamente' : 'Excluir';
     document.querySelector('#trashSubject').textContent = selectedMessage.subject || '(sem assunto)';
     document.querySelector('#trashDialog').showModal(); document.querySelector('#cancelTrash').focus();
   });
-  document.querySelector('#cancelTrash').addEventListener('click', () => document.querySelector('#trashDialog').close());
+  document.querySelector('#cancelTrash').addEventListener('click', () => { pendingDelete = null; document.querySelector('#trashDialog').close(); });
+  document.querySelector('#trashDialog').addEventListener('cancel', () => { pendingDelete = null; });
   document.querySelector('#confirmTrash').addEventListener('click', async () => {
-    const target = targetFolder('trash'); if (!target) return;
-    try { await moveSelected(target.id); document.querySelector('#trashDialog').close(); }
-    catch (error) { document.querySelector('#trashDialog').close(); showError(error); }
+    if (busy || !pendingDelete) return;
+    const snapshot = pendingDelete; pendingDelete = null;
+    busy = true; updateActions();
+    try {
+      const action = snapshot.permanent ? 'delete-permanently' : 'trash';
+      await json(`/api/messages/${encodeURIComponent(snapshot.id)}/${action}`, effect('POST', {folder: snapshot.folder, confirmed: true}));
+      clearSelection(); await loadFolders(); await loadMessages();
+      setNotice(snapshot.permanent ? 'Mensagem excluída definitivamente.' : 'Mensagem movida para a Lixeira.');
+      document.querySelector('#trashDialog').close();
+    } catch (error) { document.querySelector('#trashDialog').close(); clearSelection(); showError(error); }
+    finally { busy = false; updateActions(); }
   });
   for (const [id, direction] of [['previousMessage', -1], ['nextMessage', 1]]) {
     document.getElementById(id).addEventListener('click', () => {

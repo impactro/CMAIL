@@ -282,6 +282,19 @@ class MicrosoftGraphProvider(Provider):
         self._call("POST", f"/me/messages/{selected}/{action}", {"comment": str(comment)[:200_000]}, expected=(202,))
         return {"accepted": True, "action": action}
 
+    def trash(self, identifier: str, destination_id: str, *, folder: str = "INBOX") -> dict[str, object]:
+        return {**self.move(identifier, destination_id), "trashed": True}
+
+    def delete_permanently(self, identifier: str, *, folder: str = "INBOX") -> dict[str, object]:
+        selected = _identifier(identifier, "Mensagem")
+        trash = self._call("GET", "/me/mailFolders/deleteditems?%24select=id")
+        trash_id = str(trash.get("id") or "") if isinstance(trash, dict) else ""
+        message = self._call("GET", f"/me/messages/{selected}?%24select=id,parentFolderId")
+        if not trash_id or folder != trash_id or not isinstance(message, dict) or message.get("parentFolderId") != trash_id:
+            raise MailError("A exclusão definitiva exige uma mensagem na lixeira.")
+        self._call("POST", f"/me/messages/{selected}/permanentDelete", expected=(204,))
+        return {"id": identifier, "deletedPermanently": True}
+
     def forward(self, identifier: str, recipients: list[str], comment: str) -> dict[str, object]:
         selected = _identifier(identifier, "Mensagem")
         payload = {

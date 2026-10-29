@@ -1,5 +1,27 @@
 # Histórico
 
+## 2026-10-29 — Excluir por contexto e APIs distintas — 26.10.29a
+
+- Componente `26.10.29a`, distribuição `26.10.29`; instalação e validação do
+  consumidor são registradas separadamente do empacotamento do fonte.
+
+- Botão Excluir mantém ícone/cor: fora da lixeira, move para ela; dentro dela,
+  solicita confirmação explícita de exclusão definitiva. API Python e HTTP
+  separam `trash_message`/`trash` de `delete_permanently`/`delete-permanently`.
+  Serviço verifica contexto, capabilities e confirmação; auditoria é distinta.
+- Lixeira não depende do flag genérico de movimentação. CAPABILITY IMAP passa
+  a ser consultado após autenticar; o cache anterior ao LOGIN podia ocultar
+  incorretamente ações. Expurgo definitivo IMAP é restrito ao UID na lixeira.
+- Graph/Gmail conferem a pasta/marcador real antes de excluir definitivamente.
+  Gmail respeita o grant já concedido, sem ampliar consentimento automaticamente.
+- Regressão também expôs intermitência preexistente de IDs/tokens aleatórios
+  iniciados por hífen na CLI. Prefixos fixos nos novos valores opacos evitam
+  interpretação como opção; confirmações anteriores continuam válidas.
+- 154 testes aprovados, incluindo cinco de navegador e regressões de
+  confirmação, CSRF, pasta real, CAPABILITY pós-login e UID isolado.
+  Validação somente com contas, provedores e mensagens sintéticas; não equivale
+  à homologação de exclusão em uma caixa real.
+
 ## 2026-10-28 — Barra contextual e organização do Webmail — 26.10.28a
 
 - Componente `26.10.28a`, distribuição Python `26.10.28`, incluindo as imagens

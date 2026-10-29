@@ -17,6 +17,7 @@ def imap_provider(tmp_path, capabilities=(b"IMAP4rev1", b"MOVE")):
     selected = replace(config(tmp_path), mode="imap")
     client = Mock()
     client.capabilities = capabilities
+    client.capability.return_value = ("OK", [b" ".join(capabilities)])
     client.select.return_value = ("OK", [])
     client.uid.return_value = ("OK", [])
     provider = ImapSmtpProvider(selected)
@@ -60,7 +61,7 @@ def test_imap_moves_only_selected_uid_never_expunge_mailbox(tmp_path, capabiliti
 
 def test_imap_without_safe_move_support_never_copies_or_deletes(tmp_path):
     _, provider, client = imap_provider(tmp_path, (b"IMAP4rev1",))
-    assert provider.message_actions() == {"setRead": True, "move": False}
+    assert provider.message_actions() == {"setRead": True, "move": False, "trash": True, "deletePermanently": False}
     with pytest.raises(MailError, match="segura"):
         provider.move("42", "Trash")
     client.uid.assert_not_called()
@@ -82,7 +83,7 @@ def test_api_actions_respect_principal_and_web_mutations_require_csrf(tmp_path):
     api = CmailApi(service)
     readonly = Principal("", "", frozenset({"mail.read"}))
     actions = api.message_actions(readonly)
-    assert actions == {"setRead": False, "move": False, "reply": False, "forward": False, "send": False, "lists": False}
+    assert actions == {"setRead": False, "move": False, "reply": False, "forward": False, "trash": False, "deletePermanently": False, "send": False, "lists": False}
     with pytest.raises(PermissionError):
         api.move(readonly, "42", "Trash")
     imap.uid.assert_not_called()
@@ -95,6 +96,38 @@ def test_api_actions_respect_principal_and_web_mutations_require_csrf(tmp_path):
     imap.select.assert_called_with('"Projects"', readonly=False)
     assert web.post("/api/messages/42/move", headers={"X-CSRF-Token": csrf}, json={"destinationId": "Trash", "folder": "Projects"}).status_code == 200
     assert service.history(Principal("local-imap", "", frozenset({"mail.read"})))[0]["action"] == "move"
+
+
+def test_imap_capabilities_are_queried_after_login_instead_of_cached(tmp_path):
+    _, provider, client = imap_provider(tmp_path, (b"IMAP4rev1",))
+    client.capability.return_value = ("OK", [b"IMAP4rev1 MOVE UIDPLUS"])
+    assert provider.message_actions()["move"]
+    assert provider.message_actions()["deletePermanently"]
+    provider.move("42", "Trash")
+    client.uid.assert_called_once_with("MOVE", "42", '"Trash"')
+
+
+def test_imap_permanent_delete_only_expunge_selected_trash_uid(tmp_path):
+    _, provider, client = imap_provider(tmp_path, (b"UIDPLUS",))
+    provider.folders = Mock(return_value=[{"id": "INBOX.Trash", "name": "INBOX.Trash"}])
+    with pytest.raises(MailError, match="lixeira"):
+        provider.delete_permanently("42", folder="INBOX")
+    client.uid.assert_not_called()
+    assert provider.delete_permanently("42", folder="INBOX.Trash")["deletedPermanently"]
+    assert client.uid.call_args_list == [call("STORE", "42", "+FLAGS.SILENT", "(\\Deleted)"), call("EXPUNGE", "42")]
+    client.expunge.assert_not_called()
+
+
+@pytest.mark.parametrize("capabilities,failed_step", [((b"MOVE",), -1), ((b"UIDPLUS",), 0), ((b"UIDPLUS",), 1)])
+def test_imap_permanent_delete_fails_without_broad_expunge_or_retry(tmp_path, capabilities, failed_step):
+    _, provider, client = imap_provider(tmp_path, capabilities)
+    provider.folders = Mock(return_value=[{"id": "Trash", "name": "Trash"}])
+    if failed_step >= 0:
+        client.uid.side_effect = [("OK", [])] * failed_step + [("NO", [])]
+    with pytest.raises(MailError):
+        provider.delete_permanently("42", folder="Trash")
+    assert client.uid.call_count == max(0, failed_step + 1)
+    client.expunge.assert_not_called()
 
 
 def test_imap_reply_all_uses_original_folder_and_excludes_own_account(tmp_path):

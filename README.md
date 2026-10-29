@@ -2,7 +2,7 @@
 
 `CMAIL` é o nome técnico do módulo independente que reúne webmail, leitura de
 pastas e mensagens, listas de destinatários e disparo controlado de e-mail.
-Versão do componente: `26.10.28a` (pacote Python `26.10.28`).
+Versão do componente: `26.10.29a` (pacote Python `26.10.29`).
 
 Gmail por arquivo também oferece envio SMTP/XOAUTH2 explícito no schema `1.3`,
 com `gmailFile.transport="smtp"`. TLS e confirmação da caixa pelo SMTP Google
@@ -115,9 +115,12 @@ Proxy de imagens, campanhas e editor HTML rico continuam fora desta fatia.
 
 A interface usa uma barra contextual de ícones no cabeçalho para a mensagem
 selecionada, com rótulos acessíveis, dicas e navegação anterior/próxima. Ações
-dependem das capacidades do principal e do provider; arquivar e excluir usam
-as pastas de arquivo/lixeira disponíveis. Excluir pede confirmação e move para
-a lixeira. Pastas têm ícones e nomes de apresentação, preservando seus IDs.
+dependem das capacidades do principal e do provider. O mesmo ícone **Excluir**,
+na mesma cor, move para a lixeira fora dela e exclui definitivamente dentro
+dela, por operações de API separadas e com confirmações diferentes. A lixeira
+habilita a ação recuperável independentemente do flag genérico de movimentação;
+a exclusão definitiva exige suporte/autorização do provedor e verifica a pasta
+real da mensagem. Pastas têm ícones e nomes de apresentação, preservando seus IDs.
 O filtro pesquisa somente as mensagens já carregadas. As classes `cm-*` e os
 tokens `--ca-ui-*` mantêm o tema do host quando incorporado e a base neutra
 quando independente, sem depender de assets privados do CA.

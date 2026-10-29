@@ -144,14 +144,20 @@ class ContextMailbox:
             {"id": "three", "subject": "Atualização do projeto", "from": {"name": "Equipe Produto", "address": "produto@example.test"}, "receivedAt": "2026-10-27T16:15:00-03:00", "isRead": False, "preview": "As novidades da semana já estão disponíveis.", "body": "As novidades da semana já estão disponíveis."},
         ]
         self.moves = []
+        self.locations = {item["id"]: "INBOX" for item in self.items}
+        self.deleted = []
     def folders(self):
         return [{"id": "INBOX", "name": "INBOX", "unread": 2}, {"id": "Archive", "name": "INBOX.Archive"}, {"id": "Sent", "name": "INBOX.Sent"}, {"id": "Drafts", "name": "INBOX.Drafts"}, {"id": "Junk", "name": "INBOX.Junk"}, {"id": "Trash", "name": "INBOX.Trash"}]
-    def messages(self, folder, limit=50): return self.items if folder == "INBOX" else []
+    def messages(self, folder, limit=50): return [item for item in self.items if self.locations[item["id"]] == folder]
     def message(self, folder, identifier): return next(item for item in self.items if item["id"] == identifier)
     def set_read(self, identifier, is_read):
         item = self.message("INBOX", identifier); item["isRead"] = is_read; return item
     def move(self, identifier, destination_id):
-        self.moves.append((identifier, destination_id)); self.items = [item for item in self.items if item["id"] != identifier]; return {"moved": True}
+        self.moves.append((identifier, destination_id)); self.locations[identifier] = destination_id; return {"moved": True}
+    def delete_permanently(self, identifier, *, folder):
+        assert folder == "Trash" and self.locations[identifier] == "Trash"
+        self.deleted.append(identifier); self.items = [item for item in self.items if item["id"] != identifier]
+        return {"deletedPermanently": True}
     def reply(self, *args, **kwargs): raise AssertionError("No email in UI tests")
     def forward(self, *args, **kwargs): raise AssertionError("No email in UI tests")
     def send(self, *args, **kwargs): raise AssertionError("No email in UI tests")
@@ -238,6 +244,55 @@ def test_context_toolbar_in_embedded_host_inherits_live_theme(tmp_path):
             page.screenshot(path=str(tmp_path / "cmail-context-embedded-dark.png"), full_page=True)
             assert frame.locator("#messageActions").is_visible()
             assert frame.locator("body").evaluate("() => document.documentElement.scrollWidth <= window.innerWidth")
+            browser.close()
+    finally:
+        server.should_exit = True
+        thread.join(timeout=5)
+
+
+def test_same_delete_button_trashes_then_permanently_deletes_synthetic_message(tmp_path):
+    from playwright.sync_api import expect
+    sync_playwright = pytest.importorskip("playwright.sync_api").sync_playwright
+    mailbox = ContextMailbox()
+    # Deletion-to-trash is distinct from the generic move toolbar capability.
+    mailbox.message_actions = lambda: {"move": False, "trash": True, "deletePermanently": True}
+    selected = _demo_config(tmp_path)
+    server, thread, port = _server(create_app(selected, MailService(selected, mailbox)))
+    try:
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(channel="msedge", headless=True)
+            page = browser.new_page(viewport={"width": 1064, "height": 760})
+            page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
+            page.locator('.message-item[data-id="one"]').click()
+            remove = page.get_by_role("button", name="Excluir", exact=True)
+            expect(remove).to_be_visible()
+            expect(remove).to_be_enabled()
+            assert page.locator("#moveMessage").is_hidden()
+            color = remove.evaluate("node => getComputedStyle(node).color")
+            remove.click()
+            expect(page.locator("#trashTitle")).to_have_text("Excluir mensagem?")
+            page.locator("#cancelTrash").click()
+            assert mailbox.moves == [] and mailbox.deleted == []
+            remove.click()
+            page.locator("#confirmTrash").click()
+            expect(page.locator("#trashDialog")).not_to_be_visible()
+            assert mailbox.locations["one"] == "Trash" and mailbox.deleted == []
+            page.locator('.cm-folder[data-id="Trash"]').click()
+            page.locator('.message-item[data-id="one"]').click()
+            expect(remove).to_be_enabled()
+            assert remove.evaluate("node => getComputedStyle(node).color") == color
+            assert remove.get_attribute("title") == "Excluir definitivamente"
+            remove.click()
+            expect(page.locator("#trashTitle")).to_have_text("Excluir definitivamente?")
+            expect(page.locator("#deleteExplanation")).to_contain_text("Não será possível recuperá-la")
+            page.screenshot(path=str(tmp_path / "cmail-delete-permanently-confirm.png"), full_page=True)
+            page.locator("#cancelTrash").click()
+            assert mailbox.deleted == []
+            remove.click()
+            page.locator("#confirmTrash").click()
+            expect(page.locator("#trashDialog")).not_to_be_visible()
+            assert mailbox.deleted == ["one"]
+            expect(page.locator("#messageActions")).not_to_be_visible()
             browser.close()
     finally:
         server.should_exit = True

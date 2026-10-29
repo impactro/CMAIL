@@ -11,6 +11,7 @@ from .gmail import GmailProvider, GoogleAuthService
 from .graph import MicrosoftGraphProvider
 from .mail import Provider, provider
 from .store import EMAIL, Store
+from .folder_roles import folder_role
 
 
 READ_MAIL = "mail.read"
@@ -220,7 +221,7 @@ class MailService:
 
     def folders(self, principal: Principal) -> list[dict[str, object]]:
         principal.require(READ_MAIL)
-        return self.provider_for(principal).folders()
+        return [{**item, "wellKnownName": folder_role(item)} for item in self.provider_for(principal).folders()]
 
     def messages(self, principal: Principal, folder: str, limit: int = 50) -> list[dict[str, object]]:
         principal.require(READ_MAIL)
@@ -281,16 +282,53 @@ class MailService:
         principal.require(READ_MAIL)
         selected = self.provider_for(principal)
         actions = {"setRead": hasattr(selected, "set_read"), "move": hasattr(selected, "move"),
-                   "reply": hasattr(selected, "reply"), "forward": hasattr(selected, "forward")}
+                   "reply": hasattr(selected, "reply"), "forward": hasattr(selected, "forward"),
+                   "trash": hasattr(selected, "trash") or hasattr(selected, "move"),
+                   "deletePermanently": hasattr(selected, "delete_permanently")}
         if hasattr(selected, "message_actions"):
             actions.update(selected.message_actions())
-        for action in ("setRead", "move"):
+        for action in ("setRead", "move", "trash", "deletePermanently"):
             actions[action] = actions[action] and MANAGE_MAIL in principal.capabilities
         for action in ("reply", "forward"):
             actions[action] = actions[action] and SEND_MAIL in principal.capabilities
         actions["send"] = SEND_MAIL in principal.capabilities
         actions["lists"] = MANAGE_LISTS in principal.capabilities
         return actions
+
+    def trash_message(self, principal: Principal, identifier: str, *, folder: str = "INBOX", confirmed: bool = False) -> dict[str, object]:
+        principal.require(MANAGE_MAIL)
+        if not confirmed:
+            raise ValueError("Mover para a lixeira exige confirmação explícita.")
+        selected = self.provider_for(principal)
+        targets = [item for item in selected.folders() if folder_role(item) == "trash"]
+        if not targets:
+            raise ValueError("A conta não possui uma lixeira reconhecida.")
+        if any(str(item["id"]) == folder for item in targets):
+            raise ValueError("A mensagem já está na lixeira; a exclusão definitiva é uma operação separada.")
+        destination = str(targets[0]["id"])
+        if hasattr(selected, "trash"):
+            result = selected.trash(identifier, destination, folder=folder)
+        elif hasattr(selected, "move"):
+            options = {"folder": folder} if self.config.mode in {"imap", "gmail", "gmail-file"} else {}
+            result = {**selected.move(identifier, destination, **options), "trashed": True}
+        else:
+            raise NotImplementedError("O provedor atual não permite mover para a lixeira.")
+        self.store.record_action("trash", "completed", {"messageId": str(identifier)[:1024], "folderId": destination}, self._owner(principal))
+        return result
+
+    def delete_permanently(self, principal: Principal, identifier: str, *, folder: str, confirmed: bool = False) -> dict[str, object]:
+        principal.require(MANAGE_MAIL)
+        if not confirmed:
+            raise ValueError("Excluir definitivamente exige confirmação explícita.")
+        selected = self.provider_for(principal)
+        targets = [str(item["id"]) for item in selected.folders() if folder_role(item) == "trash"]
+        if not folder or folder not in targets:
+            raise ValueError("A exclusão definitiva exige uma mensagem na lixeira.")
+        if not hasattr(selected, "delete_permanently"):
+            raise NotImplementedError("O provedor atual não oferece exclusão definitiva.")
+        result = selected.delete_permanently(identifier, folder=folder)
+        self.store.record_action("delete-permanently", "completed", {"messageId": str(identifier)[:1024], "folderId": folder}, self._owner(principal))
+        return result
 
     def set_read(self, principal: Principal, identifier: str, is_read: bool, *, folder: str = "INBOX") -> dict[str, object]:
         principal.require(MANAGE_MAIL)

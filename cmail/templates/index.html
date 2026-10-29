@@ -35,7 +35,8 @@
           <button id="forward" class="icon-button cm-action" type="button" data-capability="forward" title="Encaminhar" aria-label="Encaminhar">{{ icon('forward') }}</button>
           <button id="archiveMessage" class="icon-button cm-action" type="button" data-capability="move" title="Arquivar" aria-label="Arquivar">{{ icon('archive') }}</button>
           <button id="moveMessage" class="icon-button cm-action" type="button" data-capability="move" title="Mover para outra pasta" aria-label="Mover para outra pasta">{{ icon('move') }}</button>
-          <button id="trashMessage" class="icon-button cm-action cm-action-danger" type="button" data-capability="move" title="Mover para a lixeira" aria-label="Mover para a lixeira">{{ icon('trash') }}</button>
+          <button id="trashMessage" class="icon-button cm-action cm-action-danger" type="button" data-capability="trash" title="Excluir — mover para a lixeira" aria-label="Excluir" aria-describedby="deleteContext">{{ icon('trash') }}</button>
+          <span id="deleteContext" class="cm-sr-only">Mover a mensagem para a lixeira.</span>
           <button id="toggleRead" class="icon-button cm-action" type="button" data-capability="setRead" title="Marcar como lida" aria-label="Marcar como lida">{{ icon('open-mail') }}</button>
           <span class="cm-action-divider" aria-hidden="true"></span>
           <button id="previousMessage" class="icon-button cm-action" type="button" title="Mensagem anterior" aria-label="Mensagem anterior">{{ icon('previous') }}</button>
@@ -115,10 +116,10 @@
     </form>
   </dialog>
   <dialog id="trashDialog" aria-labelledby="trashTitle">
-    <h2 id="trashTitle">Mover para a lixeira?</h2>
+    <h2 id="trashTitle">Excluir mensagem?</h2>
     <p id="trashSubject" class="cm-dialog-subject"></p>
-    <p>Você poderá recuperar a mensagem na pasta Lixeira.</p>
-    <div class="dialog-actions"><button id="cancelTrash" class="quiet-button" type="button">Cancelar</button><button id="confirmTrash" class="cm-danger-button" type="button">Mover para a lixeira</button></div>
+    <p id="deleteExplanation">A mensagem será movida para a Lixeira e poderá ser recuperada.</p>
+    <div class="dialog-actions"><button id="cancelTrash" class="quiet-button" type="button">Cancelar</button><button id="confirmTrash" class="cm-danger-button" type="button">Excluir</button></div>
   </dialog>
 {% endif %}
 <script src="{{ base_path }}/static/app.js" defer></script>

@@ -235,7 +235,8 @@ class Store:
         inline_images = normalize_inline_images(payload.get("inlineImages", []), body_html)
         if inline_images:
             clean["inlineImages"] = inline_images
-        identifier, token = secrets.token_urlsafe(18), secrets.token_urlsafe(32)
+        # Keep opaque values usable as CLI arguments even when randomness starts '-'.
+        identifier, token = "d_" + secrets.token_urlsafe(18), "c_" + secrets.token_urlsafe(32)
         expires = _now() + timedelta(minutes=10)
         with self.connect() as db:
             db.execute("INSERT INTO mail_drafts(id,created_at,expires_at,payload_json,confirmation_hash,status,owner_id) VALUES(?,?,?,?,?,?,?)",

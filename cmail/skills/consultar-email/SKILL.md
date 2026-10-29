@@ -14,7 +14,12 @@ Use `check-config` para validação offline e `status --live` somente quando uma
 conexão real for necessária. `folders`, `messages` e `message` são leituras do
 provedor configurado. Declare conta autenticada, pasta, limite e momento da
 consulta. Para marcar leitura ou mover/limpar mensagens, exija também
-`mail.manage` e confirme a pasta de destino; não faça exclusão permanente.
+`mail.manage` e confirme a pasta de destino. Excluir fora da lixeira usa
+`trash_message`, com confirmação explícita; não use exclusão definitiva como
+fallback. Dentro da lixeira, uma solicitação explícita de exclusão definitiva
+usa exclusivamente `delete_permanently`, confirmando a mensagem e o caráter
+irreversível antes da chamada. Não confundir as duas operações nem repetir
+automaticamente uma execução com resultado incerto.
 
 Para mensagens de uma pessoa pelo nome, pesquise primeiro a caixa de e-mail.
 Só use a skill de pessoas quando for preciso descobrir o endereço corporativo

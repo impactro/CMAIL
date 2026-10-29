@@ -427,6 +427,26 @@ def _create_module_app(
             folder=str(value.get("folder") or "INBOX")[:512],
         )}
 
+    @app.post("/api/messages/{identifier}/trash")
+    async def message_trash(identifier: str, request: Request):
+        principal = require_principal(request)
+        require_csrf(request, principal)
+        value = await _payload(request)
+        return {"ok": True, "message": current.trash_message(
+            principal, identifier, folder=str(value.get("folder") or "INBOX")[:512],
+            confirmed=value.get("confirmed") is True,
+        )}
+
+    @app.post("/api/messages/{identifier}/delete-permanently")
+    async def message_delete_permanently(identifier: str, request: Request):
+        principal = require_principal(request)
+        require_csrf(request, principal)
+        value = await _payload(request)
+        return {"ok": True, "message": current.delete_permanently(
+            principal, identifier, folder=str(value.get("folder") or "")[:512],
+            confirmed=value.get("confirmed") is True,
+        )}
+
     @app.post("/api/messages/{identifier}/forward")
     async def message_forward(identifier: str, request: Request):
         principal = require_principal(request)
