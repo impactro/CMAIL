@@ -2,7 +2,7 @@
 
 `CMAIL` é o nome técnico do módulo independente que reúne webmail, leitura de
 pastas e mensagens, listas de destinatários e disparo controlado de e-mail.
-Versão do componente: `26.10.29c` (pacote Python `26.10.29.post2`).
+Versão do componente: `26.10.29d` (pacote Python `26.10.29.post3`).
 
 Template e assinatura são independentes. O webmail oferece modal, importação
 de HTML/logos e prévia sem envio. Novas mensagens, respostas e encaminhamentos

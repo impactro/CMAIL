@@ -1,6 +1,6 @@
 # Template e assinatura
 
-Componente 26.10.29c, distribuição 26.10.29.post2. Independente do CA; nenhum
+Componente 26.10.29d, distribuição 26.10.29.post3. Independente do CA; nenhum
 nome, marca ou contato de cliente pertence ao pacote genérico.
 
 Template envolve a mensagem com testeira, moldura e rodapé; assinatura é um

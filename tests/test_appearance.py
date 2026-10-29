@@ -209,3 +209,12 @@ def test_graph_rich_reply_uses_body_and_prepared_recipients_without_comment():
     assert 'comment' not in packet
     assert packet['message']['body'] == {'contentType':'HTML','content':'<p>Resposta</p>'}
     assert packet['message']['toRecipients'] == [{'emailAddress':{'address':'target@example.test'}}]
+
+
+def test_legacy_content_type_meta_is_supported_without_allowing_refresh(tmp_path):
+    appearance = Appearance(tmp_path,tmp_path / 'state')
+    template = '<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head><body>{{body_html}}</body></html>'
+    profile = {'templateHtml':template,'modes':{'new':{'template':'custom','signature':'none'}}}
+    assert 'http-equiv="Content-Type"' in appearance.render('','Título','Texto',override=profile)['bodyHtml']
+    with pytest.raises(ValueError):
+        appearance.render('','Título','Texto',override={**profile,'templateHtml':template.replace('Content-Type','refresh')})

@@ -44,7 +44,7 @@ class MailHtml(HTMLParser):
                'div span p br hr strong b em i u s small font h1 h2 h3 h4 h5 h6 ul ol li '
                'blockquote pre code a img center'.split())
     attrs = set('style class id role lang charset name content width height align valign bgcolor '
-                'cellspacing cellpadding border colspan rowspan face size color alt title nowrap href src'.split())
+                'cellspacing cellpadding border colspan rowspan face size color alt title nowrap href src http-equiv'.split())
 
     def __init__(self):
         super().__init__(convert_charrefs=True)
@@ -71,6 +71,8 @@ class MailHtml(HTMLParser):
                 raise ValueError('Imagens do template devem usar cid: e arquivos incorporados.')
             if tag == 'meta' and name == 'name' and value.lower() != 'viewport':
                 raise ValueError('Metadado HTML não permitido.')
+            if name == 'http-equiv' and (tag != 'meta' or value.lower() != 'content-type'):
+                raise ValueError('Apenas o metadado legado Content-Type é permitido.')
             safe.append(f' {name}="{html.escape(value, quote=True)}"')
         self.output.append('<' + tag + ''.join(safe) + '>')
 

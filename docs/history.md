@@ -1,5 +1,15 @@
 # Histórico
 
+## 2026-10-29 — Compatibilidade dos templates legados — 26.10.29d
+
+- Componente `26.10.29d`, distribuição `26.10.29.post3`.
+- Aceita somente `meta http-equiv="Content-Type"` para importar templates HTML
+  antigos. Refresh e outros metadados ativos continuam recusados.
+- Regressão sintética específica para o metadado; validação operacional dos
+  modelos reais permanece fora do pacote genérico.
+- 187 testes aprovados; modelos legados Lakatos/FSND renderizados localmente,
+  com duas imagens CID no primeiro, sem envio.
+
 ## 2026-10-29 — Assinatura e template independentes — 26.10.29c
 
 - Componente `26.10.29c`, distribuição `26.10.29.post2`.
