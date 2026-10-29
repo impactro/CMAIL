@@ -1,5 +1,18 @@
 # Histórico
 
+## 2026-10-29 — Assinatura e template independentes — 26.10.29c
+
+- Componente `26.10.29c`, distribuição `26.10.29.post2`.
+- Padrão genérico, herança empresa/pessoa, escolhas por tipo de mensagem,
+  importação de HTML e imagens, arquivos no workspace e modal com prévia isolada.
+- Conteúdo e imagens são congelados na preparação. Respostas e encaminhamentos
+  web usam o mesmo journal/token, sem refazer o template na execução.
+- Microsoft/Graph informa reconexão quando a autorização é inválida; falhas
+  transitórias não revogam conta, mudam escopos nem repetem envio.
+- 186 testes aprovados, incluindo importação/visualização desktop e móvel,
+  isolamento, herança viva, CID, snapshot e distinção entre falha de autorização
+  e indisponibilidade. Somente mensagens/provedores sintéticos, sem envio real.
+
 ## 2026-10-29 — Confirmação somente na exclusão definitiva — 26.10.29b
 
 - Componente `26.10.29b`, distribuição `26.10.29.post1`.

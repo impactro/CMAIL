@@ -12,6 +12,7 @@ from .graph import MicrosoftGraphProvider
 from .mail import Provider, provider
 from .store import EMAIL, Store
 from .folder_roles import folder_role
+from .appearance import Appearance
 
 
 READ_MAIL = "mail.read"
@@ -51,9 +52,11 @@ class MailService:
         auth: MicrosoftAuthService | GoogleAuthService | None = None,
         graph_factory: Callable[[MicrosoftAuthService, str], Provider] | None = None,
         gmail_factory: Callable[[GoogleAuthService, str], Provider] | None = None,
+        appearance: Appearance | None = None,
     ):
         self.config = config
         self.store = Store(config.state_dir)
+        self.appearance = appearance or Appearance(getattr(config, 'root', config.state_dir), config.state_dir)
         self.auth = auth or (
             MicrosoftAuthService(config, self.store) if config.mode == "microsoft"
             else GoogleAuthService(config, self.store) if config.mode == "gmail"
@@ -246,9 +249,56 @@ class MailService:
     def prepare(self, payload: dict[str, object], principal: Principal | None = None) -> dict[str, object]:
         selected = principal or Principal.local_operator()
         selected.require(SEND_MAIL)
+        if 'appearance' in payload:
+            if payload.get('bodyHtml') or payload.get('inlineImages'):
+                raise ValueError('Use aparência ou HTML pronto, sem aplicar o modelo duas vezes.')
+            payload = {**payload, **self.render_appearance(selected, payload)}
         result = self.store.prepare(payload, self._owner(selected))
         return ({**result, "sender": self.config.gmail_file_account}
                 if self.config.mode == "gmail-file" else result)
+
+    def appearance_settings(self, principal: Principal) -> dict[str, object]:
+        principal.require(SEND_MAIL)
+        return self.appearance.settings(self._owner(principal))
+
+    def save_appearance(self, principal: Principal, profile: dict[str, object]) -> dict[str, object]:
+        principal.require(SEND_MAIL)
+        return self.appearance.save(self._owner(principal), profile)
+
+    def render_appearance(self, principal: Principal, payload: dict[str, object], *, profile=None):
+        principal.require(SEND_MAIL)
+        return self.appearance.render(
+            self._owner(principal), payload.get('subject', 'Prévia do e-mail'), payload.get('body', ''),
+            kind=payload.get('kind', 'new'), choices=payload.get('appearance'), override=profile,
+            values=payload.get('fields'), identity={'sender_name': principal.email,
+                                                  'sender_email': principal.email},
+        )
+
+    def prepare_message_action(self, principal: Principal, identifier: str, payload: dict[str, object]):
+        principal.require(SEND_MAIL)
+        principal.require(READ_MAIL)
+        kind = payload.get('kind')
+        if kind not in {'reply', 'replyAll', 'forward'}:
+            raise ValueError('Ação de composição inválida.')
+        folder = str(payload.get('folder') or 'INBOX')[:512]
+        selected = self.provider_for(principal)
+        original = selected.message(folder, identifier)
+        if kind == 'forward':
+            recipients = payload.get('recipients', [])
+        else:
+            recipients = [item.get('address', '') for item in (original.get('replyTo') or [original.get('from', {})])]
+            if kind == 'replyAll':
+                recipients += [item.get('address', '') for item in original.get('to', []) + original.get('cc', [])]
+                own = {principal.email.casefold(), str(getattr(self.config, 'account', '')).casefold(),
+                       str(getattr(self.config, 'username', '')).casefold()}
+                recipients = [address for address in recipients if address.casefold() not in own]
+        subject = ('Enc: ' if kind == 'forward' else 'Re: ') + str(original.get('subject') or '(sem assunto)')
+        packet = self.render_appearance(principal, {**payload, 'subject': subject,
+            'kind': 'forward' if kind == 'forward' else 'reply'})
+        # Store only the new content. The provider retains its native conversation/forward behavior.
+        action = {'kind': kind, 'id': str(identifier)[:1024], 'folder': folder}
+        return self.store.prepare({**packet, 'recipients': recipients, 'subject': subject},
+                                  self._owner(principal), message_action=action)
 
     def execute(self, identifier: str, token: str, principal: Principal | None = None) -> dict[str, object]:
         selected = principal or Principal.local_operator()
@@ -264,7 +314,18 @@ class MailService:
                 options["body_html"] = str(payload["bodyHtml"])
             if payload.get("inlineImages"):
                 options["inline_images"] = payload["inlineImages"]
-            result = mail_provider.send(*arguments, **options)
+            action = payload.get('messageAction')
+            if action:
+                if self.config.mode == 'imap':
+                    options['folder'] = action['folder']
+                if action['kind'] == 'forward':
+                    result = mail_provider.forward(action['id'], recipients, str(payload['body']), **options)
+                else:
+                    result = mail_provider.reply(action['id'], str(payload['body']),
+                                                 reply_all=action['kind'] == 'replyAll',
+                                                 reply_recipients=recipients, **options)
+            else:
+                result = mail_provider.send(*arguments, **options)
         except Exception as exc:
             uncertain = {"accepted": False, "uncertain": True, "error": str(exc)[:240],
                          "recipientCount": len(recipients)}

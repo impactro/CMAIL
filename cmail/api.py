@@ -7,6 +7,7 @@ from typing import Mapping
 
 from .config import Config
 from .service import MailService, Principal
+from .appearance import Appearance
 
 
 class CmailApi:
@@ -39,6 +40,10 @@ class CmailApi:
                 "lists": {"capability": "lists.manage", "effect": "read-local"},
                 "save-list": {"capability": "lists.manage", "effect": "write-local"},
                 "prepare-send": {"capability": "mail.send", "effect": "write-local"},
+                "appearance": {"capability": "mail.send", "effect": "read-local"},
+                "save-appearance": {"capability": "mail.send", "effect": "write-local"},
+                "render-appearance": {"capability": "mail.send", "effect": "read-local"},
+                "prepare-message-action": {"capability": "mail.send", "effect": "write-local"},
                 "execute-send": {"capability": "mail.send", "effect": "external-write-confirmed"},
                 "reply": {"capability": "mail.send", "effect": "external-write-confirmed"},
                 "forward": {"capability": "mail.send", "effect": "external-write-confirmed"},
@@ -105,8 +110,20 @@ class CmailApi:
     def prepare_send(self, principal: Principal, payload: dict[str, object]) -> dict[str, object]:
         return self.service.prepare(payload, principal)
 
+    def appearance(self, principal: Principal) -> dict[str, object]:
+        return self.service.appearance_settings(principal)
+
+    def save_appearance(self, principal: Principal, profile: dict[str, object]) -> dict[str, object]:
+        return self.service.save_appearance(principal, profile)
+
+    def render_appearance(self, principal: Principal, payload: dict[str, object]) -> dict[str, object]:
+        return self.service.render_appearance(principal, payload)
+
     def execute_send(self, principal: Principal, draft_id: str, confirmation_token: str) -> dict[str, object]:
         return self.service.execute(draft_id, confirmation_token, principal)
+
+    def prepare_message_action(self, principal: Principal, identifier: str, payload: dict[str, object]):
+        return self.service.prepare_message_action(principal, identifier, payload)
 
     def reply(
         self, principal: Principal, identifier: str, comment: str, *,
@@ -194,4 +211,10 @@ def create_component_api(
     )
     if config.mode == "gmail-file":
         raise ValueError("gmail-file exige create_api explícito, não montagem por host.")
-    return create_api(config)
+    resolver = services.get('mailWorkspaceRootResolver')
+    if resolver is not None and not callable(resolver):
+        raise ValueError('mailWorkspaceRootResolver deve ser chamável.')
+    return CmailApi(MailService(config, appearance=Appearance(
+        config.root, config.state_dir, company_root=services.get('mailCompanyRoot'),
+        workspace_resolver=resolver,
+    )))

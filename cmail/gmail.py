@@ -393,19 +393,25 @@ class GmailProvider:
         self._call("POST", f"/messages/{selected}/modify", payload)
         return {"id": identifier, "moved": True}
 
-    def reply(self, identifier: str, comment: str, *, reply_all: bool = False) -> dict[str, object]:
+    def reply(self, identifier: str, comment: str, *, reply_all: bool = False, body_html: str = "", inline_images=None, reply_recipients=None) -> dict[str, object]:
         original = self.message("", identifier)
         recipients = [str(original.get("from", {}).get("address") or "")]
         if reply_all:
             recipients.extend(str(item.get("address") or "") for item in original.get("to", []))
         recipients = list(dict.fromkeys(item for item in recipients if item))
-        result = self.send(recipients, "Re: " + str(original.get("subject") or ""), comment)
+        if reply_recipients is not None:
+            recipients = list(reply_recipients)
+        options = {'body_html': body_html, 'inline_images': inline_images} if body_html else {}
+        result = self.send(recipients, "Re: " + str(original.get("subject") or ""), comment, **options)
         return {**result, "action": "replyAll" if reply_all else "reply"}
 
-    def forward(self, identifier: str, recipients: list[str], comment: str) -> dict[str, object]:
+    def forward(self, identifier: str, recipients: list[str], comment: str, *, body_html: str = "", inline_images=None) -> dict[str, object]:
         original = self.message("", identifier)
         body = f"{comment}\n\n---------- Mensagem encaminhada ----------\n{original.get('body') or original.get('preview') or ''}"
-        result = self.send(recipients, "Enc: " + str(original.get("subject") or ""), body)
+        options = {}
+        if body_html:
+            options = {'body_html': body_html + '<hr><blockquote>' + html.escape(body[len(comment):]).replace('\n', '<br>') + '</blockquote>', 'inline_images': inline_images}
+        result = self.send(recipients, "Enc: " + str(original.get("subject") or ""), body, **options)
         return {**result, "action": "forward"}
 
     @staticmethod

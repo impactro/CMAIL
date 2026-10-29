@@ -7,7 +7,7 @@
   <title>CMAIL · Webmail</title>
   <link rel="stylesheet" href="{{ base_path }}/static/style.css">
 <link rel="stylesheet" href="{{ base_path }}/static/cm-theme.css?v=26.10.14b.1"><script src="{{ base_path }}/static/cm-theme.js?v=26.10.14b.1" defer></script></head>
-<body data-base="{{ base_path }}" data-csrf="{{ csrf }}" data-authenticated="{{ 'true' if authenticated else 'false' }}" data-mode="{{ mode }}" class="cm-page cm-webmail">
+<body data-base="{{ base_path }}" data-csrf="{{ csrf }}" data-authenticated="{{ 'true' if authenticated else 'false' }}" data-mode="{{ mode }}" data-embedded="{{ 'true' if embedded else 'false' }}" class="cm-page cm-webmail">
 {{ sprite() }}
 {% if not authenticated %}
   <main class="signin-shell">
@@ -44,7 +44,9 @@
         </div>
       </div>
       <div class="topbar-actions">
-        <span id="modeBadge" class="mode-badge">{{ 'Demonstração · nenhum envio real' if mode == 'demo' else 'Gmail conectado' if mode == 'gmail' else 'Outlook conectado' if mode == 'microsoft' else 'IMAP local' }}</span>
+        <button id="configureAppearance" class="icon-button cm-action" type="button" title="Configurar template e assinatura" aria-label="Configurar template e assinatura">{{ icon('settings') }}</button>
+        <span id="modeBadge" class="mode-badge">{{ 'Demonstração · nenhum envio real' if mode == 'demo' else 'Verificando Gmail…' if mode == 'gmail' else 'Verificando Outlook…' if mode == 'microsoft' else 'IMAP local' }}</span>
+        <a id="reconnectMail" class="quiet-button" href="{{ base_path }}{{ '/auth/google' if mode == 'gmail' else '/auth/microsoft' }}"{% if embedded %} target="_top"{% endif %} hidden>Reconectar e-mail</a>
         <span class="account">{{ identity.email if identity else '' }}</span>
         {% if not embedded %}<a class="quiet-button setup-link" href="{{ base_path }}/setup" title="Configuração" aria-label="Configuração">{{ icon('settings') }}<span>Configuração</span></a>{% endif %}
         {% if not embedded and mode in ['microsoft', 'gmail'] %}<button id="logout" class="quiet-button" type="button">Sair</button>{% endif %}
@@ -95,6 +97,7 @@
           <label for="to">Destinatários adicionais</label><input id="to" type="text" autocomplete="off" placeholder="email@dominio.com; outro@dominio.com">
           <label for="subject">Assunto</label><input id="subject" maxlength="500" required>
           <label for="body">Mensagem</label><textarea id="body" rows="12" maxlength="200000" required></textarea>
+          <div class="cm-appearance-choices"><div><label for="messageTemplate">Template da mensagem</label><select id="messageTemplate"><option value="inherit">Usar minha preferência</option><option value="none">Nenhum</option><option value="default">Padrão CMAIL</option><option value="custom">Meu HTML personalizado</option></select></div><div><label for="messageSignature">Assinatura</label><select id="messageSignature"><option value="inherit">Usar minha preferência</option><option value="none">Nenhuma</option><option value="default">Padrão CMAIL</option><option value="custom">Meu HTML personalizado</option></select></div></div>
           <button id="prepare" type="submit">Revisar envio</button>
           <p class="form-hint">O envio só ocorre após uma segunda confirmação específica.</p>
         </form>
@@ -104,6 +107,7 @@
 
   <dialog id="confirm" aria-labelledby="confirmTitle">
     <h2 id="confirmTitle">Confirmar envio</h2><p id="confirmText"></p>
+    <iframe id="sendPreview" class="cm-mail-preview" title="Prévia do conteúdo preparado" sandbox hidden></iframe>
     <div class="dialog-actions"><button id="execute" type="button">Confirmar e enviar</button><button id="cancel" class="quiet-button" type="button">Cancelar</button></div>
   </dialog>
   <dialog id="moveDialog" class="cm-move-dialog" aria-labelledby="moveTitle">
@@ -121,7 +125,9 @@
     <p id="deleteExplanation">Esta mensagem será excluída definitivamente. Não será possível recuperá-la pelo webmail.</p>
     <div class="dialog-actions"><button id="cancelTrash" class="quiet-button" type="button">Cancelar</button><button id="confirmTrash" class="cm-danger-button" type="button">Excluir definitivamente</button></div>
   </dialog>
+  {% include '_appearance.html' %}
 {% endif %}
+<script src="{{ base_path }}/static/appearance.js" defer></script>
 <script src="{{ base_path }}/static/app.js" defer></script>
 </body>
 </html>

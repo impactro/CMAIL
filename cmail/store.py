@@ -213,7 +213,7 @@ class Store:
             ).fetchall()
         return [str(row[0]) for row in rows]
 
-    def prepare(self, payload: dict[str, object], owner_id: str = "") -> dict[str, object]:
+    def prepare(self, payload: dict[str, object], owner_id: str = "", *, message_action=None) -> dict[str, object]:
         recipients = [str(item).strip().casefold() for item in payload.get("recipients", []) if str(item).strip()]
         if payload.get("listId"):
             recipients.extend(self.list_recipients(int(payload["listId"]), owner_id))
@@ -235,6 +235,8 @@ class Store:
         inline_images = normalize_inline_images(payload.get("inlineImages", []), body_html)
         if inline_images:
             clean["inlineImages"] = inline_images
+        if message_action is not None:
+            clean['messageAction'] = message_action
         # Keep opaque values usable as CLI arguments even when randomness starts '-'.
         identifier, token = "d_" + secrets.token_urlsafe(18), "c_" + secrets.token_urlsafe(32)
         expires = _now() + timedelta(minutes=10)

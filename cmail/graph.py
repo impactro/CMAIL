@@ -9,7 +9,7 @@ import urllib.parse
 import urllib.request
 from typing import Callable
 
-from .auth import MicrosoftAuthService
+from .auth import MicrosoftAuthService, AuthenticationError
 from .mail import MailError, Provider
 
 
@@ -183,6 +183,9 @@ class MicrosoftGraphProvider(Provider):
         status, result = self.requester(
             method, path, self.auth.access_token(self.identity_id), payload, headers
         )
+        if status == 401:
+            self.auth.store.set_connection_status(self.identity_id, 'reauthorize', 'provider-401')
+            raise AuthenticationError('A Microsoft recusou a autorização. Reconecte sua conta.', requires_reconnect=True)
         if status not in expected:
             raise MailError(f"O Microsoft Graph recusou a operação ({status}).")
         return result
@@ -276,10 +279,25 @@ class MicrosoftGraphProvider(Provider):
         result = self._call("POST", f"/me/messages/{selected}/move", {"destinationId": urllib.parse.unquote(destination)})
         return {"id": str(result.get("id") or ""), "moved": True} if isinstance(result, dict) else {"moved": True}
 
-    def reply(self, identifier: str, comment: str, *, reply_all: bool = False) -> dict[str, object]:
+    @staticmethod
+    def _rich_action_body(body_html, inline_images):
+        from .inline_images import normalize
+        images = normalize([] if inline_images is None else inline_images, body_html)
+        message = {'body': {'contentType': 'HTML', 'content': body_html}}
+        if images:
+            message['attachments'] = [{'@odata.type': '#microsoft.graph.fileAttachment',
+                'name': item['name'], 'contentType': item['contentType'], 'contentId': item['contentId'],
+                'isInline': True, 'contentBytes': item['contentBase64']} for item in images]
+        return message
+
+    def reply(self, identifier: str, comment: str, *, reply_all: bool = False, body_html: str = "", inline_images=None, reply_recipients=None) -> dict[str, object]:
         selected = _identifier(identifier, "Mensagem")
         action = "replyAll" if reply_all else "reply"
-        self._call("POST", f"/me/messages/{selected}/{action}", {"comment": str(comment)[:200_000]}, expected=(202,))
+        payload = {'message': self._rich_action_body(body_html, inline_images)} if body_html else {"comment": str(comment)[:200_000]}
+        if reply_recipients is not None:
+            payload.setdefault('message', {})['toRecipients'] = [{'emailAddress': {'address': address}} for address in reply_recipients]
+            payload['message']['ccRecipients'] = []
+        self._call("POST", f"/me/messages/{selected}/{action}", payload, expected=(202,))
         return {"accepted": True, "action": action}
 
     def trash(self, identifier: str, destination_id: str, *, folder: str = "INBOX") -> dict[str, object]:
@@ -295,12 +313,15 @@ class MicrosoftGraphProvider(Provider):
         self._call("POST", f"/me/messages/{selected}/permanentDelete", expected=(204,))
         return {"id": identifier, "deletedPermanently": True}
 
-    def forward(self, identifier: str, recipients: list[str], comment: str) -> dict[str, object]:
+    def forward(self, identifier: str, recipients: list[str], comment: str, *, body_html: str = "", inline_images=None) -> dict[str, object]:
         selected = _identifier(identifier, "Mensagem")
         payload = {
             "comment": str(comment)[:200_000],
             "toRecipients": [{"emailAddress": {"address": address}} for address in recipients],
         }
+        if body_html:
+            payload.pop('comment')
+            payload['message'] = self._rich_action_body(body_html, inline_images)
         self._call("POST", f"/me/messages/{selected}/forward", payload, expected=(202,))
         return {"accepted": True, "action": "forward", "recipientCount": len(recipients)}
 

@@ -228,7 +228,7 @@ class ImapSmtpProvider:
         return {flag.upper() for row in rows if isinstance(row, (bytes, str))
                 for flag in (row.decode("ascii") if isinstance(row, bytes) else row).split()}
 
-    def reply(self, identifier: str, comment: str, *, reply_all: bool = False, folder: str = "INBOX") -> dict[str, object]:
+    def reply(self, identifier: str, comment: str, *, reply_all: bool = False, folder: str = "INBOX", body_html: str = "", inline_images=None, reply_recipients=None) -> dict[str, object]:
         original = self.message(folder, identifier)
         sender = original.get("replyTo") or [original["from"]]
         recipients = [item["address"] for item in sender]
@@ -237,20 +237,26 @@ class ImapSmtpProvider:
         own = {self.config.account.casefold(), self.config.username.casefold()}
         recipients = list(dict.fromkeys(address.strip().casefold() for address in recipients
                                         if not reply_all or address.strip().casefold() not in own))
+        if reply_recipients is not None:
+            recipients = list(reply_recipients)
         if not recipients or any(not EMAIL.fullmatch(address) for address in recipients):
             raise MailError("A mensagem não possui destinatário de resposta válido.")
         subject = str(original["subject"])
         if not subject.casefold().startswith("re:"):
             subject = "Re: " + subject
-        result = self.send(recipients, subject, comment, reply_message_id=str(original.get("internetMessageId") or ""))
+        options = {'body_html': body_html, 'inline_images': inline_images} if body_html else {}
+        result = self.send(recipients, subject, comment, reply_message_id=str(original.get("internetMessageId") or ""), **options)
         return {**result, "action": "replyAll" if reply_all else "reply"}
 
-    def forward(self, identifier: str, recipients: list[str], comment: str, *, folder: str = "INBOX") -> dict[str, object]:
+    def forward(self, identifier: str, recipients: list[str], comment: str, *, folder: str = "INBOX", body_html: str = "", inline_images=None) -> dict[str, object]:
         original = self.message(folder, identifier)
         sender = original["from"]
         body = (f"{comment}\n\n---------- Mensagem encaminhada ----------\n"
                 f"De: {sender['name']} <{sender['address']}>\nAssunto: {original['subject']}\n\n{original['body']}")
-        result = self.send(recipients, "Enc: " + str(original["subject"]), body)
+        options = {}
+        if body_html:
+            options = {'body_html': body_html + '<hr><blockquote>' + html.escape(body[len(comment):]).replace('\n', '<br>') + '</blockquote>', 'inline_images': inline_images}
+        result = self.send(recipients, "Enc: " + str(original["subject"]), body, **options)
         return {**result, "action": "forward"}
 
     @staticmethod

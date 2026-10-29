@@ -1,5 +1,12 @@
 # API Python do CMAIL
 
+`appearance`, `save_appearance` e `render_appearance` configuram template e
+assinatura independentes por proprietário, com `mail.send`. A aplicação no
+`prepare_send` é explícita por `appearance: {}`. `prepare_message_action`
+prepara respostas/encaminhamentos no mesmo journal confirmado, com `mail.send`
+e `mail.read`. Contratos e serviços opcionais do host em
+[aparência do e-mail](docs/mail-appearance.md).
+
 Novo trilho local a partir da distribuição `26.10.19`: schema de configuração
 `1.2`, modo `gmail-file`, `Config.from_file` + `create_api` +
 `Principal.local_operator`. Não aceita owner/identidade web; os modos OAuth

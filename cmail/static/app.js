@@ -66,6 +66,7 @@
     document.querySelector('#previousMessage').disabled = busy || index <= 0;
     document.querySelector('#nextMessage').disabled = busy || index < 0 || index >= visibleMessages().length - 1;
     for (const id of ['execute', 'confirmMove', 'confirmTrash', 'refresh']) document.getElementById(id).disabled = busy;
+    document.querySelector('#configureAppearance').disabled = busy || !actions.send;
   }
   function clearSelection() {
     readerVersion++; selectedMessage = null;
@@ -87,7 +88,17 @@
     const response = await fetch(endpoint(path), options);
     let data;
     try { data = await response.json(); } catch (_) { throw new Error('O CMAIL devolveu uma resposta inválida.'); }
-    if (!response.ok) throw new Error(data.error || 'Falha na operação.');
+    if (!response.ok) {
+      if (data.requiresReconnect) {
+        document.querySelector('#modeBadge').textContent = 'Sessão expirada — reconecte sua conta';
+        document.querySelector('#modeBadge').dataset.reconnect = 'true';
+        document.querySelector('#reconnectMail').hidden = false;
+      } else if (data.state === 'unavailable') {
+        document.querySelector('#modeBadge').textContent = 'Conexão temporariamente indisponível';
+        document.querySelector('#reconnectMail').hidden = true;
+      }
+      throw new Error(data.error || 'Falha na operação.');
+    }
     return data;
   }
   function effect(method, value) {
@@ -105,6 +116,11 @@
 
   async function loadFolders() {
     const data = await json('/api/folders');
+    if (['microsoft','gmail'].includes(body.dataset.mode)) {
+      document.querySelector('#modeBadge').textContent = body.dataset.mode === 'gmail' ? 'Gmail conectado' : 'Outlook conectado';
+      document.querySelector('#modeBadge').dataset.reconnect = 'false';
+      document.querySelector('#reconnectMail').hidden = true;
+    }
     mailFolders = data.folders;
     const selected = mailFolders.find(item => item.id === folder) || mailFolders.find(item => folderRole(item) === 'inbox') || mailFolders[0];
     if (selected) { folder = selected.id; folderName = folderLabel(selected); }
@@ -220,6 +236,8 @@
     document.querySelector('#to').value = options.to || '';
     document.querySelector('#subject').value = options.subject || '';
     document.querySelector('#body').value = options.body || '';
+    document.querySelector('#messageTemplate').value = 'inherit';
+    document.querySelector('#messageSignature').value = 'inherit';
     document.querySelector('#listId').disabled = composeAction !== 'send' || !actions.lists;
     document.querySelector('#subject').readOnly = composeAction !== 'send';
     document.querySelector(composeAction === 'send' ? '#to' : composeAction === 'forward' ? '#to' : '#body').focus();
@@ -245,21 +263,15 @@
     try {
       const recipients = document.querySelector('#to').value.split(';').map(value => value.trim()).filter(Boolean);
       const listId = listSelect.value;
-      if (composeAction === 'reply' || composeAction === 'replyAll') {
-        pending = {kind: 'reply', id: composeMessage.id, folder: composeMessage.folder, comment: document.querySelector('#body').value, replyAll: composeAction === 'replyAll'};
-        document.querySelector('#confirmText').textContent = `${pending.replyAll ? 'Responder a todos' : 'Responder'} esta mensagem?`;
-        document.querySelector('#confirm').showModal();
-        return;
-      }
-      if (composeAction === 'forward') {
-        pending = {kind: 'forward', id: composeMessage.id, folder: composeMessage.folder, recipients, comment: document.querySelector('#body').value};
-        document.querySelector('#confirmText').textContent = `Encaminhar esta mensagem para ${recipients.length} destinatário(s)?${['imap', 'gmail'].includes(body.dataset.mode) ? ' Será encaminhado somente o texto, sem anexos.' : ''}`;
-        document.querySelector('#confirm').showModal();
-        return;
-      }
-      const data = await json('/api/send/prepare', effect('POST', {recipients, listId: listId ? Number(listId) : null, subject: document.querySelector('#subject').value, body: document.querySelector('#body').value}));
+      const action = composeAction !== 'send';
+      const path = action ? `/api/messages/${encodeURIComponent(composeMessage.id)}/prepare` : '/api/send/prepare';
+      const data = await json(path, effect('POST', {recipients, listId: listId ? Number(listId) : null,
+        subject: document.querySelector('#subject').value, body: document.querySelector('#body').value,
+        ...(action ? {kind:composeAction,folder:composeMessage.folder} : {}),
+        appearance:{template:document.querySelector('#messageTemplate').value,signature:document.querySelector('#messageSignature').value}}));
       pending = {kind: 'send', ...data.preview};
-      document.querySelector('#confirmText').textContent = `Enviar “${pending.subject}” para ${pending.recipientCount} destinatário(s)?`;
+      document.querySelector('#confirmText').textContent = `Enviar “${pending.subject}” para ${pending.preview.recipients.join('; ')}?${action ? ' A prévia mostra o conteúdo adicionado. O histórico é tratado pelo provedor; Gmail e IMAP encaminham somente texto, sem anexos originais.' : ''}`;
+      const preview = document.querySelector('#sendPreview'); preview.src = data.previewUrl; preview.hidden = false;
       document.querySelector('#confirm').showModal();
     } catch (error) { showError(error); }
   });

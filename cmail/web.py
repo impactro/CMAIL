@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import secrets
+import time
 from pathlib import Path
 from typing import Any, Callable, Mapping
 from urllib.parse import urlparse
@@ -19,6 +20,7 @@ from .auth import AuthenticationError, MICROSOFT_STATE_PREFIX
 from .config import Config
 from .service import MANAGE_LISTS, MANAGE_MAIL, READ_MAIL, SEND_MAIL, MailService, Principal
 from .setup import SetupError, SetupService
+from .appearance import Appearance, preview_html
 
 
 SESSION_COOKIE = "cmail_session"
@@ -113,6 +115,18 @@ def _create_module_app(
         session_cookie="cmail_setup_session",
     )
     app.mount("/static", StaticFiles(directory=str(PACKAGE_ROOT / "static")), name="cmail.static")
+    previews: dict[str, tuple[str, float, str]] = {}
+
+    def remember_preview(principal, packet):
+        now = time.monotonic()
+        for key, (_, expiry, _) in list(previews.items()):
+            if expiry < now:
+                previews.pop(key, None)
+        if len(previews) >= 64:
+            previews.pop(next(iter(previews)))
+        token = secrets.token_urlsafe(24)
+        previews[token] = (principal.storage_owner, now + 600, preview_html(packet))
+        return token
 
     def csrf(request: Request, principal: Principal | None) -> str:
         if principal_resolver is not None or config.mode in {"demo", "imap", "setup"}:
@@ -171,7 +185,8 @@ def _create_module_app(
         if principal is None or (
             config.mode in {"microsoft", "gmail"} and not principal.identity_id
         ):
-            raise AuthenticationError("Autentique a conta de e-mail desta instância.")
+            raise AuthenticationError("Autentique a conta de e-mail desta instância.",
+                                      requires_reconnect=config.mode in {'microsoft', 'gmail'})
         if principal_resolver is not None and not current.store.webmail_enabled(principal.storage_owner):
             raise PermissionError("O Webmail está desabilitado para este workspace.")
         return principal
@@ -383,6 +398,36 @@ def _create_module_app(
     async def message_actions(request: Request):
         return {"ok": True, "actions": current.message_actions(require_principal(request))}
 
+    @app.get('/api/appearance')
+    async def appearance_settings(request: Request):
+        return {'ok': True, **current.appearance_settings(require_principal(request))}
+
+    @app.put('/api/appearance')
+    async def appearance_save(request: Request):
+        principal = require_principal(request)
+        require_csrf(request, principal)
+        return {'ok': True, **current.save_appearance(principal, await _payload(request))}
+
+    @app.post('/api/appearance/preview')
+    async def appearance_preview(request: Request):
+        principal = require_principal(request)
+        require_csrf(request, principal)
+        value = await _payload(request)
+        packet = current.render_appearance(principal, value, profile=value.get('profile'))
+        token = remember_preview(principal, packet)
+        return {'ok': True, 'previewUrl': _module_path(request, '/api/appearance/previews/' + token),
+                'sources': packet['appearanceSources']}
+
+    @app.get('/api/appearance/previews/{token}', response_class=HTMLResponse)
+    async def appearance_preview_document(token: str, request: Request):
+        principal = require_principal(request)
+        principal.require(SEND_MAIL)
+        entry = previews.get(token)
+        if not entry or entry[0] != principal.storage_owner or entry[1] < time.monotonic():
+            raise HTTPException(404, 'Prévia ausente ou expirada.')
+        return HTMLResponse(entry[2], headers={'Content-Security-Policy':
+            "default-src 'none'; style-src 'unsafe-inline'; img-src data:; sandbox; frame-ancestors 'self'"})
+
     @app.get("/api/messages")
     async def messages(request: Request):
         folder = str(request.query_params.get("folder") or "INBOX")[:512]
@@ -573,7 +618,19 @@ def _create_module_app(
     async def prepare(request: Request):
         principal = require_principal(request)
         require_csrf(request, principal)
-        return {"ok": True, "preview": current.prepare(await _payload(request), principal)}
+        result = current.prepare(await _payload(request), principal)
+        token = remember_preview(principal, result['preview'])
+        return {"ok": True, "preview": result,
+                'previewUrl': _module_path(request, '/api/appearance/previews/' + token)}
+
+    @app.post('/api/messages/{identifier}/prepare')
+    async def prepare_message_action(identifier: str, request: Request):
+        principal = require_principal(request)
+        require_csrf(request, principal)
+        result = current.prepare_message_action(principal, identifier, await _payload(request))
+        token = remember_preview(principal, result['preview'])
+        return {'ok': True, 'preview': result,
+                'previewUrl': _module_path(request, '/api/appearance/previews/' + token)}
 
     @app.post("/api/send/execute")
     async def execute(request: Request):
@@ -592,17 +649,21 @@ def _create_module_app(
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "no-referrer"
-        response.headers["Content-Security-Policy"] = (
+        response.headers.setdefault("Content-Security-Policy", (
             "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
             "object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'self'"
-        )
+        ))
         return response
 
     @app.exception_handler(AuthenticationError)
     async def authentication_failure(request: Request, error: AuthenticationError):
         message = str(error)[:300]
         if request.url.path.startswith(f"{_base_path(request)}/api/"):
-            return JSONResponse({"ok": False, "error": message}, status_code=401)
+            reconnect = error.requires_reconnect
+            retry = '/auth/google' if config.mode == 'gmail' else '/auth/microsoft'
+            return JSONResponse({'ok': False, 'error': message, 'requiresReconnect': reconnect,
+                'state': 'reauthorize' if reconnect else 'unavailable',
+                'reauthorizeUrl': _module_path(request, retry) if reconnect else ''}, status_code=401)
         account_mismatch = "não corresponde a esta instância" in message.casefold()
         base = _base_path(request)
         retry_path = "/auth/microsoft" if config.mode == "microsoft" else "/auth/google" if config.mode == "gmail" else "/"
@@ -671,6 +732,9 @@ def create_component_app(
 ) -> FastAPI:
     """Entry-point factory used by generic ASGI hosts."""
     services = dict(host_services or {})
+    workspace_resolver = services.get('mailWorkspaceRootResolver')
+    if workspace_resolver is not None and not callable(workspace_resolver):
+        raise ValueError('mailWorkspaceRootResolver deve ser chamável.')
     config_file = services.get("configFile")
     config = (
         Config.from_file(Path(config_file), root=agent_root)
@@ -707,6 +771,10 @@ def create_component_app(
         raise ValueError("oauthSuccessPath do host deve ser um caminho relativo à origem.")
     return create_app(
         config,
+        service=MailService(config, appearance=Appearance(
+            config.root, config.state_dir, company_root=services.get('mailCompanyRoot'),
+            workspace_resolver=services.get('mailWorkspaceRootResolver'),
+        )),
         principal_resolver=resolver,
         oauth_success_path=oauth_success_path,
     )

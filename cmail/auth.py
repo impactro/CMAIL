@@ -31,6 +31,10 @@ MICROSOFT_STATE_PREFIX = "cmail."
 class AuthenticationError(RuntimeError):
     """Falha de autenticação que pode ser mostrada sem revelar segredo."""
 
+    def __init__(self, message, *, requires_reconnect=False):
+        super().__init__(message)
+        self.requires_reconnect = requires_reconnect
+
 
 class OAuthClient(Protocol):
     def initiate_auth_code_flow(
@@ -233,11 +237,11 @@ class MicrosoftAuthService:
         identity = self.store.identity(identity_id)
         connection = self.store.connection(identity_id)
         if not identity or not connection or connection.get("status") != "authorized":
-            raise AuthenticationError("A conta Microsoft precisa ser autorizada novamente.")
+            raise AuthenticationError("A conta Microsoft precisa ser autorizada novamente.", requires_reconnect=True)
         cache_path = self._identity_cache(identity_id)
         if not cache_path.is_file():
             self.store.set_connection_status(identity_id, "reauthorize", "cache-missing")
-            raise AuthenticationError("A conta Microsoft precisa ser autorizada novamente.")
+            raise AuthenticationError("A conta Microsoft precisa ser autorizada novamente.", requires_reconnect=True)
         try:
             client = self.client_factory(self.config, cache_path)
             accounts = client.get_accounts(username=identity["email"]) or client.get_accounts()
@@ -245,8 +249,10 @@ class MicrosoftAuthService:
         except Exception as exc:
             raise AuthenticationError("Não foi possível renovar a sessão Microsoft.") from exc
         if not result or not result.get("access_token"):
+            if result and result.get('error') in {'temporarily_unavailable', 'server_error', 'service_not_available'}:
+                raise AuthenticationError('A Microsoft está temporariamente indisponível. Tente novamente mais tarde.')
             self.store.set_connection_status(identity_id, "reauthorize", "silent-token")
-            raise AuthenticationError("A conta Microsoft precisa ser autorizada novamente.")
+            raise AuthenticationError("A conta Microsoft precisa ser autorizada novamente.", requires_reconnect=True)
         return str(result["access_token"])
 
     def logout(self, session_token: str) -> None:

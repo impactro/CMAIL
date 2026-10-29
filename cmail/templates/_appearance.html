@@ -1,0 +1,40 @@
+<dialog id="appearanceDialog" class="cm-appearance-dialog" aria-labelledby="appearanceTitle">
+  <form id="appearanceForm">
+    <div class="section-toolbar"><h2 id="appearanceTitle">Template e assinatura</h2><button id="closeAppearance" class="icon-button" type="button" aria-label="Fechar configuração">{{ icon('close') }}</button></div>
+    <p class="form-hint">Escolha cada recurso separadamente. Herdar acompanha as atualizações da empresa ou do padrão CMAIL.</p>
+    <p id="appearanceOrigin" class="notice"></p>
+    <div class="cm-appearance-modes">
+      <span>Usar em</span><strong>Template</strong><strong>Assinatura</strong>
+      {% for kind, label in [('new','Novas mensagens'),('reply','Respostas'),('forward','Encaminhamentos')] %}
+      <label>{{ label }}</label>
+      {% for slot in ['template','signature'] %}
+      <select id="appearance-{{ kind }}-{{ slot }}" aria-label="{{ 'Template' if slot == 'template' else 'Assinatura' }} em {{ label|lower }}">
+        <option value="inherit">Herdar padrão</option><option value="none">{{ 'Nenhum' if slot == 'template' else 'Nenhuma' }}</option><option value="default">Padrão CMAIL</option><option value="custom">Personalizado</option>
+      </select>
+      {% endfor %}{% endfor %}
+    </div>
+    <fieldset><legend>Seus dados</legend><div class="cm-appearance-fields">
+      {% for key, label in [('sender_name','Nome'),('sender_role','Cargo'),('company_name','Empresa'),('sender_phone','Telefone'),('sender_email','E-mail'),('footer_notice','Texto do rodapé')] %}
+      <div><label for="appearance-{{ key }}">{{ label }}</label><input id="appearance-{{ key }}" data-appearance-field="{{ key }}" maxlength="1000" autocomplete="off"></div>
+      {% endfor %}
+      <div><label for="appearance-header_bg">Cor da testeira</label><input id="appearance-header_bg" data-appearance-field="header_bg" placeholder="#243447" pattern="#[0-9a-fA-F]{6}"></div>
+      <div><label for="appearance-header_accent">Cor de destaque</label><input id="appearance-header_accent" data-appearance-field="header_accent" placeholder="#4d7c99" pattern="#[0-9a-fA-F]{6}"></div>
+    </div></fieldset>
+    <label for="appearanceLogo">Logo da assinatura (opcional, PNG/JPEG)</label><input id="appearanceLogo" type="file" accept="image/png,image/jpeg">
+    <p class="form-hint">O logo é incluído automaticamente na assinatura padrão. Em HTML personalizado, use {{ '{{logo_html}}' }} ou cid:logo.</p>
+    <details><summary>Avançado: HTML, imagens e campos de mesclagem</summary>
+      <p class="form-hint">Use {{ '{{body_html}}' }} para o conteúdo e {{ '{{signature_html}}' }} para a assinatura. Texto usa campos como {{ '{{sender_name}}' }}. Imagens usam &lt;img src="cid:logo"&gt;.</p>
+      <label for="appearanceTemplateHtml">HTML do template</label><textarea id="appearanceTemplateHtml" rows="8" maxlength="200000" spellcheck="false"></textarea>
+      <label for="importTemplateHtml">Importar template HTML</label><input id="importTemplateHtml" type="file" accept=".html,.htm,text/html">
+      <label for="appearanceSignatureHtml">HTML da assinatura</label><textarea id="appearanceSignatureHtml" rows="5" maxlength="200000" spellcheck="false"></textarea>
+      <label for="importSignatureHtml">Importar assinatura HTML</label><input id="importSignatureHtml" type="file" accept=".html,.htm,text/html">
+      <label for="appearanceImages">Adicionar logos e imagens (PNG/JPEG)</label><input id="appearanceImages" type="file" accept="image/png,image/jpeg" multiple>
+      <div id="appearanceAssets"></div>
+      <label for="appearanceExtraFields">Outros campos de mesclagem (JSON)</label><textarea id="appearanceExtraFields" rows="4" spellcheck="false" placeholder='{"sender_site_url":"https://exemplo.com"}'></textarea>
+      <p id="appearanceFiles" class="form-hint"></p>
+    </details>
+    <p id="appearanceError" class="cm-appearance-error" role="alert"></p>
+    <iframe id="appearancePreview" class="cm-mail-preview" title="Prévia do template e assinatura" sandbox hidden></iframe>
+    <div class="dialog-actions"><button id="resetAppearance" class="quiet-button" type="button">Restaurar herança</button><button id="previewAppearance" class="quiet-button" type="button">Visualizar</button><button id="saveAppearance" type="submit">Salvar preferências</button></div>
+  </form>
+</dialog>
