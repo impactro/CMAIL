@@ -16,7 +16,8 @@
     "clientId": "",
     "tenantId": "",
     "clientSecretFile": "",
-    "redirectUri": ""
+    "redirectUri": "",
+    "offlineAccess": false
   },
   "google": {
     "account": "",

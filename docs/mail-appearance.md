@@ -1,6 +1,6 @@
 # Template e assinatura
 
-Componente 26.10.29d, distribuição 26.10.29.post3. Independente do CA; nenhum
+Componente 26.10.29e, distribuição 26.10.29.post4. Independente do CA; nenhum
 nome, marca ou contato de cliente pertence ao pacote genérico.
 
 Template envolve a mensagem com testeira, moldura e rodapé; assinatura é um
@@ -109,7 +109,8 @@ O webmail mostra Outlook/Gmail conectado depois de carregar as pastas.
 Token Microsoft inválido ou HTTP401 do Graph marca `reauthorize` no estado
 compartilhado e devolve `requiresReconnect`/`reauthorizeUrl`. A reconexão sobe à
 janela principal quando incorporada. Timeout, HTTP403 e HTTP503 não revogam
-conta nem solicitam novo consentimento. Escopos OAuth permanecem inalterados.
+conta nem solicitam novo consentimento. Escopos OAuth permanecem inalterados
+sem o opt-in administrativo de `microsoft.offlineAccess`, documentado no README.
 
 Graph rico usa `message.body`, sem combinar com `comment`, conforme os
 contratos oficiais de [reply](https://learn.microsoft.com/en-us/graph/api/message-reply?view=graph-rest-1.0)

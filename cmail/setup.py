@@ -189,6 +189,8 @@ class SetupService:
                 "clientSecretFile": _reference(self.config, secret_path),
                 "redirectUri": f"http://localhost:{self.config.port}/auth/callback",
             }
+            if self.config.microsoft_offline_access:
+                base["microsoft"]["offlineAccess"] = True
         else:
             secret_path = state / "security" / "google" / "client-secret.txt"
             supplied_secret = str(values.get("clientSecret") or "")

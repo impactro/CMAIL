@@ -404,7 +404,7 @@ class FakeOAuthClient:
         }}
 
     def get_accounts(self, username=None): return [{"username": username}]
-    def acquire_token_silent(self, scopes, account): return {"access_token": "access-in-memory"}
+    def acquire_token_silent_with_error(self, scopes, account): return {"access_token": "access-in-memory"}
 
 
 class FakeOAuthFactory:
@@ -894,8 +894,11 @@ def test_legacy_local_lists_are_migrated_to_anonymous_owner(tmp_path):
     assert store.list_recipients(1) == ["a@example.com"]
 
 
-def test_msal_client_explicitly_excludes_offline_access(tmp_path, monkeypatch):
+@pytest.mark.parametrize("offline_access", [False, True])
+def test_msal_client_only_requests_offline_access_after_explicit_opt_in(tmp_path, monkeypatch, offline_access):
+    from dataclasses import replace
     selected = microsoft_config(tmp_path)
+    selected = replace(selected, microsoft_offline_access=offline_access)
     captured = {}
     class FakePersistence:
         def __init__(self, path): captured["path"] = path
@@ -908,5 +911,34 @@ def test_msal_client_explicitly_excludes_offline_access(tmp_path, monkeypatch):
         FilePersistenceWithDataProtection=FakePersistence, PersistedTokenCache=FakeCache,
     ))
     build_microsoft_client(selected, tmp_path / "cache.bin")
-    assert captured["exclude_scopes"] == ["offline_access"]
+    assert captured["exclude_scopes"] == ([] if offline_access else ["offline_access"])
     assert captured["authority"].endswith("/tenant-lakatos")
+
+
+@pytest.mark.parametrize("offline_access", [False, True])
+def test_config_explicit_offline_access_is_publicly_nonsecret_and_optional(tmp_path, offline_access):
+    payload = config_payload_v11()
+    payload["microsoft"]["offlineAccess"] = offline_access
+    write_config(tmp_path, payload)
+    assert Config.load(tmp_path).microsoft_offline_access is offline_access
+    del payload["microsoft"]["offlineAccess"]
+    write_config(tmp_path, payload)
+    assert Config.load(tmp_path).microsoft_offline_access is False
+
+
+@pytest.mark.parametrize("value", ["true", 1, None])
+def test_config_rejects_nonboolean_offline_access(tmp_path, value):
+    payload = config_payload_v11()
+    payload["microsoft"]["offlineAccess"] = value
+    write_config(tmp_path, payload)
+    with pytest.raises(ConfigError, match="offlineAccess"):
+        Config.load(tmp_path)
+
+
+def test_setup_preserves_explicit_microsoft_refresh_opt_in(tmp_path):
+    from dataclasses import replace
+    from cmail.setup import SetupService
+    selected = replace(microsoft_config(tmp_path), microsoft_offline_access=True)
+    SetupService(selected).save({"provider": "outlook", "clientId": "client-test",
+                                 "tenantId": "tenant-lakatos", "clientSecret": ""})
+    assert Config.load(tmp_path).microsoft_offline_access is True

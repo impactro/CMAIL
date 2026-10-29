@@ -17,5 +17,13 @@ O token autoriza apenas aquele rascunho e é consumido uma vez. Falha depois do
 início do SMTP fica `uncertain`; não repita automaticamente, pois o servidor
 pode ter aceitado a mensagem antes de interromper a resposta.
 
+Para aplicar template e assinatura configurados, envie `appearance: {}` a
+`prepare_send`; o CMAIL resolve a herança empresa/pessoa no workspace validado.
+Mostre a prévia final em texto e HTML, sem duplicar assinatura. Não misture
+`appearance` com `bodyHtml` pronto. `execute_send` consome o mesmo snapshot;
+não prepare novamente depois da confirmação nem troque destinatário ou conteúdo.
+Falha com `requires_reconnect` exige reconectar pelo perfil do CAW. Não tente
+outra conta, copiar token, renovar o login automaticamente ou repetir o envio.
+
 Responder, responder a todos e encaminhar também são efeitos externos: mostre
 destino e conteúdo e obtenha confirmação específica antes de chamar a operação.

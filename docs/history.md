@@ -1,5 +1,18 @@
 # Histórico
 
+## 2026-10-29 — Renovação Microsoft explícita — 26.10.29e
+
+- Componente `26.10.29e`, distribuição `26.10.29.post4`.
+- `microsoft.offlineAccess` opcional, booleano e desativado por padrão; nenhum
+  consumidor ganha acesso persistente apenas por atualizar o pacote.
+- MSAL mantém a renovação no cache DPAPI existente. Nova autorização Microsoft
+  é necessária para receber a concessão; políticas do Entra continuam válidas.
+- A aquisição silenciosa preserva erros OAuth, distinguindo indisponibilidade
+  temporária de necessidade de reconexão. Sem retry de envio ou novo login automático.
+- Configuração e reconfiguração conservam o opt-in explícito. Testes cobrem
+  default, opt-in, tipos inválidos, renovação simulada e falha transitória.
+- Não comprova renovação de conta real nem altera configuração de instâncias.
+
 ## 2026-10-29 — Compatibilidade dos templates legados — 26.10.29d
 
 - Componente `26.10.29d`, distribuição `26.10.29.post3`.

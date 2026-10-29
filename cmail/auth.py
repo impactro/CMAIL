@@ -47,7 +47,7 @@ class OAuthClient(Protocol):
         self, flow: dict[str, object], auth_response: dict[str, str]
     ) -> dict[str, object]: ...
     def get_accounts(self, username: str | None = None) -> list[dict[str, object]]: ...
-    def acquire_token_silent(self, scopes: list[str], account: dict[str, object]) -> dict[str, object] | None: ...
+    def acquire_token_silent_with_error(self, scopes: list[str], account: dict[str, object]) -> dict[str, object] | None: ...
 
 
 OAuthClientFactory = Callable[[Config, Path], OAuthClient]
@@ -70,9 +70,9 @@ def build_microsoft_client(config: Config, cache_path: Path) -> OAuthClient:
         authority=f"https://login.microsoftonline.com/{config.microsoft_tenant_id}",
         client_credential=config.microsoft_client_secret(),
         token_cache=cache,
-        # MSAL adiciona openid/profile ao fluxo. O refresh implícito
-        # offline_access fica deliberadamente excluído do consentimento.
-        exclude_scopes=["offline_access"],
+        # MSAL owns refresh tokens in the same DPAPI cache. Prolonged access
+        # requires an explicit instance opt-in and a new Microsoft consent.
+        exclude_scopes=[] if config.microsoft_offline_access else ["offline_access"],
     )
 
 
@@ -245,7 +245,9 @@ class MicrosoftAuthService:
         try:
             client = self.client_factory(self.config, cache_path)
             accounts = client.get_accounts(username=identity["email"]) or client.get_accounts()
-            result = client.acquire_token_silent(list(MAIL_SCOPES), accounts[0]) if accounts else None
+            # Unlike acquire_token_silent, this preserves OAuth error codes so
+            # a temporary outage is not mistaken for a revoked authorization.
+            result = client.acquire_token_silent_with_error(list(MAIL_SCOPES), accounts[0]) if accounts else None
         except Exception as exc:
             raise AuthenticationError("Não foi possível renovar a sessão Microsoft.") from exc
         if not result or not result.get("access_token"):

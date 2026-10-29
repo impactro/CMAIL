@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
-  "version": "26.10.29b",
-  "packageVersion": "26.10.29.post1",
+  "version": "26.10.29e",
+  "packageVersion": "26.10.29.post4",
   "owner": "CMAIL",
   "componentApp": {
     "entryPointGroup": "crania_agent.component_apps",

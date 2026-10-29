@@ -2,7 +2,7 @@
 
 `CMAIL` é o nome técnico do módulo independente que reúne webmail, leitura de
 pastas e mensagens, listas de destinatários e disparo controlado de e-mail.
-Versão do componente: `26.10.29d` (pacote Python `26.10.29.post3`).
+Versão do componente: `26.10.29e` (pacote Python `26.10.29.post4`).
 
 Template e assinatura são independentes. O webmail oferece modal, importação
 de HTML/logos e prévia sem envio. Novas mensagens, respostas e encaminhamentos
@@ -76,11 +76,27 @@ CMAIL. A aplicação registrada recebe `openid`, `profile` e `email` para
 identidade, além de `User.Read`, `User.ReadBasic.All`, `Mail.ReadWrite`,
 `Mail.Send`, `Contacts.Read` e `Calendars.ReadWrite` para as capacidades
 publicadas pelo módulo.
-O MSAL inclui `openid/profile` no protocolo; o CMAIL exclui explicitamente
+O MSAL inclui `openid/profile` no protocolo. Por padrão, o CMAIL exclui
 `offline_access`, portanto a expiração do token pode exigir novo login.
+Em schemas `1.1` ou posteriores, `microsoft.offlineAccess: true` habilita
+explicitamente a renovação persistente pelo MSAL. A ausência ou `false` conserva
+o comportamento anterior; texto `"true"` não é aceito. Essa escolha prolonga o
+acesso e exige autorização administrativa específica e uma nova conexão Microsoft.
+Tokens renováveis permanecem no mesmo cache DPAPI, sob a conta Windows do serviço;
+não são copiados ao CA, ao prompt, ao Git ou a outro proprietário. A política do
+Entra pode revogar ou exigir interação mesmo com renovação habilitada.
+O rollback para versão anterior exige remover a chave opcional antes de instalar
+o wheel anterior. Desligar a opção não revoga tokens já concedidos: para revogar
+o acesso, usar a desconexão normal do CMAIL e autorizar novamente se necessário.
 `server.sessionHours` controla somente a sessão web local do CMAIL e aceita de
 1 a 720 horas (30 dias); a validade do token OAuth do Microsoft Graph continua
 sendo definida pelo Microsoft Entra/MSAL.
+
+Falhas transitórias na renovação conservam a autorização e não disparam envio
+ou login automático. O conector usa `acquire_token_silent_with_error` para
+preservar o código OAuth retornado pelo MSAL; uma falta de token, concessão
+inválida ou HTTP401 do Graph pede reconexão. Não há repetição automática de
+envios com recibo incerto.
 
 O schema `1.0` anterior continua legível para rollback. O modo `imap` agora
 também abre a interface web, sempre como instância local de uma única conta.

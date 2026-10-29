@@ -24,8 +24,8 @@ def auth_stub(tmp_path, result=None, error=None):
     auth.config = SimpleNamespace()
     client = Mock()
     client.get_accounts.return_value = [{'id':'synthetic'}]
-    client.acquire_token_silent.return_value = result
-    client.acquire_token_silent.side_effect = error
+    client.acquire_token_silent_with_error.return_value = result
+    client.acquire_token_silent_with_error.side_effect = error
     auth.client_factory = lambda *args: client
     return auth
 
@@ -36,6 +36,12 @@ def test_silent_token_failure_persists_reconnect_state(tmp_path):
         auth.access_token('identity')
     assert raised.value.requires_reconnect
     auth.store.set_connection_status.assert_called_once_with('identity','reauthorize','silent-token')
+
+
+def test_silent_refresh_success_keeps_authorization_without_exposing_token(tmp_path):
+    auth = auth_stub(tmp_path, {'access_token': 'synthetic-refreshed-token'})
+    assert auth.access_token('identity') == 'synthetic-refreshed-token'
+    auth.store.set_connection_status.assert_not_called()
 
 
 @pytest.mark.parametrize('result,error', [({'error':'temporarily_unavailable'},None),

@@ -149,6 +149,7 @@ class Config:
     gmail_file_account: str = ""
     gmail_token_file: Path | None = None
     gmail_file_transport: str = "api"
+    microsoft_offline_access: bool = False
 
     @classmethod
     def load(cls, root: str | Path | None = None) -> "Config":
@@ -194,10 +195,10 @@ class Config:
             raise ConfigError("mode deve ser setup, demo, imap, microsoft, gmail ou gmail-file.")
         server = _object(value["server"], "server", SERVER_KEYS)
         state = _object(value["state"], "state", STATE_KEYS)
-        microsoft = _object(
-            value["microsoft"], "microsoft",
-            MICROSOFT_KEYS if schema_version == "1.0" else MICROSOFT_KEYS_V11,
-        )
+        microsoft_keys = MICROSOFT_KEYS if schema_version == "1.0" else MICROSOFT_KEYS_V11
+        if schema_version != "1.0" and isinstance(value["microsoft"], dict) and "offlineAccess" in value["microsoft"]:
+            microsoft_keys = microsoft_keys | {"offlineAccess"}
+        microsoft = _object(value["microsoft"], "microsoft", microsoft_keys)
         google = (
             _object(value["google"], "google", GOOGLE_KEYS)
             if schema_version != "1.0"
@@ -241,6 +242,7 @@ class Config:
             microsoft_client_secret_file=_path(config_root, microsoft["clientSecretFile"], "microsoft.clientSecretFile"),
             microsoft_redirect_uri=redirect_uri,
             microsoft_account=_text(microsoft.get("account", ""), "microsoft.account"),
+            microsoft_offline_access=_boolean(microsoft.get("offlineAccess", False), "microsoft.offlineAccess"),
             google_client_id=_text(google["clientId"], "google.clientId"),
             google_client_secret_file=_path(
                 config_root, google["clientSecretFile"], "google.clientSecretFile"

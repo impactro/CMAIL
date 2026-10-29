@@ -1,6 +1,6 @@
 """CMAIL: rotinas independentes de e-mail."""
 
-__version__ = "26.10.29d"
+__version__ = "26.10.29e"
 
 from .config import Config
 from .api import CmailApi, create_api
