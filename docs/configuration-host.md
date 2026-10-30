@@ -148,6 +148,9 @@ aplicada ao serviço antigo.
 
 ## Migração e fronteiras
 
+Procedimento e inventário, inclusive ausência de configuração e setup no CA:
+[migração e bootstrap](configuration-migration.md).
+
 Para mover um JSON legado para config/: conservar backup operacional, ajustar
 caminhos relativos para os mesmos destinos, validar, criar seu MD, alterar o
 ponteiro/configFile e reconstruir o componente. Só então retirar a fonte antiga

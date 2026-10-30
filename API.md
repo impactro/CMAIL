@@ -6,6 +6,12 @@ Leitura, validação, revisão, catálogo CES e aplicação estão documentados 
 [configuração pelo host](docs/configuration-host.md). Não há novo endpoint HTTP
 administrativo. O host valida a permissão do administrador antes de expor essa API.
 
+O procedimento de [migração e bootstrap](docs/configuration-migration.md) distingue
+uma configuração existente de uma instância ainda em setup, sem descobrir ou
+atribuir automaticamente caixa/credenciais. O
+[levantamento visual](docs/theme-integration-review.md) registra gaps de herança
+CA/CWH para alinhamento; não anuncia uma ponte de tema nova.
+
 `appearance`, `save_appearance` e `render_appearance` configuram template e
 assinatura independentes por proprietário, com `mail.send`. A aplicação no
 `prepare_send` é explícita por `appearance: {}`. `prepare_message_action`
