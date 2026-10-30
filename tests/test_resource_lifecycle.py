@@ -188,6 +188,10 @@ def test_python_facade_does_not_load_web_framework_until_requested():
     from helpers import PROJECT_ROOT
     script = (
         "import cmail,sys; assert 'fastapi' not in sys.modules; "
+        "assert {'CmailConfiguration','ConfigurationConflict'} <= set(dir(cmail)); "
+        "assert {'CmailConfiguration','ConfigurationConflict'} <= set(cmail.__all__); "
+        "from cmail import CmailConfiguration,ConfigurationConflict; "
+        "assert 'fastapi' not in sys.modules; "
         "from cmail import create_api,Principal; assert callable(create_api); "
         "assert 'fastapi' not in sys.modules; "
         "assert 'create_app' in dir(cmail); from cmail import create_app; "

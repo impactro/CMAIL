@@ -2,7 +2,7 @@
 
 from importlib import import_module
 
-__version__ = "26.10.30b"
+__version__ = "26.10.30c"
 
 _EXPORTS = {
     'CmailConfiguration': ('configuration', 'CmailConfiguration'),
@@ -18,11 +18,7 @@ _EXPORTS = {
     'render_email_template': ('template_render', 'render_email_template'),
 }
 
-__all__ = [
-    "CmailApi", "Config", "MailService", "Principal", "create_api",
-    "CmailComponent", "create_app", "create_component", "__version__",
-    "render_email_template",
-]
+__all__ = list(_EXPORTS) + ["__version__"]
 
 
 def __getattr__(name):

@@ -1,5 +1,13 @@
 # Histórico
 
+## 2026-10-30 — Descoberta da configuração pública — 26.10.30c
+
+- Componente `26.10.30c`, distribuição `26.10.30.post2`.
+- Inclui CmailConfiguration/ConfigurationConflict em `__all__` e `dir(cmail)`
+  antes de seu primeiro acesso, preservando import lazy sem FastAPI.
+- Mantém a API administrativa de `5fee2f6`. Catálogo CES com optional/next-operation
+  segue compatível: conexão obrigatória e aplicação por reload/restart.
+
 ## 2026-10-30 — Contrato administrativo de configuração CES — 26.10.30b
 
 - Componente `26.10.30b`, distribuição `26.10.30.post1`.

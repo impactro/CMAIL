@@ -1,6 +1,6 @@
 # Configuração administrativa pelo host
 
-Componente `26.10.30b`, distribuição `26.10.30.post1`. Continuação aditiva da
+Componente `26.10.30c`, distribuição `26.10.30.post2`. Continuação aditiva da
 refatoração `088b427` / `26.10.30a`, para configuração pelo CWH/CA e standalone.
 Não inclui instalação, migração de instâncias existentes ou implementação no CWH.
 
@@ -46,6 +46,10 @@ responsável por validar schema, campos desconhecidos, IDs/paths duplicados e
 escapes no catálogo completo, inclusive entradas fornecidas por outros módulos.
 `secretPaths` está vazio porque o JSON nativo só permite referências externas;
 isso não dispensa a autorização administrativa nem a proteção dos arquivos.
+O campo CES `optional` pode ser omitido: o JSON de conexão é obrigatório e não
+tem contrato de recuperação pela ausência. `next-operation` existe no catálogo
+comum, mas a conexão CMAIL conserva reload/restart; não se aplica ao provider
+ativo no meio de uma operação.
 
 ## API Python de administração
 
@@ -164,13 +168,18 @@ Nenhum código CWH foi editado nesta entrega e nenhuma instância foi atualizada
 
 ## Validação desta entrega
 
-230 testes passaram no Python canônico com user-site desativado, incluindo
+Na base `5fee2f6` / 26.10.30b, 230 testes passaram no Python canônico com user-site
+desativado, incluindo
 schemas legados, composição, ausência de efeitos na validação, revisões antigas,
 dois editores concorrentes, lock entre processos, falha de substituição,
 comparação salva/ativa e rejeição de metadados/caminhos fora do catálogo.
 O fragmento real gerado foi validado contra o schema CES compartilhado.
 O wheel contém 60 arquivos do módulo, incluindo os dois defaults, conferidos
 byte a byte com o fonte. Não inclui ferramentas/testes/staging.
+
+O patch 26.10.30c valida novamente as 36 verificações de lifecycle/configuração/
+componentes, incluindo descoberta dos novos exports em um processo Python novo
+sem carregar FastAPI. O wheel foi reconstruído e conferido com o fonte do patch.
 
 Não se mediu comportamento em uma instância CWH/CA real nesta rodada.
 O aviso de depreciação Starlette/httpx já presente no ambiente continua; nenhuma
