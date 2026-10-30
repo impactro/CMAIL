@@ -219,4 +219,4 @@ ou consulta adicional às contas reais.
 - Versão: `26.10.30e`; pacote `26.10.30.post4`.
 - Resultado: Orientação distingue capacidades reutilizáveis de identidade/finalidade do consumidor e conta autenticada; preserva escopo e controle de envio.
 - Validação DEV: 238 passed, 1 warning in 34.19s. Revisão de diff e dos descritores de skills; nenhuma mudança de operação, schema, conta ou permissão.
-- Entrega: fonte preparada para publicação Git e instalação global pelo procedimento OPS, com recibo no ambiente executor. Sem geração de mídia, acesso a caixa real ou publicação de site nesta validação.
+- Entrega: fonte publicada e pacote instalado no Python global do UniServer, com 60 arquivos conferidos byte a byte contra o wheel do commit `8396eb8`. Rollback preservado; CA saudável e CWH conectado. Sem geração de mídia, acesso a caixa real ou publicação de site nesta validação.
