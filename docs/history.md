@@ -213,3 +213,10 @@ ou consulta adicional às contas reais.
 - Contraprova real26.10.14b/post1: itens de mensagem preservam fundo neutro
   e datas legíveis; não herdam preenchimento de botão de ação. Apenas
   apresentação, sem abrir, marcar, arquivar ou enviar mensagens.
+
+## 2026-10-30 — Orientações genéricas por capacidade
+
+- Versão: `26.10.30e`; pacote `26.10.30.post4`.
+- Resultado: Orientação distingue capacidades reutilizáveis de identidade/finalidade do consumidor e conta autenticada; preserva escopo e controle de envio.
+- Validação DEV: 238 passed, 1 warning in 34.19s. Revisão de diff e dos descritores de skills; nenhuma mudança de operação, schema, conta ou permissão.
+- Entrega: fonte preparada para publicação Git e instalação global pelo procedimento OPS, com recibo no ambiente executor. Sem geração de mídia, acesso a caixa real ou publicação de site nesta validação.

@@ -5,6 +5,14 @@ description: Consultar configuração, pastas, mensagens e anexos da caixa auten
 
 # Consultar E-mail
 
+CMAIL oferece leitura de e-mail, contatos, listas e envio controlado como
+capacidades reutilizáveis. O agente consumidor define sua identidade, negócio,
+finalidade e escopo de atendimento; a conta efetiva vem da autenticação validada,
+nunca de um nome sugerido no prompt. Diferencie explicar uma função de executá-la.
+Para envio, use `enviar-email`; para descobrir pessoas ou manter listas, use as
+skills correspondentes. Ter o módulo instalado não comprova conta conectada ou
+permissão para enviar, administrar mensagens ou operar outro workspace.
+
 Esta skill serve a runtimes agentes que incorporam o CMAIL, incluindo CA e CAX
 mínimos; não é instrução da interface humana standalone. Pela API Python, passe
 sempre um `Principal` cuja assertion já tenha sido validada pelo host e exija
