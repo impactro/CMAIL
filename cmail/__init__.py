@@ -2,9 +2,11 @@
 
 from importlib import import_module
 
-__version__ = "26.10.30a"
+__version__ = "26.10.30b"
 
 _EXPORTS = {
+    'CmailConfiguration': ('configuration', 'CmailConfiguration'),
+    'ConfigurationConflict': ('configuration', 'ConfigurationConflict'),
     'Config': ('config', 'Config'),
     'CmailApi': ('api', 'CmailApi'),
     'create_api': ('api', 'create_api'),

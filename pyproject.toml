@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "crania-cmail"
-version = "26.10.30"
+version = "26.10.30.post1"
 description = "Componente independente de webmail, listas e disparos controlados"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -37,7 +37,7 @@ cmail = "cmail.web:create_component_app"
 include = ["cmail*"]
 
 [tool.setuptools.package-data]
-cmail = ["templates/*.html", "static/*.css", "static/*.js", "skills/*/SKILL.md"]
+cmail = ["templates/*.html", "static/*.css", "static/*.js", "skills/*/SKILL.md", "defaults/*.json", "defaults/*.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

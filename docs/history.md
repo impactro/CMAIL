@@ -1,5 +1,20 @@
 # Histórico
 
+## 2026-10-30 — Contrato administrativo de configuração CES — 26.10.30b
+
+- Componente `26.10.30b`, distribuição `26.10.30.post1`.
+- API Python `CmailConfiguration` para leitura, validação pelo mesmo parser,
+  criação do par inicial JSON/MD e edição com revisão SHA-256 e lock de arquivo.
+- Estado salvo/aplicado/restart compara Config ativo com o candidato, mantendo a
+  revisão exata carregada quando disponível. Salvar não aplica automaticamente.
+- Fragmento `cmail.settings` compatível com catálogo CES v1, paths relativos a
+  `config/`, rejeição de symlinks/escape e documentação de mesmo nome-base.
+- Preserva configFile, principalResolver, mailWorkspaceRootResolver, schemas
+  1.0–1.3 e caminhos explícitos legados. Sem endpoints administrativos novos,
+  mudanças de permissões, OAuth, instalação ou edição de fontes CWH.
+- Perfis de assinatura/template mantêm locais anteriores; migração de aparência
+  ainda precisa ser explícita, sem cópias concorrentes. Não há prompts IA próprios.
+
 ## 2026-10-30 — Refatoração de módulos e recursos — 26.10.30a
 
 - Componente `26.10.30a`, distribuição `26.10.30`. Preserva a correção de

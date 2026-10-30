@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+import hashlib
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -13,6 +14,7 @@ class ConfigError(ValueError):
 
 
 ROOT_KEYS_V1 = {"schemaVersion", "mode", "server", "state", "microsoft", "imap"}
+MAX_CONFIG_BYTES = 512 * 1024
 MIN_SESSION_HOURS = 1
 MAX_SESSION_HOURS = 30 * 24
 ROOT_KEYS_V11 = ROOT_KEYS_V1 | {"google"}
@@ -150,6 +152,7 @@ class Config:
     gmail_token_file: Path | None = None
     gmail_file_transport: str = "api"
     microsoft_offline_access: bool = False
+    source_revision: str | None = field(default=None, compare=False, repr=False)
 
     @classmethod
     def load(cls, root: str | Path | None = None) -> "Config":
@@ -167,15 +170,16 @@ class Config:
     ) -> "Config":
         """Load the JSON directly when an embedding host owns the agent .env."""
         config_file = Path(path).expanduser().resolve()
+        raw, content = read_config_document(config_file)
+        selected = cls.from_mapping(raw, path=config_file, root=root)
+        return replace(selected, source_revision=hashlib.sha256(content).hexdigest())
+
+    @classmethod
+    def from_mapping(cls, raw: object, *, path: str | Path,
+                     root: str | Path | None = None) -> "Config":
+        """Validate without writing, contacting a provider or reading a secret."""
+        config_file = Path(path).expanduser().resolve()
         execution_root = Path(root).resolve() if root is not None else config_file.parent
-        if not config_file.is_file():
-            raise ConfigError("O JSON indicado por CMAIL_CONFIG_FILE não foi encontrado.")
-        if config_file.stat().st_size > 512 * 1024:
-            raise ConfigError("O JSON de configuração excede 512 KiB.")
-        try:
-            raw = json.loads(config_file.read_text(encoding="utf-8-sig"))
-        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise ConfigError("O JSON de configuração é inválido.") from exc
         if not isinstance(raw, dict):
             raise ConfigError("raiz deve ser um objeto JSON.")
         schema_version = str(raw.get("schemaVersion") or "")
@@ -325,3 +329,20 @@ class Config:
             "authenticationRequired": self.mode in {"microsoft", "gmail"},
             "singleAccount": True,
         }
+
+
+def read_config_document(path: Path) -> tuple[object, bytes]:
+    """Read one bounded snapshot; the revision is computed over these exact bytes."""
+    try:
+        with path.open('rb') as stream:
+            content = stream.read(MAX_CONFIG_BYTES + 1)
+    except FileNotFoundError as exc:
+        raise ConfigError("O JSON indicado por CMAIL_CONFIG_FILE não foi encontrado.") from exc
+    except OSError as exc:
+        raise ConfigError("O JSON de configuração não está acessível.") from exc
+    if len(content) > MAX_CONFIG_BYTES:
+        raise ConfigError("O JSON de configuração excede 512 KiB.")
+    try:
+        return json.loads(content.decode('utf-8-sig')), content
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ConfigError("O JSON de configuração é inválido.") from exc

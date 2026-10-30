@@ -14,6 +14,10 @@ desse JSON. Esse é o contrato standalone; em composição o host entrega
 `configFile` e o módulo carrega o mesmo JSON diretamente, sem interpretar o
 `.env` completo do agente. Segredos e
 senhas nunca ficam no JSON: somente referências para arquivos externos.
+`configuration.py` oferece ao host administrativo leitura/validação, edição por
+revisão e o fragmento do catálogo CES. Novas instâncias usam `config/` e pares
+JSON/MD. Salvar não substitui o Config imutável em uso nem reinicia o host.
+Contrato: [configuração pelo host](docs/configuration-host.md).
 `auth.py` mantém Microsoft SSO; `google_auth.py`, Google OAuth/DPAPI;
 `gmail.py`, somente operações da caixa Gmail; `setup.py`, a configuração local
 unitária. Os nomes públicos anteriores de Google continuam reexportados por

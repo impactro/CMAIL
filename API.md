@@ -1,5 +1,11 @@
 # API Python do CMAIL
 
+Configuração administrativa é uma API Python separada das capabilities da caixa:
+`CmailConfiguration` / `ConfigurationConflict`, disponíveis em `cmail`.
+Leitura, validação, revisão, catálogo CES e aplicação estão documentados em
+[configuração pelo host](docs/configuration-host.md). Não há novo endpoint HTTP
+administrativo. O host valida a permissão do administrador antes de expor essa API.
+
 `appearance`, `save_appearance` e `render_appearance` configuram template e
 assinatura independentes por proprietário, com `mail.send`. A aplicação no
 `prepare_send` é explícita por `appearance: {}`. `prepare_message_action`
