@@ -10,6 +10,7 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from .database import Database
 from .inline_images import normalize as normalize_inline_images, summaries as inline_summaries
 
 
@@ -24,89 +25,10 @@ class Store:
     def __init__(self, state_dir: Path):
         self.state_dir = state_dir
         self.path = state_dir / "cmail.sqlite3"
+        self._database = Database(self.path)
 
     def connect(self) -> sqlite3.Connection:
-        self.state_dir.mkdir(parents=True, exist_ok=True)
-        db = sqlite3.connect(self.path, timeout=15)
-        db.row_factory = sqlite3.Row
-        db.execute("PRAGMA foreign_keys=ON")
-        db.execute("PRAGMA busy_timeout=15000")
-        db.executescript("""
-          PRAGMA journal_mode=WAL;
-          CREATE TABLE IF NOT EXISTS mail_lists(
-            id INTEGER PRIMARY KEY, owner_id TEXT NOT NULL, name TEXT NOT NULL,
-            created_at TEXT NOT NULL, UNIQUE(owner_id,name));
-          CREATE TABLE IF NOT EXISTS mail_recipients(
-            list_id INTEGER NOT NULL, address TEXT NOT NULL, name TEXT NOT NULL DEFAULT '',
-            PRIMARY KEY(list_id,address), FOREIGN KEY(list_id) REFERENCES mail_lists(id) ON DELETE CASCADE);
-          CREATE TABLE IF NOT EXISTS mail_drafts(
-            id TEXT PRIMARY KEY, created_at TEXT NOT NULL, expires_at TEXT NOT NULL,
-            payload_json TEXT NOT NULL, confirmation_hash TEXT NOT NULL,
-            status TEXT NOT NULL, result_json TEXT NOT NULL DEFAULT '{}', owner_id TEXT NOT NULL);
-          CREATE TABLE IF NOT EXISTS mail_audit_events(
-            id INTEGER PRIMARY KEY, created_at TEXT NOT NULL, action TEXT NOT NULL,
-            status TEXT NOT NULL, detail_json TEXT NOT NULL, owner_id TEXT NOT NULL);
-          CREATE TABLE IF NOT EXISTS auth_identities(
-            id TEXT PRIMARY KEY, provider TEXT NOT NULL, tenant_id TEXT NOT NULL,
-            subject_id TEXT NOT NULL, email TEXT NOT NULL, display_name TEXT NOT NULL,
-            owner_id TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
-            UNIQUE(provider,tenant_id,subject_id));
-          CREATE TABLE IF NOT EXISTS mail_connections(
-            identity_id TEXT PRIMARY KEY, status TEXT NOT NULL, scopes_json TEXT NOT NULL,
-            last_error TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL,
-            FOREIGN KEY(identity_id) REFERENCES auth_identities(id) ON DELETE CASCADE);
-          CREATE TABLE IF NOT EXISTS web_sessions(
-            token_hash TEXT PRIMARY KEY, identity_id TEXT NOT NULL, csrf_hash TEXT NOT NULL,
-            created_at TEXT NOT NULL, expires_at TEXT NOT NULL, revoked_at TEXT,
-            FOREIGN KEY(identity_id) REFERENCES auth_identities(id) ON DELETE CASCADE);
-          CREATE TABLE IF NOT EXISTS owner_preferences(
-            owner_id TEXT PRIMARY KEY,
-            webmail_enabled INTEGER NOT NULL DEFAULT 1 CHECK(webmail_enabled IN (0,1)),
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL);
-          CREATE INDEX IF NOT EXISTS idx_web_sessions_identity ON web_sessions(identity_id);
-        """)
-        self._migrate_legacy(db)
-        return db
-
-    @staticmethod
-    def _migrate_legacy(db: sqlite3.Connection) -> None:
-        version = int(db.execute("PRAGMA user_version").fetchone()[0])
-        names = {
-            str(row[0]) for row in db.execute(
-                "SELECT name FROM sqlite_master WHERE type='table'"
-            ).fetchall()
-        }
-        if version < 2 and {"recipient_lists", "recipients"} <= names:
-            db.execute(
-                "INSERT OR IGNORE INTO mail_lists(id,owner_id,name,created_at) SELECT id,'',name,created_at FROM recipient_lists"
-            )
-            db.execute(
-                "INSERT OR IGNORE INTO mail_recipients(list_id,address,name) SELECT list_id,address,name FROM recipients"
-            )
-        if version < 2 and "drafts" in names:
-            db.execute(
-                """INSERT OR IGNORE INTO mail_drafts(id,created_at,expires_at,payload_json,confirmation_hash,status,result_json,owner_id)
-                   SELECT id,created_at,expires_at,payload_json,confirmation_hash,status,result_json,'' FROM drafts"""
-            )
-        if version < 2 and "audit_events" in names:
-            db.execute(
-                """INSERT OR IGNORE INTO mail_audit_events(id,created_at,action,status,detail_json,owner_id)
-                   SELECT id,created_at,action,status,detail_json,'' FROM audit_events"""
-            )
-        columns = {
-            str(row[1]) for row in db.execute("PRAGMA table_info(auth_identities)")
-        }
-        if "owner_id" not in columns:
-            db.execute(
-                "ALTER TABLE auth_identities ADD COLUMN owner_id TEXT NOT NULL DEFAULT ''"
-            )
-        db.execute(
-            """CREATE UNIQUE INDEX IF NOT EXISTS idx_auth_identity_provider_owner
-               ON auth_identities(provider,owner_id) WHERE owner_id <> ''"""
-        )
-        db.execute("PRAGMA user_version=4")
-        db.commit()
+        return self._database.connect()
 
     def webmail_enabled(self, owner_id: str = "") -> bool:
         owner = str(owner_id or "").strip()
@@ -256,14 +178,18 @@ class Store:
             row = db.execute("SELECT * FROM mail_drafts WHERE id=? AND owner_id=?", (identifier, owner_id)).fetchone()
             if not row or row["status"] != "prepared":
                 raise ValueError("Rascunho ausente, consumido ou incerto.")
-            if datetime.fromisoformat(row["expires_at"]) < _now():
+            expired = datetime.fromisoformat(row["expires_at"]) < _now()
+            if expired:
                 db.execute("UPDATE mail_drafts SET status='expired' WHERE id=? AND owner_id=?", (identifier, owner_id))
-                raise ValueError("Confirmação expirada.")
-            if not secrets.compare_digest(row["confirmation_hash"], hashlib.sha256(token.encode()).hexdigest()):
-                raise ValueError("Confirmação inválida.")
-            db.execute("UPDATE mail_drafts SET status='sending' WHERE id=? AND owner_id=?", (identifier, owner_id))
-            self._audit(db, "send-execute", "sending", {"draftId": identifier}, owner_id)
-            return json.loads(row["payload_json"])
+            else:
+                if not secrets.compare_digest(row["confirmation_hash"], hashlib.sha256(token.encode()).hexdigest()):
+                    raise ValueError("Confirmação inválida.")
+                db.execute("UPDATE mail_drafts SET status='sending' WHERE id=? AND owner_id=?", (identifier, owner_id))
+                self._audit(db, "send-execute", "sending", {"draftId": identifier}, owner_id)
+                payload = json.loads(row["payload_json"])
+        if expired:
+            raise ValueError("Confirmação expirada.")
+        return payload
 
     def finish(self, identifier: str, status: str, result: dict[str, object], owner_id: str = "") -> None:
         with self.connect() as db:

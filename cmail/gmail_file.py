@@ -15,7 +15,8 @@ from pathlib import Path
 
 from .auth import AuthenticationError
 from .config import Config
-from .gmail import GMAIL_API, GOOGLE_TOKEN
+from .google_auth import GMAIL_API, GOOGLE_TOKEN
+from .http_io import read_limited, GMAIL_RESPONSE_BYTES
 
 MAX_CREDENTIAL_BYTES = 65536
 TOKEN_URIS = {GOOGLE_TOKEN, "https://accounts.google.com/o/oauth2/token"}
@@ -33,9 +34,7 @@ def _request(method, url, headers, body):
     try:
         request = urllib.request.Request(url, data=body, method=method, headers=headers)
         with urllib.request.build_opener(_NoRedirect()).open(request, timeout=20) as response:
-            raw = response.read(8 * 1024 * 1024 + 1)
-            if len(raw) > 8 * 1024 * 1024:
-                raise ValueError()
+            raw = read_limited(response, GMAIL_RESPONSE_BYTES)
             return response.status, json.loads(raw.decode("utf-8")) if raw else {}
     except urllib.error.HTTPError as error:
         return error.code, {}  # Never propagate provider bodies or raw tokens.

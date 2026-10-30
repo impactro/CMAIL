@@ -10,7 +10,7 @@ from cmail.gmail import GmailProvider
 from cmail.mail import ImapSmtpProvider, MailError
 from cmail.service import MailService, Principal
 from cmail.web import create_app
-from test_cmail import config
+from helpers import config
 
 
 def imap_provider(tmp_path, capabilities=(b"IMAP4rev1", b"MOVE")):

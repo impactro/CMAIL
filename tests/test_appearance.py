@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from cmail.appearance import Appearance, preview_html
 from cmail.service import MailService, Principal, READ_MAIL, SEND_MAIL
 from cmail.web import create_app
-from test_cmail import config
+from helpers import config
 from test_inline_images import PNG, image
 
 

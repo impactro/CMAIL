@@ -11,7 +11,7 @@ from cmail.graph import MicrosoftGraphProvider
 from cmail.mail import MailError
 from cmail.service import MailService, Principal
 from cmail.web import create_app
-from test_cmail import config
+from helpers import config
 from test_frontend_playwright import ContextMailbox
 
 

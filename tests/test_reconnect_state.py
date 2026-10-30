@@ -11,7 +11,7 @@ from cmail.graph import MicrosoftGraphProvider
 from cmail.mail import MailError
 from cmail.service import MailService
 from cmail.web import create_app
-from test_cmail import config
+from helpers import config
 
 
 def auth_stub(tmp_path, result=None, error=None):

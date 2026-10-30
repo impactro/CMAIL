@@ -1,6 +1,6 @@
 # Template e assinatura
 
-Componente 26.10.29e, distribuição 26.10.29.post4. Independente do CA; nenhum
+Componente 26.10.30a, distribuição 26.10.30. Independente do CA; nenhum
 nome, marca ou contato de cliente pertence ao pacote genérico.
 
 Template envolve a mensagem com testeira, moldura e rodapé; assinatura é um
@@ -91,7 +91,9 @@ Gmail/IMAP continuam encaminhando texto sem anexos originais.
 HTTP: GET/PUT `/api/appearance`, POST `/api/appearance/preview`, POST
 `/api/messages/{id}/prepare`, POST `/api/send/prepare` e `/api/send/execute`.
 Escritas e prévias exigem CSRF; proprietário não vem do payload. Prévias ficam
-em memória, isoladas por proprietário, até dez minutos, no máximo 64 por app.
+em memória, isoladas por proprietário, até dez minutos: 64 por aplicação,
+oito por proprietário, 16 MiB no total e quatro MiB por prévia. Expiração é
+recolhida no próximo acesso, sem thread de manutenção nem escrita em disco.
 A rota HTML tem CSP própria e iframe sandbox sem scripts/formulários/rede.
 
 Factories Python/ASGI aceitam serviços opcionais do host:

@@ -1,16 +1,36 @@
-"""CMAIL: rotinas independentes de e-mail."""
+"""CMAIL public facade; load only the adapters the embedding system requests."""
 
-__version__ = "26.10.29e"
+from importlib import import_module
 
-from .config import Config
-from .api import CmailApi, create_api
-from .service import MailService, Principal
-from .web import create_app
-from .component import CmailComponent, create_component
-from .template_render import render_email_template
+__version__ = "26.10.30a"
+
+_EXPORTS = {
+    'Config': ('config', 'Config'),
+    'CmailApi': ('api', 'CmailApi'),
+    'create_api': ('api', 'create_api'),
+    'MailService': ('service', 'MailService'),
+    'Principal': ('principal', 'Principal'),
+    'create_app': ('web', 'create_app'),
+    'CmailComponent': ('component', 'CmailComponent'),
+    'create_component': ('component', 'create_component'),
+    'render_email_template': ('template_render', 'render_email_template'),
+}
 
 __all__ = [
     "CmailApi", "Config", "MailService", "Principal", "create_api",
     "CmailComponent", "create_app", "create_component", "__version__",
     "render_email_template",
 ]
+
+
+def __getattr__(name):
+    if name not in _EXPORTS:
+        raise AttributeError(f'module {__name__!r} has no attribute {name!r}')
+    module, attribute = _EXPORTS[name]
+    value = getattr(import_module('.' + module, __name__), attribute)
+    globals()[name] = value
+    return value
+
+
+def __dir__():
+    return sorted(set(globals()) | set(__all__))

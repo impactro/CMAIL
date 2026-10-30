@@ -2,7 +2,12 @@
 
 `CMAIL` é o nome técnico do módulo independente que reúne webmail, leitura de
 pastas e mensagens, listas de destinatários e disparo controlado de e-mail.
-Versão do componente: `26.10.29e` (pacote Python `26.10.29.post4`).
+Versão do componente: `26.10.30a` (pacote Python `26.10.30`).
+
+A manutenção separa autenticação, provedores, rotas e persistência; limita
+memória de prévias e executa operações síncronas fora do loop ASGI. O relatório
+de tamanho, recursos, compatibilidade e preparação para o CWH está em
+[manutenção do CMAIL](docs/maintenance.md).
 
 Template e assinatura são independentes. O webmail oferece modal, importação
 de HTML/logos e prévia sem envio. Novas mensagens, respostas e encaminhamentos

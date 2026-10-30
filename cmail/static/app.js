@@ -269,7 +269,7 @@
         subject: document.querySelector('#subject').value, body: document.querySelector('#body').value,
         ...(action ? {kind:composeAction,folder:composeMessage.folder} : {}),
         appearance:{template:document.querySelector('#messageTemplate').value,signature:document.querySelector('#messageSignature').value}}));
-      pending = {kind: 'send', ...data.preview};
+      pending = data.preview;
       document.querySelector('#confirmText').textContent = `Enviar “${pending.subject}” para ${pending.preview.recipients.join('; ')}?${action ? ' A prévia mostra o conteúdo adicionado. O histórico é tratado pelo provedor; Gmail e IMAP encaminham somente texto, sem anexos originais.' : ''}`;
       const preview = document.querySelector('#sendPreview'); preview.src = data.previewUrl; preview.hidden = false;
       document.querySelector('#confirm').showModal();
@@ -279,14 +279,7 @@
     if (busy || !pending) return;
     busy = true; updateActions();
     try {
-      let data;
-      if (pending.kind === 'reply') {
-        data = await json(`/api/messages/${encodeURIComponent(pending.id)}/reply`, effect('POST', {comment: pending.comment, replyAll: pending.replyAll, folder: pending.folder, confirmed: true}));
-      } else if (pending.kind === 'forward') {
-        data = await json(`/api/messages/${encodeURIComponent(pending.id)}/forward`, effect('POST', {recipients: pending.recipients, comment: pending.comment, folder: pending.folder, confirmed: true}));
-      } else {
-        data = await json('/api/send/execute', effect('POST', {draftId: pending.draftId, confirmationToken: pending.confirmationToken, confirmed: true}));
-      }
+      const data = await json('/api/send/execute', effect('POST', {draftId: pending.draftId, confirmationToken: pending.confirmationToken, confirmed: true}));
       const demo = data.result?.demo === true;
       setNotice(demo ? 'Demonstração concluída: nenhum e-mail foi enviado.' : 'Operação aceita pelo provedor de e-mail.');
       document.querySelector('#confirm').close(); document.querySelector('#composeForm').reset(); document.querySelector('#composePane').hidden = true; composeAction = 'send'; pending = null;

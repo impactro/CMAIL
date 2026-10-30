@@ -1,5 +1,20 @@
 # Histórico
 
+## 2026-10-30 — Refatoração de módulos e recursos — 26.10.30a
+
+- Componente `26.10.30a`, distribuição `26.10.30`. Preserva a correção de
+  renovação Microsoft opt-in publicada em `6a2da93`, incluindo seus testes.
+- Separa rotas, segurança, OAuth Google, DTOs/transporte Outlook, MIME,
+  calendário e lifecycle SQLite; mantém imports e contratos públicos.
+- Fecha conexões deterministamente, inicializa schema uma vez por arquivo,
+  indexa auditoria por owner e persiste o estado de rascunho expirado.
+- Teto de memória/quantidade/TTL por prévia e owner, JSON/HTTP limitado e I/O
+  síncrono fora do loop ASGI. Retira o envio direto morto do compositor.
+- Listagem IMAP evita mensagens/anexos completos; Gmail pede só metadados
+  necessários. Imports Python não carregam a interface web antecipadamente.
+- Suítes separadas por responsabilidade e ferramentas locais de inventário e
+  benchmark. Medidas e limites em [manutenção](maintenance.md).
+
 ## 2026-10-29 — Renovação Microsoft explícita — 26.10.29e
 
 - Componente `26.10.29e`, distribuição `26.10.29.post4`.

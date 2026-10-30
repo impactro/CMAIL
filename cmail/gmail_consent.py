@@ -11,7 +11,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
 from .auth import AuthenticationError
-from .gmail import GOOGLE_AUTH, GOOGLE_TOKEN, GMAIL_API, GMAIL_SCOPES
+from .google_auth import GOOGLE_AUTH, GOOGLE_TOKEN, GMAIL_API, GMAIL_SCOPES
 from .gmail_file import _read_json, _request, _field, _duration, TOKEN_URIS
 from .store import EMAIL
 
