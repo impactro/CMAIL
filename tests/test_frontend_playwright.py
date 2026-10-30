@@ -291,3 +291,72 @@ def test_same_delete_button_trashes_then_permanently_deletes_synthetic_message(t
     finally:
         server.should_exit = True
         thread.join(timeout=5)
+
+
+@pytest.mark.parametrize('provider', ['cwh', 'ca'])
+def test_marked_theme_provider_preserves_host_tokens_and_live_draft(tmp_path, provider):
+    from fastapi import FastAPI
+    from fastapi.responses import HTMLResponse
+    from playwright.sync_api import expect
+    sync_playwright = pytest.importorskip('playwright.sync_api').sync_playwright
+    selected = _demo_config(tmp_path)
+    host = FastAPI()
+
+    @host.get('/', response_class=HTMLResponse)
+    def shell():
+        return (
+            f'<html data-ca-theme-provider="{provider}" style="color-scheme:light;'
+            '--ca-ui-canvas:#fafafa;--ca-ui-surface:#ffffff;--ca-ui-text:#223344;'
+            '--ca-ui-muted:#667788;--ca-ui-border:#aabbcc;--ca-ui-action:#445566;'
+            '--ca-ui-on-action:#f1e2d3;--ca-ui-success:#148838;--ca-ui-warning:#998811;'
+            '--ca-ui-danger:#aa1122;--ca-ui-focus:#125634;--ca-ui-radius:13px;'
+            '--ca-ui-space:16px;--ca-ui-font:Georgia,serif;--ca-ui-selection:#ddeecc">'
+            '<body style="margin:0"><iframe title="Webmail" src="/cm/cmail/" '
+            'style="width:100%;height:100vh;border:0"></iframe></body></html>'
+        )
+
+    host.mount('/cm/cmail', create_app(selected, MailService(selected, ContextMailbox()),
+        principal_resolver=lambda _request: {'identifier':'synthetic-workspace',
+            'capabilities':['mail.read','mail.manage','mail.send','lists.manage']}))
+    server, thread, port = _server(host)
+    try:
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(channel='msedge', headless=True)
+            page = browser.new_page(viewport={'width':1064,'height':760})
+            page.goto(f'http://127.0.0.1:{port}/', wait_until='networkidle')
+            frame = page.frame_locator('iframe[title="Webmail"]')
+            frame.locator('.message-item').first.click()
+            expect(frame.locator('#readSubject')).to_have_css('color','rgb(34, 51, 68)')
+            expect(frame.locator('#reply')).to_have_css('border-radius','13px')
+            expect(frame.locator('.compose-button')).to_have_css('color','rgb(241, 226, 211)')
+            assert 'Georgia' in frame.locator('#readBody').evaluate('(node)=>getComputedStyle(node).fontFamily')
+            assert frame.locator('body').evaluate('()=>window.CAFrameTheme.inherited()')
+            frame.locator('#reply').click()
+            frame.locator('#body').fill('Rascunho com identidade visual do host.')
+            page.evaluate("""() => {
+                const root=document.documentElement;
+                root.style.setProperty('--ca-ui-text','#e8ebf5');
+                root.style.setProperty('--ca-ui-surface','#161a25');
+                root.style.setProperty('--ca-ui-muted','#aab4c3');
+                root.style.setProperty('--ca-ui-border','#30384b');
+                root.style.setProperty('--ca-ui-selection','#263445');
+                root.style.setProperty('--ca-ui-font','monospace');
+                root.style.setProperty('--ca-ui-radius','7px');
+                root.style.setProperty('--ca-ui-on-action','#abc123');
+                root.style.colorScheme='dark';
+                document.dispatchEvent(new Event('ca:theme-change'));
+            }""")
+            expect(frame.locator('#readSubject')).to_have_css('color','rgb(232, 235, 245)')
+            expect(frame.locator('.message-item').first).to_have_css('background-color','rgb(38, 52, 69)')
+            expect(frame.locator('#reply')).to_have_css('border-radius','7px')
+            expect(frame.locator('.compose-button')).to_have_css('color','rgb(171, 193, 35)')
+            assert frame.locator('#body').input_value() == 'Rascunho com identidade visual do host.'
+            assert frame.locator('#readBody').evaluate('(node)=>getComputedStyle(node).fontFamily') == 'monospace'
+            assert frame.locator('body').evaluate("()=>getComputedStyle(document.documentElement).getPropertyValue('--ca-ui-success').trim()") == '#148838'
+            assert frame.locator('body').evaluate("()=>getComputedStyle(document.documentElement).getPropertyValue('--ca-ui-warning').trim()") == '#998811'
+            frame.locator('#closeCompose').click()
+            page.screenshot(path=str(tmp_path / f'cmail-marked-{provider}-dark.png'), full_page=True)
+            browser.close()
+    finally:
+        server.should_exit = True
+        thread.join(timeout=5)

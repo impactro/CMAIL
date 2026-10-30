@@ -1,5 +1,17 @@
 # Histórico
 
+## 2026-10-30 — Herança visual CA/CWH pelo provedor mais próximo — 26.10.30f
+
+- Componente `26.10.30f`, distribuição `26.10.30.post5`. Conserva o hotfix
+  Graph 201 de `23dcf9e` e a orientação/contexto de `8396eb8` (26.10.30e).
+- Ponte reconhece html[data-ca-theme-provider=ca|cwh] na mesma origem e mantém
+  CA legado. Copia allowlist, preserva valores explícitos, observa evento comum,
+  redescobre owner e remove cópias obsoletas. Pai opaco conserva fallback local.
+- Fonte do leitor e bordas/erro do modal de aparência usam tokens públicos.
+  Estrutura cm-*, preferências, identidade, permissões e providers não mudam.
+- Guia/testes de migração e bootstrap publicados separadamente em `e1fc49e`;
+  configuração inicial não depende de instalar esta atualização visual.
+
 ## 2026-10-30 — Resultado correto ao mover mensagens Outlook — 26.10.30d
 
 - Componente `26.10.30d`, distribuição `26.10.30.post3`.

@@ -2,7 +2,7 @@
 
 from importlib import import_module
 
-__version__ = "26.10.30e"
+__version__ = "26.10.30f"
 
 _EXPORTS = {
     'CmailConfiguration': ('configuration', 'CmailConfiguration'),

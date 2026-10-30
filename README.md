@@ -2,7 +2,12 @@
 
 `CMAIL` é o nome técnico do módulo independente que reúne webmail, leitura de
 pastas e mensagens, listas de destinatários e disparo controlado de e-mail.
-Versão do componente: `26.10.30e` (pacote Python `26.10.30.post4`).
+Versão do componente: `26.10.30f` (pacote Python `26.10.30.post5`).
+
+A apresentação herda o provedor CA/CWH de mesma origem mais próximo, com
+tokens `--ca-ui-*` no html. Fonte, dimensões e cores explícitas do host são
+preservadas; standalone conserva a base local. Veja
+[herança de tema](docs/theme-integration.md).
 
 Configuração administrativa para hosts: `CmailConfiguration` oferece leitura,
 validação, edição por revisão e comparação com o Config ativo. Novas instâncias

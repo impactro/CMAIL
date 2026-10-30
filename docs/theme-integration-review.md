@@ -1,6 +1,8 @@
 # Herança visual CMAIL — levantamento para CA e CWH
 
 Inspeção do runtime `a6e1088` / CMAIL 26.10.30c em 30/10/2026.
+Este é o levantamento histórico. A ponte alinhada e seus limites atuais estão
+em [herança de tema](theme-integration.md), a partir de 26.10.30f.
 Não altera CSS/JS, temas, preferências, identidade de usuário ou autorização.
 O dicionário e o mapa central pertencem ao CA (`VISUAL-IDENTITY.md` na raiz);
 este documento registra o consumidor CMAIL e os pontos para integração.
@@ -19,7 +21,7 @@ Não lê APIs, cookies, credenciais nem conteúdo de mensagens do host. O teste
 de navegador existente cobre CA sintético e mudança clara/escura sem perder
 o rascunho; não cobre CWH como provedor de tema.
 
-## Gaps concretos no código atual
+## Gaps concretos na base inspecionada
 
 | Local | Comportamento observado | Consequência |
 | --- | --- | --- |

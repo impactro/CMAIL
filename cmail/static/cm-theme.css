@@ -5,7 +5,7 @@
   --ca-ui-radius:3px; --ca-ui-space:16px; --ca-ui-font:system-ui,"Segoe UI",sans-serif;
   --blue:var(--ca-ui-action); --blue-soft:var(--cm-soft); --line:var(--ca-ui-border); --muted:var(--ca-ui-muted);
   --surface:var(--ca-ui-surface); --sidebar:var(--ca-ui-surface); --shadow:none;
-  --cm-soft:color-mix(in srgb,var(--ca-ui-text) 5%,var(--ca-ui-surface));
+  --cm-soft:var(--ca-ui-selection,color-mix(in srgb,var(--ca-ui-text) 5%,var(--ca-ui-surface)));
   background:var(--ca-ui-canvas); color:var(--ca-ui-text); font-family:var(--ca-ui-font); color-scheme:light;
 }
 .cm-page { background:var(--ca-ui-canvas); color:var(--ca-ui-text); font-family:var(--ca-ui-font); }
@@ -88,7 +88,7 @@
 .cm-page.cm-webmail .message-meta { flex-wrap:wrap; padding-bottom:14px; gap:8px; color:var(--ca-ui-muted); }
 .cm-page.cm-webmail .message-meta strong { color:var(--ca-ui-text); overflow-wrap:anywhere; }
 .cm-page.cm-webmail .cm-reader-recipients { color:var(--ca-ui-muted); font-size:12px; line-height:1.6; overflow-wrap:anywhere; }
-.cm-page.cm-webmail .reader pre { color:var(--ca-ui-text); }
+.cm-page.cm-webmail .reader pre { color:var(--ca-ui-text); font-family:var(--ca-ui-font); }
 .cm-page.cm-webmail .empty-state { min-height:300px; }
 .cm-page.cm-webmail .empty-state .cm-icon { width:44px; height:44px; }
 .cm-page.cm-webmail .empty-state h2 { font-size:20px; }
