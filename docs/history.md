@@ -1,5 +1,14 @@
 # Histórico
 
+## 2026-10-30 — Resultado correto ao mover mensagens Outlook — 26.10.30d
+
+- Componente `26.10.30d`, distribuição `26.10.30.post3`.
+- A movimentação Graph aceita `201 Created`, conforme o contrato Microsoft,
+  evitando falso erro depois de mover para Lixeira, Arquivo ou outra pasta.
+- Preserva o novo ID da mensagem, erros reais e reconexão em HTTP 401.
+- Regressões usam transporte simulado; nenhuma mensagem real é movida ou
+  excluída pelos testes. Não adiciona retry de operações com efeito externo.
+
 ## 2026-10-30 — Descoberta da configuração pública — 26.10.30c
 
 - Componente `26.10.30c`, distribuição `26.10.30.post2`.

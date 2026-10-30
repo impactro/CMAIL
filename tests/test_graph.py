@@ -19,7 +19,7 @@ def test_graph_provider_uses_only_me_routes_and_normalizes_mail():
                 "bodyPreview": "Resumo", "isRead": False,
             }]}
         if method == "PATCH": return 200, {"id": "message-1", "isRead": True}
-        if path.endswith("/move"): return 200, {"id": "message-2"}
+        if path.endswith("/move"): return 201, {"id": "message-2"}
         if path == "/me/sendMail": return 202, {}
         if path == "/me/calendar/getSchedule":
             return 200, {"value": [{"scheduleId": "a@example.com", "availabilityView": "0", "scheduleItems": []}]}

@@ -128,7 +128,7 @@ class MicrosoftGraphProvider(Provider):
     def move(self, identifier: str, destination_id: str) -> dict[str, object]:
         selected = _identifier(identifier, "Mensagem")
         destination = _identifier(destination_id, "Pasta de destino")
-        result = self._call("POST", f"/me/messages/{selected}/move", {"destinationId": urllib.parse.unquote(destination)})
+        result = self._call("POST", f"/me/messages/{selected}/move", {"destinationId": urllib.parse.unquote(destination)}, expected=(201,))
         return {"id": str(result.get("id") or ""), "moved": True} if isinstance(result, dict) else {"moved": True}
 
     @staticmethod
