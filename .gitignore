@@ -1,5 +1,8 @@
 .env
-.agents/
+.agents/*
+!.agents/updates/
+.agents/updates/*
+!.agents/updates/*.md
 .state/
 security/
 __pycache__/

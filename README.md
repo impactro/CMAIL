@@ -1,5 +1,8 @@
 # CMAIL
 
+Desenvolvimento externo planejado: [piloto de navegação contextual no CWH](.agents/updates/README.md),
+parte da iniciativa única de renderização CCR. Não representa funcionalidade instalada.
+
 `CMAIL` é o nome técnico do módulo independente que reúne webmail, leitura de
 pastas e mensagens, listas de destinatários e disparo controlado de e-mail.
 Versão do componente: `26.10.30f` (pacote Python `26.10.30.post5`).
