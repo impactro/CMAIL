@@ -21,7 +21,7 @@ def test_initialize_creates_one_explicit_pair_and_never_overwrites(tmp_path):
     snapshot = editor.initialize()
     selected = Config.from_file(path, root=tmp_path)
     assert selected.mode == 'setup'
-    assert selected.state_dir == tmp_path / '.state' / 'cmail'
+    assert selected.state_dir == tmp_path / 'security' / 'cmail'
     assert editor.markdown_path == path.with_suffix('.md')
     assert editor.markdown_path.is_file()
     assert snapshot['source']['jsonPath'] == str(path)

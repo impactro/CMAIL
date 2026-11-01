@@ -8,7 +8,7 @@
     "sessionHours": 12,
     "cookieSecure": false
   },
-  "state": {"directory": "../.state/cmail"},
+  "state": {"directory": "../security/cmail"},
   "microsoft": {
     "clientId": "", "tenantId": "", "clientSecretFile": "", "redirectUri": "",
     "account": "", "offlineAccess": false

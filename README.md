@@ -15,6 +15,10 @@ usam o par `config/cmail.config.json` / `config/cmail.config.md`, sem busca por
 fontes concorrentes. Contrato e aplicação em
 [configuração pelo host](docs/configuration-host.md).
 
+Estado persistente da conexão: **`security/cmail/` na raiz da instância**.
+Banco, tokens e segredos ficam fora do Git e da limpeza de temporários.
+Veja o [padrão de armazenamento e migração](docs/state-storage.md).
+
 A manutenção separa autenticação, provedores, rotas e persistência; limita
 memória de prévias e executa operações síncronas fora do loop ASGI. O relatório
 de tamanho, recursos, compatibilidade e preparação para o CWH está em

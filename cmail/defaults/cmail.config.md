@@ -49,7 +49,14 @@ os opcionais identificados, campos não são preenchidos por omissão.
 | `server.openBrowser` | Booleano; deve ser false em gmail-file | false |
 | `server.sessionHours` | Inteiro 1–720 | 12 |
 | `server.cookieSecure` | Booleano; usar true quando a origem acessada é HTTPS | false |
-| `state.directory` | Caminho não vazio, relativo à pasta deste JSON ou absoluto | `../.state/cmail` |
+| `state.directory` | Caminho não vazio, relativo à pasta deste JSON ou absoluto | `../security/cmail` |
+
+O padrão é `<raiz-da-instância>/security/cmail/`: estado persistente da conexão,
+banco e tokens privados. Não usar `temp/`, caches ou `.agents/`. Com JSON em
+subpasta de `config/`, ajustar o caminho relativo para o mesmo destino.
+Instâncias existentes exigem migração explícita, com serviço parado e preservação
+integral do estado; mudar somente o ponteiro pode criar uma caixa aparentemente
+desconectada. As subpastas internas do módulo permanecem inalteradas.
 
 `server.host` continua loopback mesmo quando o host publica a composição por
 proxy HTTPS. Em composição ASGI, o host controla a porta/origem externas;

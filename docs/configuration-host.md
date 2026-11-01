@@ -12,6 +12,11 @@ efetivo é injetado por `configFile`; não existe autodiscovery nem merge de
 arquivos de conexão. O standalone usa somente o ponteiro `CMAIL_CONFIG_FILE`
 no `.env`. Referências relativas continuam resolvidas pela pasta do JSON.
 
+O destino padrão do estado é `security/cmail/` na raiz da instância:
+`state.directory=../security/cmail` para o JSON em `config/`.
+Seguir o [padrão de armazenamento e migração](state-storage.md), inclusive
+para migrar uma instalação que ainda usa `.state/cmail/`.
+
 O pacote inclui `cmail/defaults/cmail.config.json` e seu MD: são o par inicial,
 schema 1.3, modo setup e referências vazias. `initialize()` copia esses valores
 para o caminho explícito da instância; o pacote não vira uma segunda fonte

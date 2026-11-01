@@ -116,7 +116,7 @@ api = create_component_api(instance_root, {"configFile": editor.path})
 O resultado usa schema 1.3 e `mode=setup`, contas/segredos vazios,
 `offlineAccess=false` e `openBrowser=false`. Não seleciona Outlook/Gmail/IMAP,
 não associa caixa, não cria SQLite, não muda `.env`/catálogo nem busca arquivos
-de credenciais existentes. O state default é `../.state/cmail` relativo ao JSON;
+de credenciais existentes. O state default é `../security/cmail` relativo ao JSON;
 se já houver um destino de estado operacional conhecido, não adotá-lo como
 substituto sem conciliação. Fonte desconhecida não equivale a instância nova.
 
