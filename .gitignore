@@ -1,6 +1,7 @@
 .env
 .agents/
 .state/
+security/
 __pycache__/
 *.py[cod]
 .pytest_cache/
