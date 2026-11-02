@@ -19,7 +19,16 @@
   let mailFolders = [], messageItems = [], actions = {};
   let busy = false, readerVersion = 0, listVersion = 0;
   let pendingDelete = null;
-  const composeOnly = body.dataset.embedded === 'true' && new URLSearchParams(location.search).get('composeOnly') === '1';
+  const parameters=new URLSearchParams(location.search);
+  const composeOnly = body.dataset.embedded === 'true' && parameters.get('composeOnly') === '1';
+  const readerOnly = body.dataset.embedded === 'true' && parameters.get('readerOnly') === '1' && !composeOnly;
+  if(readerOnly)body.classList.add('cm-reader-only');
+  function notifyHost(type){const request=parameters.get('hostRequest');if(readerOnly && parent!==window && /^[a-f0-9]{32}$/.test(request||''))parent.postMessage({type,request},location.origin);}
+  async function refreshAfterRemoval(){
+    clearSelection();
+    if(readerOnly)notifyHost('cmail:message-changed');
+    else {await loadFolders();await loadMessages();}
+  }
   if(composeOnly){
     body.classList.add('cm-compose-only');
     const pane=document.querySelector('#composePane');pane.hidden=false;pane.prepend(notice);
@@ -305,7 +314,7 @@
     if (!selectedMessage) return;
     if (busy) return;
     busy = true; updateActions();
-    try { const data = await json(`/api/messages/${encodeURIComponent(selectedMessage.id)}/read`, effect('PATCH', {isRead: !selectedMessage.isRead, folder})); selectedMessage.isRead = data.message.isRead; await loadMessages(true); } catch (error) { showError(error); }
+    try { const data = await json(`/api/messages/${encodeURIComponent(selectedMessage.id)}/read`, effect('PATCH', {isRead: !selectedMessage.isRead, folder})); selectedMessage.isRead = data.message.isRead; if(readerOnly)notifyHost('cmail:message-updated');else await loadMessages(true); } catch (error) { showError(error); }
     finally { busy = false; updateActions(); }
   });
   document.querySelector('#reply').addEventListener('click', () => selectedMessage && showCompose({action: 'reply', title: 'Responder', to: selectedMessage.from?.address || '', subject: `RE: ${selectedMessage.subject || ''}`}));
@@ -318,7 +327,7 @@
     busy = true; updateActions();
     try {
       await json(`/api/messages/${encodeURIComponent(selectedMessage.id)}/move`, effect('POST', {destinationId, folder}));
-      clearSelection(); await loadFolders(); await loadMessages();
+      await refreshAfterRemoval();
       setNotice('Mensagem movida.');
     } finally { busy = false; updateActions(); }
   }
@@ -343,7 +352,7 @@
       const action = snapshot.permanent ? 'delete-permanently' : 'trash';
       const payload = snapshot.permanent ? {folder: snapshot.folder, confirmed: true} : {folder: snapshot.folder};
       await json(`/api/messages/${encodeURIComponent(snapshot.id)}/${action}`, effect('POST', payload));
-      clearSelection(); await loadFolders(); await loadMessages();
+      await refreshAfterRemoval();
       setNotice(snapshot.permanent ? 'Mensagem excluída definitivamente.' : 'Mensagem movida para a Lixeira.');
       document.querySelector('#trashDialog').close();
     } catch (error) { document.querySelector('#trashDialog').close(); clearSelection(); showError(error); }
@@ -388,6 +397,12 @@
     if(composeOnly){
       if(actions.send){document.querySelector('#composeForm').hidden=false;showCompose();setNotice('');} else setNotice('Envio indisponível nesta conta.');
       if(actions.lists)await loadLists();
+    } else if(readerOnly){
+      const requestedFolder=parameters.get('folder'),identifier=parameters.get('messageId');
+      if(!requestedFolder||!identifier)throw Error('Selecione uma pasta e mensagem no menu.');
+      folder=requestedFolder;await loadFolders();
+      if(folder!==requestedFolder)throw Error('A pasta selecionada não está disponível.');
+      if(actions.lists)await loadLists();await openMessage(identifier,null);
     } else { await loadFolders(); if (actions.lists) await loadLists(); await loadMessages(); }
   })().catch(showError);
 })();

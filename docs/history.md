@@ -1,5 +1,14 @@
 # Histórico
 
+## 2026-11-02 — leitor nativo hospedado — CES26.11.2d
+
+Python26.11.2.post3: readerOnly incorporado conserva o cabeçalho nativo e ações
+autorizadas de responder, encaminhar, organizar e excluir. Lista/pastas ficam
+no host; não cria outra leitura paginada da caixa. Pasta e ID continuam passando
+pelas APIs autenticadas. Alterações confirmadas notificam somente o frame/nonce
+de apresentação. Envio, prévia, CSRF e confirmação definitiva seguem seus
+contratos anteriores. Testes DOM com provedor fictício; sem efeito real.
+
 ## 2026-11-02 — validação da configuração hospedada — CES26.11.2c
 
 Python26.11.2.post2: `check-config` pelo Component Manager recebe

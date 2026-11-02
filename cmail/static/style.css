@@ -126,3 +126,10 @@ dialog { width: min(480px, calc(100vw - 32px)); padding: 26px; border: 0; border
 .cm-page.cm-compose-only .cm-shell { display:block; height:100dvh; padding:0; }
 .cm-page.cm-compose-only .cm-mailbox { display:block; padding:16px; height:100%; overflow:auto; }
 .cm-page.cm-compose-only .cm-compose { position:static; width:100%; max-width:none; max-height:none; margin:0; border:0; border-radius:0; box-shadow:none; }
+.cm-page.cm-reader-only .cm-sidebar,.cm-page.cm-reader-only .cm-message-column {display:none!important}
+.cm-page.cm-reader-only .cm-shell {grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);height:100dvh;min-height:0}
+.cm-page.cm-reader-only .cm-header {grid-column:1;padding:8px 12px;min-height:56px;flex-wrap:wrap;gap:6px}
+.cm-page.cm-reader-only .cm-header .brand,.cm-page.cm-reader-only #selectionHint,.cm-page.cm-reader-only #previousMessage,.cm-page.cm-reader-only #nextMessage {display:none}
+.cm-page.cm-reader-only .cm-mailbox {grid-column:1;grid-template-columns:minmax(0,1fr);min-height:0}
+.cm-page.cm-reader-only .cm-reader {grid-column:1;min-width:0;min-height:0}
+.cm-page.cm-reader-only .cm-compose {top:56px;bottom:0;right:0;width:min(760px,100%);max-height:calc(100dvh - 56px)}

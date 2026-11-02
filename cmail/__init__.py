@@ -2,7 +2,7 @@
 
 from importlib import import_module
 
-__version__ = "26.11.2c"
+__version__ = "26.11.2d"
 
 _EXPORTS = {
     'GoogleRead': ('google_content', 'GoogleRead'),
