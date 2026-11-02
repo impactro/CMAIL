@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from typing import Callable
+import threading
+import time
 
 from .auth import MicrosoftAuthService
 from .config import Config
@@ -29,6 +31,8 @@ class MailService:
         appearance: Appearance | None = None,
     ):
         self.config = config
+        self._recent_mail = {}
+        self._recent_mail_lock = threading.Lock()
         self.store = Store(config.state_dir)
         self._calendar = CalendarOperations(self.provider_for, self._owner, self.store)
         self.appearance = appearance or Appearance(getattr(config, 'root', config.state_dir), config.state_dir)
@@ -203,7 +207,23 @@ class MailService:
 
     def messages(self, principal: Principal, folder: str, limit: int = 50) -> list[dict[str, object]]:
         principal.require(READ_MAIL)
-        return self.provider_for(principal).messages(folder, limit)
+        rows = self.provider_for(principal).messages(folder, limit)
+        key = (principal.storage_owner, principal.identity_id, folder)
+        with self._recent_mail_lock:
+            self._recent_mail[key] = (time.monotonic(), rows[:40])
+            if len(self._recent_mail) > 16:
+                del self._recent_mail[next(iter(self._recent_mail))]
+        return rows
+
+    def search_messages(self, principal, folder, query, limit=25):
+        principal.require(READ_MAIL)
+        selected = self.provider_for(principal)
+        key = (principal.storage_owner, principal.identity_id, folder)
+        with self._recent_mail_lock:
+            stamp, rows = self._recent_mail.get(key, (0, []))
+            recent = rows if time.monotonic()-stamp < 60 else []
+        from .search import search_messages
+        return search_messages(selected, folder, query, min(100, max(1, int(limit))), recent)
 
     def message(self, principal: Principal, folder: str, identifier: str) -> dict[str, object]:
         principal.require(READ_MAIL)

@@ -20,8 +20,8 @@
   let busy = false, readerVersion = 0, listVersion = 0;
   let pendingDelete = null;
   const parameters=new URLSearchParams(location.search);
-  const composeOnly = body.dataset.embedded === 'true' && parameters.get('composeOnly') === '1';
-  const readerOnly = body.dataset.embedded === 'true' && parameters.get('readerOnly') === '1' && !composeOnly;
+  const composeOnly = parameters.get('composeOnly') === '1';
+  const readerOnly = parameters.get('readerOnly') === '1' && !composeOnly;
   if(readerOnly)body.classList.add('cm-reader-only');
   function notifyHost(type){const request=parameters.get('hostRequest');if(readerOnly && parent!==window && /^[a-f0-9]{32}$/.test(request||''))parent.postMessage({type,request},location.origin);}
   async function refreshAfterRemoval(){
@@ -397,6 +397,7 @@
     if(composeOnly){
       if(actions.send){document.querySelector('#composeForm').hidden=false;showCompose();setNotice('');} else setNotice('Envio indisponível nesta conta.');
       if(actions.lists)await loadLists();
+      if(parameters.get('settingsOnly')==='1')document.querySelector('#configureAppearance').click();
     } else if(readerOnly){
       const requestedFolder=parameters.get('folder'),identifier=parameters.get('messageId');
       if(!requestedFolder||!identifier)throw Error('Selecione uma pasta e mensagem no menu.');

@@ -50,6 +50,10 @@ class DemoProvider:
     def messages(self, folder: str, limit: int = 50) -> list[dict[str, object]]:
         return []
 
+    def search_messages(self, folder, query, limit=50):
+        from .search import approximate
+        return [row for row in self.messages(folder, 100) if approximate(row, query)][:limit]
+
     def message(self, folder: str, identifier: str) -> dict[str, object]:
         raise MailError("Mensagem não existe no modo demo.")
 
@@ -133,6 +137,27 @@ class ImapSmtpProvider:
                 if summary is not None:
                     result.append(summary)
             return result
+        finally:
+            client.logout()
+
+    def search_messages(self, folder, query, limit=50):
+        client = self._imap()
+        try:
+            if client.select(_mailbox(folder), readonly=True)[0] != 'OK':
+                raise MailError('Pasta de e-mail inválida.')
+            literal = ('"' + str(query).replace('\\', '\\\\').replace('"', '\\"') + '"').encode('utf-8')
+            status, data = client.uid('search', 'CHARSET', 'UTF-8', 'OR', 'OR', 'SUBJECT', literal, 'BODY', literal, 'TO', literal)
+            if status != 'OK':
+                raise MailError('Servidor recusou a busca de mensagens.')
+            rows = []
+            for uid in recent_uids(data[0] or b'', limit):
+                identifier = uid.decode('ascii')
+                status, fetched = client.uid('fetch', identifier, LIST_FETCH)
+                if status == 'OK' and fetched:
+                    row = list_summary(fetched, identifier)
+                    if row is not None:
+                        rows.append(row)
+            return rows
         finally:
             client.logout()
 

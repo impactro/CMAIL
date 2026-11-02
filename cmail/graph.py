@@ -90,6 +90,17 @@ class MicrosoftGraphProvider(Provider):
         values = result.get("value") if isinstance(result, dict) else []
         return [_summary(item) for item in values or []]
 
+    def search_messages(self, folder: str, query: str, limit: int = 50):
+        selected = _identifier(folder, "Pasta")
+        literal = str(query).replace('\\', '\\\\').replace('"', '\\"')
+        params = urllib.parse.urlencode({
+            '$top': str(max(1, min(int(limit), 100))),
+            '$search': '"' + ' OR '.join(f'{field}:{literal}' for field in ('subject', 'body', 'to', 'from')) + '"',
+            '$select': 'id,subject,from,toRecipients,ccRecipients,receivedDateTime,isRead,importance,bodyPreview,hasAttachments',
+        })
+        result = self._call('GET', f'/me/mailFolders/{selected}/messages?{params}')
+        return [_summary(item) for item in (result.get('value') or [])]
+
     def message(self, folder: str, identifier: str) -> dict[str, object]:
         del folder
         selected = _identifier(identifier, "Mensagem")

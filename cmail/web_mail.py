@@ -25,6 +25,9 @@ def register_mail_routes(app: FastAPI, ctx: WebContext):
         except ValueError as error:
             raise ValueError('Limite inválido.') from error
         principal = ctx.principal(request)
+        query = str(request.query_params.get('q') or '').strip()
+        if query:
+            return {'ok': True, 'folder': folder, **ctx.service.search_messages(principal, folder, query, limit)}
         return {'ok': True, 'folder': folder, 'messages': ctx.service.messages(principal, folder, limit)}
 
     @app.get('/api/messages/{identifier}')

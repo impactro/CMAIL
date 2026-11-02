@@ -42,17 +42,33 @@ def register_auth_routes(app: FastAPI, ctx, security, templates, *, oauth_succes
         elif config.mode in {"microsoft", "gmail"} and not connected and current.auth:
             if current.auth.session_identity(str(request.cookies.get(SESSION_COOKIE) or "")):
                 auth_state = "reauthorize"
+        focused = any(request.query_params.get(key) == '1' for key in ('readerOnly', 'composeOnly'))
         return TEMPLATES.TemplateResponse(
-            request=request, name="index.html",
+            request=request, name="webmail.html" if connected and webmail_enabled and not focused else "index.html",
             context={
                 "csrf": csrf(request, principal),
                 "authenticated": connected and webmail_enabled,
                 "identity": {"email": principal.email} if principal else None,
                 "mode": config.mode, "auth_state": auth_state,
                 "base_path": _base_path(request), "embedded": principal_resolver is not None,
+                "hosted": request.query_params.get("hosted") == "1",
                 "webmail_enabled": webmail_enabled,
             },
         )
+
+    @app.get('/connection', response_class=HTMLResponse)
+    def connection_page(request: Request):
+        principal = _web_principal(current, request, principal_resolver)
+        if principal_resolver is not None and principal is None:
+            raise AuthenticationError('Entre no painel antes de conectar o e-mail.')
+        if principal_resolver is not None:
+            connection = current.connection_status(principal.storage_owner)
+        else:
+            connected = bool(principal and (config.mode not in {'gmail', 'microsoft'} or principal.identity_id))
+            connection = {'authorized': connected, 'email': principal.email if principal else '',
+                          'canAuthorize': config.mode in {'gmail', 'microsoft'}}
+        return TEMPLATES.TemplateResponse(request=request, name='connection.html', context={
+            'connection': connection, 'csrf': csrf(request, principal), 'base_path': _base_path(request), 'mode': config.mode})
 
     @app.get("/health")
     async def health():

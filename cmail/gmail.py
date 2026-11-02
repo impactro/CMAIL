@@ -74,8 +74,14 @@ class GmailProvider:
         ]
 
     def messages(self, folder: str, limit: int = 50) -> list[dict[str, object]]:
+        return self._messages(folder, limit)
+
+    def search_messages(self, folder: str, query: str, limit: int = 50):
+        return self._messages(folder, limit, query)
+
+    def _messages(self, folder, limit, query=''):
         selected_limit = max(1, min(int(limit), 100))
-        params = urllib.parse.urlencode({'maxResults': selected_limit, 'labelIds': str(folder or 'INBOX')})
+        params = urllib.parse.urlencode({'maxResults': selected_limit, 'labelIds': str(folder or 'INBOX'), **({'q': query} if query else {})})
         value = self._call('GET', '/messages?' + params)
         references = [item for item in value.get('messages', [])
                       if isinstance(item, dict) and item.get('id')][:selected_limit]

@@ -1,11 +1,13 @@
 # CMAIL
 
+[Webmail, lista compartilhada, busca e composição CAW/CWH](docs/webmail-layout.md).
+
 Desenvolvimento externo planejado: [piloto de navegação contextual no CWH](.agents/updates/README.md),
 parte da iniciativa única de renderização CCR. Não representa funcionalidade instalada.
 
 `CMAIL` é o nome técnico do módulo independente que reúne webmail, leitura de
 pastas e mensagens, listas de destinatários e disparo controlado de e-mail.
-Versão do componente: CES `26.11.2a` (pacote Python `26.11.2`).
+Versão do componente: CES `26.11.2e` (pacote Python `26.11.2.post4`).
 
 Conteúdo Google genérico: Drive paginado, Docs, valores/formatação e metadados
 de gráficos Sheets e Slides pela
