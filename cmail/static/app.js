@@ -397,7 +397,6 @@
     if(composeOnly){
       if(actions.send){document.querySelector('#composeForm').hidden=false;showCompose();setNotice('');} else setNotice('Envio indisponível nesta conta.');
       if(actions.lists)await loadLists();
-      if(parameters.get('settingsOnly')==='1')document.querySelector('#configureAppearance').click();
     } else if(readerOnly){
       const requestedFolder=parameters.get('folder'),identifier=parameters.get('messageId');
       if(!requestedFolder||!identifier)throw Error('Selecione uma pasta e mensagem no menu.');

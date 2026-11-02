@@ -16,6 +16,9 @@ def test_full_webmail_and_focused_blocks_use_the_same_authenticated_api(tmp_path
         assert compose.status_code == 200 and 'id="composeForm"' in compose.text
         assert 'Autenticação' not in reader.text or 'mailbox-shell.mjs' not in reader.text
         assert client.get('/api/messages').status_code == 200
+        template = client.get('/template')
+        assert template.status_code == 200 and 'appearanceDialog' in template.text
+        assert 'composeForm' not in template.text
 
 
 def test_hosted_company_connection_uses_one_owner_for_two_people(tmp_path):

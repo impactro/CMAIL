@@ -68,7 +68,7 @@
     settings = await request('/api/appearance'); fill(settings.profile);
     const origins = {system:'CMAIL',company:'empresa',personal:'pessoal'};
     document.querySelector('#appearanceOrigin').textContent = `Novas mensagens: template ${origins[settings.effective.new.template.source]}, assinatura ${origins[settings.effective.new.signature.source]}.`;
-    document.querySelector('#appearanceFiles').textContent = `Arquivos pessoais: ${settings.workspaceDirectory}. Use profile.json e caminhos relativos para HTML e imagens.`;
+    document.querySelector('#appearanceFiles').textContent = 'Templates e assinaturas são aplicados aos novos e-mails e às respostas.';
     dialog.showModal();
   }).catch(fail));
   document.querySelector('#closeAppearance').addEventListener('click', () => { if (!busy) dialog.close(); });

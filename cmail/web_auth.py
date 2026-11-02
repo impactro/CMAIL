@@ -70,6 +70,13 @@ def register_auth_routes(app: FastAPI, ctx, security, templates, *, oauth_succes
         return TEMPLATES.TemplateResponse(request=request, name='connection.html', context={
             'connection': connection, 'csrf': csrf(request, principal), 'base_path': _base_path(request), 'mode': config.mode})
 
+    @app.get('/template', response_class=HTMLResponse)
+    def template_page(request: Request):
+        principal = require_principal(request)
+        principal.require('mail.send')
+        return TEMPLATES.TemplateResponse(request=request, name='template.html', context={
+            'csrf': csrf(request, principal), 'base_path': _base_path(request)})
+
     @app.get("/health")
     async def health():
         return {
