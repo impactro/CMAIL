@@ -215,6 +215,12 @@ class MailService:
                 del self._recent_mail[next(iter(self._recent_mail))]
         return rows
 
+    def _invalidate_recent(self, principal):
+        with self._recent_mail_lock:
+            for key in list(self._recent_mail):
+                if key[:2] == (principal.storage_owner, principal.identity_id):
+                    del self._recent_mail[key]
+
     def search_messages(self, principal, folder, query, limit=25):
         principal.require(READ_MAIL)
         selected = self.provider_for(principal)
@@ -298,6 +304,7 @@ class MailService:
     def execute(self, identifier: str, token: str, principal: Principal | None = None) -> dict[str, object]:
         selected = principal or Principal.local_operator()
         selected.require(SEND_MAIL)
+        self._invalidate_recent(selected)
         owner = self._owner(selected)
         payload = self.store.claim(identifier, token, owner)
         recipients = list(payload["recipients"])
@@ -353,6 +360,7 @@ class MailService:
 
     def trash_message(self, principal: Principal, identifier: str, *, folder: str = "INBOX", confirmed: bool = False) -> dict[str, object]:
         principal.require(MANAGE_MAIL)
+        self._invalidate_recent(principal)
         # `confirmed` remains accepted for compatibility; recoverable deletion is immediate.
         selected = self.provider_for(principal)
         targets = [item for item in selected.folders() if folder_role(item) == "trash"]
@@ -373,6 +381,7 @@ class MailService:
 
     def delete_permanently(self, principal: Principal, identifier: str, *, folder: str, confirmed: bool = False) -> dict[str, object]:
         principal.require(MANAGE_MAIL)
+        self._invalidate_recent(principal)
         if not confirmed:
             raise ValueError("Excluir definitivamente exige confirmação explícita.")
         selected = self.provider_for(principal)
@@ -387,6 +396,7 @@ class MailService:
 
     def set_read(self, principal: Principal, identifier: str, is_read: bool, *, folder: str = "INBOX") -> dict[str, object]:
         principal.require(MANAGE_MAIL)
+        self._invalidate_recent(principal)
         selected = self.provider_for(principal)
         if not hasattr(selected, "set_read"):
             raise NotImplementedError("O provedor atual não permite alterar leitura.")
@@ -400,6 +410,7 @@ class MailService:
 
     def move(self, principal: Principal, identifier: str, destination_id: str, *, folder: str = "INBOX") -> dict[str, object]:
         principal.require(MANAGE_MAIL)
+        self._invalidate_recent(principal)
         selected = self.provider_for(principal)
         if not hasattr(selected, "move"):
             raise NotImplementedError("O provedor atual não permite mover mensagens.")

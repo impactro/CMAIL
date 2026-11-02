@@ -39,3 +39,17 @@ def test_outlook_search_targets_subject_body_and_recipient_without_incompatible_
     assert 'subject:proposta' in params['$search'][0]
     assert 'body:proposta' in params['$search'][0] and 'to:proposta' in params['$search'][0]
     assert '$orderby' not in params
+
+
+def test_mail_mutation_invalidates_recent_approximation_cache(tmp_path):
+    from helpers import config
+    from cmail.service import MailService
+    from cmail.principal import Principal
+    provider = SimpleNamespace(messages=lambda folder,limit:[row('old','2026-01-01T00:00:00Z')],
+                               set_read=lambda *args,**kw:{'isRead':True})
+    service = MailService(config(tmp_path), provider)
+    person = Principal.local_operator()
+    service.messages(person,'INBOX')
+    assert service._recent_mail
+    service.set_read(person,'old',True)
+    assert not service._recent_mail
