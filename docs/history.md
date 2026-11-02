@@ -1,5 +1,14 @@
 # Histórico
 
+## 2026-11-02 — Webmail e blocos compartilhados — CES26.11.2e
+
+Python26.11.2.post4: uma lista nativa para CMAIL, CAW e CWH; pastas/lupa, busca
+real no provedor com aproximações no recorte recente e ordem por recebimento.
+Webmail completo usa a mesma lista e leitor/composição nativos em toda a área.
+Modos de apresentação não dependem de identidade hospedada e preservam OAuth,
+CSRF, capacidades e confirmação. Configuração visual limitada a conexão e
+template/assinatura; tema herdado. Contratos e limites em webmail-layout.md.
+
 ## 2026-11-02 — leitor nativo hospedado — CES26.11.2d
 
 Python26.11.2.post3: readerOnly incorporado conserva o cabeçalho nativo e ações
