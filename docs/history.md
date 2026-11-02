@@ -1,305 +1,52 @@
-# Histórico
+# Histórico do CMAIL
 
-## 2026-11-02 — testes da composição Webmail
+Registros completos anteriores no Git, tag
+`archive/docs-before-package-review-20261102`. Instalação e aceite pertencem
+ao consumidor; este histórico não é inventário de máquinas.
 
-Fixtures de navegador passam a selecionar mensagens na lista compartilhada e
-validar o leitor nativo dentro do frame. Configuração de template usa a rota
-própria; composição e testes de ações usam os blocos focados. Removidas as
-premissas de navegação duplicada do layout anterior. Suite sem navegador:
-320 testes aprovados; execução visual completa responsiva segue separada.
+## 2026-11-02 — documentação operacional
 
-## 2026-11-02 — Webmail e blocos compartilhados — CES26.11.2e
+[Guia instalado](installed-package.md) e histórico conciso, sem alteração
+de OAuth, configuração ativa, banco ou comportamento.
 
-Python26.11.2.post4: uma lista nativa para CMAIL, CAW e CWH; pastas/lupa, busca
-real no provedor com aproximações no recorte recente e ordem por recebimento.
-Webmail completo usa a mesma lista e leitor/composição nativos em toda a área.
-Modos de apresentação não dependem de identidade hospedada e preservam OAuth,
-CSRF, capacidades e confirmação. Configuração visual limitada a conexão e
-template/assinatura; tema herdado. Contratos e limites em webmail-layout.md.
+## 26.11.2b–e — Webmail e composição
 
-## 2026-11-02 — leitor nativo hospedado — CES26.11.2d
+Lista única standalone/CAW/CWH: pastas/busca/composição/itens compactos.
+Leitor/compositor usam a área hospedada e ações/prévia/confirmação nativas.
+Busca consulta provedor mais aproximações nas até 40 prévias recentes, sem
+índice fuzzy integral. check-config --from-host usa ponteiro, não .env do CA.
+Conexão e template têm rotas próprias. Fixtures adaptadas/coletadas não
+comprovam aceite real de todos os modos/provedores.
 
-Python26.11.2.post3: readerOnly incorporado conserva o cabeçalho nativo e ações
-autorizadas de responder, encaminhar, organizar e excluir. Lista/pastas ficam
-no host; não cria outra leitura paginada da caixa. Pasta e ID continuam passando
-pelas APIs autenticadas. Alterações confirmadas notificam somente o frame/nonce
-de apresentação. Envio, prévia, CSRF e confirmação definitiva seguem seus
-contratos anteriores. Testes DOM com provedor fictício; sem efeito real.
+## 26.11.2a — Google por capacidade
 
-## 2026-11-02 — validação da configuração hospedada — CES26.11.2c
+Drive/Docs/Sheets/Slides com consentimento incremental e grants por operação.
+Escrita com prévia persistida, confirmação e claim único; sem replay incerto.
+Gmail não concede Drive; testes sintéticos não comprovam OAuth/ação real.
 
-Python26.11.2.post2: `check-config` pelo Component Manager recebe
-`--from-host` e resolve somente `CMAIL_CONFIG_FILE` injetado pelo host, sem
-interpretar seu `.env` compartilhado como standalone. Referência ausente ou
-inválida falha sem fallback. A validação não instancia MailService nem cria
-estado, lê tokens ou abre conexão. Standalone mantém seu `.env` canônico;
-envio Microsoft continua restrito à API com Principal autenticado.
-Regressões cobrem CLI e invocação real pelo CM, com fontes sintéticas:
-314 testes Python aprovados, excluindo os dois módulos de navegador; 29 testes
-focais de configuração/CM também aprovados. Não houve autenticação, envio real,
-migração de estado ou instalação nesta entrega.
+## 26.10.30 — configuração, tema e manutenção
 
-## 2026-11-02 — compositor integrado — CES26.11.2b
+CmailConfiguration valida/edita por revisão e distingue salvo/ativo.
+Rotas/provedores/persistência separados, prévias limitadas. Graph move aceita
+201 Created. Tema pelo provedor de mesma origem mais próximo.
 
-Python26.11.2.post1: a UI hospedada aceita composeOnly=1 para apresentar só
-o compositor na área central do CAW, mantendo autorização, preparação, prévia
-e confirmação nativas. Navegação do host não envia e-mail. Reabertura por
-evento same-origin/parent conserva o rascunho em memória; troca de identidade
-continua responsabilidade do host, que desmonta o frame. Standalone preservado.
+## 26.10.28–29 — aparência e renovação
 
-## 2026-11-02 — Conteúdo Google genérico (tasks12/13) — CES 26.11.2a
+Barra contextual/pastas; excluir fora da lixeira move, exclusão definitiva
+confirma separadamente. Template/assinatura independentes com herança.
+CID PNG/JPEG: até oito imagens/2 MiB. Microsoft offlineAccess opt-in,
+cache ligado à identidade Windows; sessão local não prolonga token.
 
-- Distribuição Python 26.11.2; GoogleAuthService existente com consentimento
-  incremental por capacidade e grants verificados por operação. Gmail legado
-  preservado; Gmail não implica Drive. Autorização de conteúdo pode ocorrer
-  sem uma caixa de email; callback não concede sessão Webmail.
-- API tipada Drive/Docs/Sheets/Slides vinculada ao owner, leitura/escrita
-  separadas, limites de entrada/resposta/paginação e transporte sem redirects.
-  Sheets inclui metadados de gráficos e formatação de intervalos delimitados.
-- Escritas somente após prévia com validade de 600s e claim SQLite atômico de uso
-  único, inclusive concorrência, crash e falha incerta, sem retry automático.
-- Descritor/skill empacotados; CLI somente descobre contrato, sem identidade
-  inventada. Integração do adaptador e limites em docs/google-content.md.
-- Validação local sintética: 303 testes passaram, excluindo os dois módulos de
-  navegador; wheel construído sem instalar. Email, OAuth e conta Google reais
-  não homologados. Instalação e adoção pelo host são etapas separadas.
+## 26.10.19–21 — Gmail por arquivo
 
-## 2026-10-30 — Herança visual CA/CWH pelo provedor mais próximo — 26.10.30f
+Schema 1.2 gmail-file/authorized_user externo; 1.3 SMTP/XOAUTH2 explícito,
+TLS/identidade, sem fallback automático. Schemas anteriores mantêm contrato.
+Envio em duas fases/journal, sem retry incerto.
 
-- Componente `26.10.30f`, distribuição `26.10.30.post5`. Conserva o hotfix
-  Graph 201 de `23dcf9e` e a orientação/contexto de `8396eb8` (26.10.30e).
-- Ponte reconhece html[data-ca-theme-provider=ca|cwh] na mesma origem e mantém
-  CA legado. Copia allowlist, preserva valores explícitos, observa evento comum,
-  redescobre owner e remove cópias obsoletas. Pai opaco conserva fallback local.
-- Fonte do leitor e bordas/erro do modal de aparência usam tokens públicos.
-  Estrutura cm-*, preferências, identidade, permissões e providers não mudam.
-- Guia/testes de migração e bootstrap publicados separadamente em `e1fc49e`;
-  configuração inicial não depende de instalar esta atualização visual.
+## 26.10.2–14 — extração e apresentação
 
-## 2026-10-30 — Resultado correto ao mover mensagens Outlook — 26.10.30d
-
-- Componente `26.10.30d`, distribuição `26.10.30.post3`.
-- A movimentação Graph aceita `201 Created`, conforme o contrato Microsoft,
-  evitando falso erro depois de mover para Lixeira, Arquivo ou outra pasta.
-- Preserva o novo ID da mensagem, erros reais e reconexão em HTTP 401.
-- Regressões usam transporte simulado; nenhuma mensagem real é movida ou
-  excluída pelos testes. Não adiciona retry de operações com efeito externo.
-
-## 2026-10-30 — Descoberta da configuração pública — 26.10.30c
-
-- Componente `26.10.30c`, distribuição `26.10.30.post2`.
-- Inclui CmailConfiguration/ConfigurationConflict em `__all__` e `dir(cmail)`
-  antes de seu primeiro acesso, preservando import lazy sem FastAPI.
-- Mantém a API administrativa de `5fee2f6`. Catálogo CES com optional/next-operation
-  segue compatível: conexão obrigatória e aplicação por reload/restart.
-
-## 2026-10-30 — Contrato administrativo de configuração CES — 26.10.30b
-
-- Componente `26.10.30b`, distribuição `26.10.30.post1`.
-- API Python `CmailConfiguration` para leitura, validação pelo mesmo parser,
-  criação do par inicial JSON/MD e edição com revisão SHA-256 e lock de arquivo.
-- Estado salvo/aplicado/restart compara Config ativo com o candidato, mantendo a
-  revisão exata carregada quando disponível. Salvar não aplica automaticamente.
-- Fragmento `cmail.settings` compatível com catálogo CES v1, paths relativos a
-  `config/`, rejeição de symlinks/escape e documentação de mesmo nome-base.
-- Preserva configFile, principalResolver, mailWorkspaceRootResolver, schemas
-  1.0–1.3 e caminhos explícitos legados. Sem endpoints administrativos novos,
-  mudanças de permissões, OAuth, instalação ou edição de fontes CWH.
-- Perfis de assinatura/template mantêm locais anteriores; migração de aparência
-  ainda precisa ser explícita, sem cópias concorrentes. Não há prompts IA próprios.
-
-## 2026-10-30 — Refatoração de módulos e recursos — 26.10.30a
-
-- Componente `26.10.30a`, distribuição `26.10.30`. Preserva a correção de
-  renovação Microsoft opt-in publicada em `6a2da93`, incluindo seus testes.
-- Separa rotas, segurança, OAuth Google, DTOs/transporte Outlook, MIME,
-  calendário e lifecycle SQLite; mantém imports e contratos públicos.
-- Fecha conexões deterministamente, inicializa schema uma vez por arquivo,
-  indexa auditoria por owner e persiste o estado de rascunho expirado.
-- Teto de memória/quantidade/TTL por prévia e owner, JSON/HTTP limitado e I/O
-  síncrono fora do loop ASGI. Retira o envio direto morto do compositor.
-- Listagem IMAP evita mensagens/anexos completos; Gmail pede só metadados
-  necessários. Imports Python não carregam a interface web antecipadamente.
-- Suítes separadas por responsabilidade e ferramentas locais de inventário e
-  benchmark. Medidas e limites em [manutenção](maintenance.md).
-
-## 2026-10-29 — Renovação Microsoft explícita — 26.10.29e
-
-- Componente `26.10.29e`, distribuição `26.10.29.post4`.
-- `microsoft.offlineAccess` opcional, booleano e desativado por padrão; nenhum
-  consumidor ganha acesso persistente apenas por atualizar o pacote.
-- MSAL mantém a renovação no cache DPAPI existente. Nova autorização Microsoft
-  é necessária para receber a concessão; políticas do Entra continuam válidas.
-- A aquisição silenciosa preserva erros OAuth, distinguindo indisponibilidade
-  temporária de necessidade de reconexão. Sem retry de envio ou novo login automático.
-- Configuração e reconfiguração conservam o opt-in explícito. Testes cobrem
-  default, opt-in, tipos inválidos, renovação simulada e falha transitória.
-- Não comprova renovação de conta real nem altera configuração de instâncias.
-
-## 2026-10-29 — Compatibilidade dos templates legados — 26.10.29d
-
-- Componente `26.10.29d`, distribuição `26.10.29.post3`.
-- Aceita somente `meta http-equiv="Content-Type"` para importar templates HTML
-  antigos. Refresh e outros metadados ativos continuam recusados.
-- Regressão sintética específica para o metadado; validação operacional dos
-  modelos reais permanece fora do pacote genérico.
-- 187 testes aprovados; modelos legados Lakatos/FSND renderizados localmente,
-  com duas imagens CID no primeiro, sem envio.
-
-## 2026-10-29 — Assinatura e template independentes — 26.10.29c
-
-- Componente `26.10.29c`, distribuição `26.10.29.post2`.
-- Padrão genérico, herança empresa/pessoa, escolhas por tipo de mensagem,
-  importação de HTML e imagens, arquivos no workspace e modal com prévia isolada.
-- Conteúdo e imagens são congelados na preparação. Respostas e encaminhamentos
-  web usam o mesmo journal/token, sem refazer o template na execução.
-- Microsoft/Graph informa reconexão quando a autorização é inválida; falhas
-  transitórias não revogam conta, mudam escopos nem repetem envio.
-- 186 testes aprovados, incluindo importação/visualização desktop e móvel,
-  isolamento, herança viva, CID, snapshot e distinção entre falha de autorização
-  e indisponibilidade. Somente mensagens/provedores sintéticos, sem envio real.
-
-## 2026-10-29 — Confirmação somente na exclusão definitiva — 26.10.29b
-
-- Componente `26.10.29b`, distribuição `26.10.29.post1`.
-
-- Excluir fora da lixeira move imediatamente, sem modal nem flag de confirmação
-  obrigatória na API. `mail.manage`, CSRF, contexto da pasta e auditoria permanecem.
-- Dentro da lixeira, Excluir mantém confirmação explícita e aviso de exclusão
-  definitiva. Mesmo botão, ícone, cor e operações de API distintas.
-- Testes de navegador verificam POST direto para lixeira sem clique adicional
-  e cancelamento/confirmação da exclusão definitiva apenas dentro dela.
-
-## 2026-10-29 — Excluir por contexto e APIs distintas — 26.10.29a
-
-- Componente `26.10.29a`, distribuição `26.10.29`; instalação e validação do
-  consumidor são registradas separadamente do empacotamento do fonte.
-
-- Botão Excluir mantém ícone/cor: fora da lixeira, move para ela; dentro dela,
-  solicita confirmação explícita de exclusão definitiva. API Python e HTTP
-  separam `trash_message`/`trash` de `delete_permanently`/`delete-permanently`.
-  Serviço verifica contexto, capabilities e confirmação; auditoria é distinta.
-- Lixeira não depende do flag genérico de movimentação. CAPABILITY IMAP passa
-  a ser consultado após autenticar; o cache anterior ao LOGIN podia ocultar
-  incorretamente ações. Expurgo definitivo IMAP é restrito ao UID na lixeira.
-- Graph/Gmail conferem a pasta/marcador real antes de excluir definitivamente.
-  Gmail respeita o grant já concedido, sem ampliar consentimento automaticamente.
-- Regressão também expôs intermitência preexistente de IDs/tokens aleatórios
-  iniciados por hífen na CLI. Prefixos fixos nos novos valores opacos evitam
-  interpretação como opção; confirmações anteriores continuam válidas.
-- 154 testes aprovados, incluindo cinco de navegador e regressões de
-  confirmação, CSRF, pasta real, CAPABILITY pós-login e UID isolado.
-  Validação somente com contas, provedores e mensagens sintéticas; não equivale
-  à homologação de exclusão em uma caixa real.
-
-## 2026-10-28 — Barra contextual e organização do Webmail — 26.10.28a
-
-- Componente `26.10.28a`, distribuição Python `26.10.28`, incluindo as imagens
-  CID da evolução anterior. Instalação e homologação de cada consumidor são
-  verificações operacionais separadas da publicação do fonte.
-
-- Ações da mensagem selecionada passam ao cabeçalho com ícones SVG locais,
-  nomes acessíveis, dicas e navegação anterior/próxima. Pastas recebem ícones
-  e nomes de apresentação; filtro atua somente na lista carregada. Leitor
-  mostra destinatários e inventário de anexos, sem executar HTML externo.
-- Mantidos os IDs funcionais, classes públicas `cm-*`, tokens `--ca-ui-*`,
-  ponte de tema e prefixos ASGI. Base independente e host de teste com frame
-  verificados em claro/escuro e larguras 1440, 1064, 768 e 390 px.
-- Disponibilidade de ações combina provider e capabilities. IMAP passa a
-  marcar leitura, mover por UID e responder/encaminhar com pasta explícita.
-  Encaminhamento IMAP é textual, sem anexos, com limite informado na confirmação.
-  Destinos de arquivo/lixeira são pastas reais; excluir confirma antes de mover.
-- Movimentação IMAP usa MOVE ou COPY/STORE/UID EXPUNGE; nunca expurga a caixa
-  inteira ou repete automaticamente uma falha. Graph resolve IDs de arquivo
-  e lixeira sem depender do idioma. Gmail inclui lixeira e mantém destino e
-  origem coerentes ao restaurar; Enviados/Rascunhos não são destinos manuais.
-- Regressão: 139 testes sintéticos aprovados, incluindo quatro testes de
-  navegador. Conferência visual própria, sem uso de conta real ou envio.
-
-## 2026-10-24 — Imagens CID opcionais, somente fonte
-
-- Payload `inlineImages` liga PNG/JPEG ao HTML por `img src="cid:..."`, com
-  oito imagens e dois MiB totais no máximo. Sem caminhos, downloads ou SVG.
-- Corpo e bytes ficam no mesmo snapshot/token confirmado; prévia inclui
-  metadados e hash. MIME related compartilhado por Gmail/SMTP/IMAP; Graph
-  usa imagens inline nativas. Anexos gerais continuam recusados.
-- Principal, autenticação, refresh, TLS, configuração, schema do banco e
-  tratamento de envio incerto não foram alterados. CLI aceita arquivo JSON
-  de imagens somente na preparação, nunca para substituir o rascunho.
-- 48 testes focais e 123 completos aprovados, todos sintéticos; sem envio.
-  Integração privada do consumidor montou MIME com apresentação e assets
-  aprovados, preservando bytes e HTML no roundtrip, sem chamar provider.
-- Fonte não instalada nem publicada; metadados da distribuição anterior
-  permanecem até a geração deliberada de uma candidata. Não afirmar E2E de
-  Gmail, Outlook ou entrega. Contrato: `docs/inline-images.md`.
-## 2026-10-21 — Gmail SMTP/XOAUTH2 por arquivo
-
-- `26.10.21a`: schema `1.3` com transporte explícito `api`/`smtp`; schemas
-  anteriores preservados. SMTP fixo Google, TLS obrigatório, identidade por
-  AUTH, status sem envio e refresh em memória; sem fallback ou senha de app.
-- Consentimento SMTP opcional usa grant próprio, PKCE e valida a caixa antes
-  de criar arquivo novo. CLI de envio e templates preservam duas fases.
-- Journal isolado por conta/transporte, Bcc e recibo DATA; falhas incertas
-  não são repetidas. SMTP não anuncia leitura, pastas ou webmail.
-- Validação: 100 testes sintéticos de regressão/fonte aprovados; 19 testes
-  SMTP também aprovados a partir do diretório externo ao checkout. A validação
-  de conta e a implantação reais são registradas privadamente no host consumidor.
-
-## 2026-10-19 — Gmail Por Arquivo E Envio Em Duas Fases
-
-- Candidata `26.10.19a`, distribuição `26.10.19`: modo headless `gmail-file`
-  no schema `1.2`, preservando os schemas/modos anteriores. Referência externa
-  authorized_user, refresh em memória e identidade real conferida no Gmail.
-- CLI `cmail.gmail_file auth/init/status/refresh`: consentimento Google Desktop
-  explícito, URL, loopback efêmero, state/PKCE e arquivo novo; uso normal nunca
-  abre login. Endpoints fixos, sem redirects, sem SSO CA e sem owner arbitrário.
-- `cmail.enviar --gmail`: corpo/arquivo UTF-8, HTML ou template estrito,
-  preparação por padrão e execução exclusiva de draft confirmado. Renderer
-  público exportado, com escape padrão e campos HTML explícitos.
-- Prévia inclui o snapshot exato normalizado do journal; execução não relê o
-  template e não faz replay após claim incerto. Anexos continuam recusados.
-- Suíte completa: 81 testes aprovados, somente fixtures/provedores simulados,
-  incluindo regressão web existente. AST/UTF-8/JSON/diff conferidos. Sem leitura
-  de token real, consentimento real, envio, instalação, reinício, commit ou push.
-- Namespace editorial `knowbase/mail/templates/` documentado no CA, sem dados
-  pessoais no template genérico. Integração opcional CVai é entrega de outro dono.
-- Smoke real relatado pelo consumidor: refresh aceito, porém a Gmail API do
-  projeto legado retornou `403 SERVICE_DISABLED`. Não declarar essa conta
-  operacional na rota API. SMTP XOAUTH2 é extensão pendente de autorização
-  específica, sem campo `transport` nem fallback implementado nesta candidata.
-
-## 2026-10-02 — Extração genérica em e-mail para RPA
-
-Adicionado cmail.extraction: título parcial normalizado, janela em minutos,
-interseção com início da operação, REGEX/grupo e remetente opcional. Valor único
-em memória, sem log ou marcação de leitura; ambiguidade não reutiliza mensagem
-anterior. Polling cancelável a cada 30 segundos, timeout por consumidor.
-38 testes CMAIL aprovados, incluindo zero inicial, mensagem antiga/futura,
-ambiguidade, grupos e cancelamento. Primeiro consumidor: login MFA Acessórias,
-cuja política de portal permanece fora deste módulo.
-
-## 2026-10-14 — Apresentação WebMail compatível com temas CA
-
-Versão26.10.14a, distribuição26.10.14. Classes `cm-*`, tokens públicos
-e ponte de mesma origem, fallback neutro e foco/contrastes revisados nos
-quatro temas. Regiões, IDs, ações e autenticação preservados. 44 testes
-focais aprovados e revisão visual no Edge com dados fictícios. Sem envio
-ou consulta adicional às contas reais.
-
-- Contraprova real26.10.14b/post1: itens de mensagem preservam fundo neutro
-  e datas legíveis; não herdam preenchimento de botão de ação. Apenas
-  apresentação, sem abrir, marcar, arquivar ou enviar mensagens.
-
-## 2026-10-30 — Orientações genéricas por capacidade
-
-- Versão: `26.10.30e`; pacote `26.10.30.post4`.
-- Resultado: Orientação distingue capacidades reutilizáveis de identidade/finalidade do consumidor e conta autenticada; preserva escopo e controle de envio.
-- Validação DEV: 238 passed, 1 warning in 34.19s. Revisão de diff e dos descritores de skills; nenhuma mudança de operação, schema, conta ou permissão.
-- Entrega: fonte publicada e pacote instalado no Python global do UniServer, com 60 arquivos conferidos byte a byte contra o wheel do commit `8396eb8`. Rollback preservado; CA saudável e CWH conectado. Sem geração de mídia, acesso a caixa real ou publicação de site nesta validação.
-
-## 2026-11-02 — fila local única
-
-Referências operacionais e bootstraps usam `.agents/tasks.md`, fila local
-ignorada pelo Git, com BUG, SUGESTÃO e BACKLOG. Retiradas as referências
-ativas às filas antigas; fatos históricos continuam rastreáveis. Esta
-conciliação documental não executa tarefas nem altera contas ou serviços.
+Extração por assunto/remetente/tempo/REGEX, falha em ambiguidade; não marca
+leitura nem registra valor sensível. Tema cm-* herdado ou base standalone.
+Estado security/cmail/ por instância/owner; pacote não transporta tokens.
+Encaminhamento Gmail/IMAP é texto, sem anexos; envio de anexos arbitrários
+não é suportado. OAuth e execução real são aceites por consumidor.

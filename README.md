@@ -2,8 +2,9 @@
 
 [Webmail, lista compartilhada, busca e composição CAW/CWH](docs/webmail-layout.md).
 
-Desenvolvimento externo planejado: [piloto de navegação contextual no CWH](.agents/updates/README.md),
-parte da iniciativa única de renderização CCR. Não representa funcionalidade instalada.
+Comece por [operação pelo pacote instalado](docs/installed-package.md).
+A navegação compartilhada está no módulo; instalação, configuração e OAuth
+são aceites próprios de cada consumidor, não consequência de atualizar fontes.
 
 `CMAIL` é o nome técnico do módulo independente que reúne webmail, leitura de
 pastas e mensagens, listas de destinatários e disparo controlado de e-mail.
@@ -178,7 +179,9 @@ confirmação; somente excluir definitivamente abre a confirmação. A lixeira
 habilita a ação recuperável independentemente do flag genérico de movimentação;
 a exclusão definitiva exige suporte/autorização do provedor e verifica a pasta
 real da mensagem. Pastas têm ícones e nomes de apresentação, preservando seus IDs.
-O filtro pesquisa somente as mensagens já carregadas. As classes `cm-*` e os
+Busca consulta o provedor e aproximações nas até 40 prévias recentes, conforme
+[escopo da busca](docs/webmail-layout.md); não é limitada à lista visível nem
+índice fuzzy integral da caixa. As classes `cm-*` e os
 tokens `--ca-ui-*` mantêm o tema do host quando incorporado e a base neutra
 quando independente, sem depender de assets privados do CA.
 
@@ -265,7 +268,7 @@ segundo armazenamento de tokens no runtime consumidor.
 `git pull` atualiza somente o fonte. A instância standalone reflete a mudança
 depois de instalar o wheel e reiniciar `python -m cmail serve`; o CA reflete a
 mudança depois de instalar o mesmo wheel no runtime compartilhado e reiniciar o
-serviço LIA. A porta standalone não participa da aplicação ASGI incorporada.
+serviço hospedeiro afetado. A porta standalone não participa da aplicação ASGI incorporada.
 
 Cada origem OAuth precisa de um redirect registrado e coerente com a URL que o
 navegador realmente alcança. Uma instância local usa `localhost`; a composição
