@@ -1,5 +1,13 @@
 # Histórico
 
+## 2026-11-02 — testes da composição Webmail
+
+Fixtures de navegador passam a selecionar mensagens na lista compartilhada e
+validar o leitor nativo dentro do frame. Configuração de template usa a rota
+própria; composição e testes de ações usam os blocos focados. Removidas as
+premissas de navegação duplicada do layout anterior. Suite sem navegador:
+320 testes aprovados; execução visual completa responsiva segue separada.
+
 ## 2026-11-02 — Webmail e blocos compartilhados — CES26.11.2e
 
 Python26.11.2.post4: uma lista nativa para CMAIL, CAW e CWH; pastas/lupa, busca
@@ -288,3 +296,10 @@ ou consulta adicional às contas reais.
 - Resultado: Orientação distingue capacidades reutilizáveis de identidade/finalidade do consumidor e conta autenticada; preserva escopo e controle de envio.
 - Validação DEV: 238 passed, 1 warning in 34.19s. Revisão de diff e dos descritores de skills; nenhuma mudança de operação, schema, conta ou permissão.
 - Entrega: fonte publicada e pacote instalado no Python global do UniServer, com 60 arquivos conferidos byte a byte contra o wheel do commit `8396eb8`. Rollback preservado; CA saudável e CWH conectado. Sem geração de mídia, acesso a caixa real ou publicação de site nesta validação.
+
+## 2026-11-02 — fila local única
+
+Referências operacionais e bootstraps usam `.agents/tasks.md`, fila local
+ignorada pelo Git, com BUG, SUGESTÃO e BACKLOG. Retiradas as referências
+ativas às filas antigas; fatos históricos continuam rastreáveis. Esta
+conciliação documental não executa tarefas nem altera contas ou serviços.

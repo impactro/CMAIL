@@ -19,8 +19,7 @@ def test_modal_imports_independent_models_and_previews_prepared_snapshot(tmp_pat
             page = browser.new_page(viewport={'width':1440,'height':1000})
             errors = []
             page.on('pageerror',lambda error: errors.append(str(error)))
-            page.goto(f'http://127.0.0.1:{port}/',wait_until='networkidle')
-            page.get_by_role('button',name='Configurar template e assinatura',exact=True).click()
+            page.goto(f'http://127.0.0.1:{port}/template',wait_until='networkidle')
             expect(page.locator('#appearanceDialog')).to_be_visible()
             page.screenshot(path=str(tmp_path / 'appearance-settings.png'),full_page=True)
             page.locator('#appearance-sender_name').fill('Ana Exemplo')
@@ -42,7 +41,7 @@ def test_modal_imports_independent_models_and_previews_prepared_snapshot(tmp_pat
             page.locator('#saveAppearance').click()
             expect(page.locator('#appearanceDialog')).not_to_be_visible()
             assert json.loads((service.appearance.user_root('') / 'profile.json').read_text(encoding='utf-8'))['fields']['sender_name'] == 'Ana Exemplo'
-            page.locator('#newMessage').click()
+            page.goto(f'http://127.0.0.1:{port}/?composeOnly=1',wait_until='networkidle')
             page.locator('#to').fill('test@example.test')
             page.locator('#subject').fill('Prévia de teste')
             page.locator('#body').fill('Conteúdo de teste, sem envio.')
@@ -51,7 +50,7 @@ def test_modal_imports_independent_models_and_previews_prepared_snapshot(tmp_pat
             expect(page.frame_locator('#sendPreview').locator('strong')).to_have_text('Ana Exemplo')
             assert 'test@example.test' in page.locator('#confirmText').inner_text()
             page.locator('#cancel').click()
-            page.locator('#configureAppearance').click()
+            page.goto(f'http://127.0.0.1:{port}/template',wait_until='networkidle')
             page.locator('#resetAppearance').click()
             page.locator('#previewAppearance').click()
             expect(page.frame_locator('#appearancePreview').locator('h1')).to_have_text('Prévia da sua mensagem')

@@ -62,7 +62,7 @@ def _setup_config(tmp_path: Path) -> Config:
 def _assert_inside_viewport(page, selector: str) -> None:
     box = page.locator(selector).bounding_box()
     assert box is not None
-    width = page.evaluate("window.innerWidth")
+    width = page.locator('body').evaluate("() => window.innerWidth")
     assert box["x"] >= -0.5
     assert box["x"] + box["width"] <= width + 0.5
 
@@ -82,18 +82,14 @@ def test_demo_webmail_remains_accessible_at_supported_viewports(tmp_path):
                     page.set_viewport_size({"width": width, "height": height})
                     page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
 
-                    badge = page.locator("#modeBadge")
-                    assert badge.is_visible()
-                    assert "Demonstração" in badge.inner_text()
-                    assert "nenhum envio real" in badge.inner_text()
-                    assert page.locator("#showListForm").is_visible()
-                    assert page.locator("#newMessage").is_visible()
+                    assert page.get_by_role('combobox',name='Pasta de e-mail').is_visible()
+                    assert page.get_by_role('button',name='Novo e-mail',exact=True).is_visible()
+                    assert page.get_by_role('button',name='Buscar e-mails',exact=True).is_visible()
                     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
 
-                    page.locator("#showListForm").click()
-                    for selector in ("#modeBadge", "#showListForm", "#listForm", "#listName", "#listRecipients", "#saveList"):
-                        assert page.locator(selector).is_visible()
-                        _assert_inside_viewport(page, selector)
+                    page.get_by_role('button',name='Buscar e-mails',exact=True).click()
+                    assert page.get_by_role('searchbox',name='Buscar e-mails').is_visible()
+                    assert page.get_by_role('combobox',name='Pasta de e-mail').is_hidden()
                     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
                     page.screenshot(path=str(tmp_path / f"cmail-{width}x{height}.png"), full_page=True)
             finally:
@@ -175,34 +171,36 @@ def test_context_toolbar_selection_mutations_and_responsive_layout(tmp_path):
             errors = []
             page.on("pageerror", lambda error: errors.append(str(error)))
             page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
-            assert page.locator("#messageActions").is_hidden()
-            assert page.locator(".cm-folder").first.inner_text().startswith("Caixa de entrada")
-            page.locator(".message-item").first.click()
-            page.locator("#messageActions").wait_for(state="visible")
-            assert page.get_by_role("button", name="Responder", exact=True).get_attribute("title") == "Responder"
-            assert page.locator("#readAttachments").inner_text() == "Cronograma.pdf"
+            assert page.locator('#mail-reader').is_hidden()
+            page.locator(".cmail-navigation-item").first.click()
+            reader=page.frame_locator('#mail-reader')
+            reader.locator("#messageActions").wait_for(state="visible")
+            assert reader.get_by_role("button", name="Responder", exact=True).get_attribute("title") == "Responder"
+            assert reader.locator("#readAttachments").inner_text() == "Cronograma.pdf"
             for width, height in ((1440, 900), (1064, 700), (768, 1024), (390, 844)):
                 page.set_viewport_size({"width": width, "height": height})
                 assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
                 for selector in ("#reply", "#forward", "#toggleRead", "#moveMessage", "#trashMessage"):
-                    _assert_inside_viewport(page, selector)
+                    _assert_inside_viewport(reader, selector)
                 page.screenshot(path=str(tmp_path / f"cmail-context-{width}.png"), full_page=True)
             page.set_viewport_size({"width": 1440, "height": 900})
-            page.locator("#toggleRead").click()
-            page.get_by_role("button", name="Marcar como não lida", exact=True).wait_for()
+            reader.locator("#toggleRead").click()
+            reader.get_by_role("button", name="Marcar como não lida", exact=True).wait_for()
             assert mailbox.items[0]["isRead"]
-            page.locator("#moveMessage").click()
-            page.locator("#destinationFolder").select_option("Archive")
-            page.locator("#confirmMove").click()
-            page.locator("#moveDialog").wait_for(state="hidden")
+            reader.locator("#moveMessage").click()
+            reader.locator("#destinationFolder").select_option("Archive")
+            reader.locator("#confirmMove").click()
+            page.locator('#mail-reader').wait_for(state='hidden')
             assert mailbox.moves == [("one", "Archive")]
-            assert page.locator("#messageActions").is_hidden()
-            page.locator("#messageFilter").fill("planejamento")
-            assert page.locator(".message-item").count() == 1
-            page.locator(".message-item").click()
-            page.locator("#messageActions").wait_for(state="visible")
-            page.locator("#trashMessage").click()
-            page.locator("#messageActions").wait_for(state="hidden")
+            page.get_by_role('button',name='Buscar e-mails',exact=True).click()
+            page.get_by_role('searchbox',name='Buscar e-mails').fill('planejamento')
+            page.get_by_role('searchbox',name='Buscar e-mails').press('Enter')
+            from playwright.sync_api import expect
+            expect(page.locator('.cmail-navigation-item')).to_have_count(1)
+            page.locator('.cmail-navigation-item').click()
+            reader.locator("#messageActions").wait_for(state="visible")
+            reader.locator("#trashMessage").click()
+            page.locator('#mail-reader').wait_for(state='hidden')
             assert mailbox.moves[-1] == ("two", "Trash")
             assert errors == []
             browser.close()
@@ -219,7 +217,7 @@ def test_context_toolbar_in_embedded_host_inherits_live_theme(tmp_path):
     host = FastAPI()
     @host.get("/", response_class=HTMLResponse)
     def shell():
-        return '<html style="--ca-ui-surface:#fff;--ca-ui-text:#20252b;--ca-ui-muted:#626b75;--ca-ui-action:#343d48;--ca-ui-border:#d5dae0;color-scheme:light"><body class="ca-shell" style="margin:0"><iframe title="Webmail" src="/cm/cmail/" style="width:100%;height:100vh;border:0"></iframe></body></html>'
+        return '<html style="--ca-ui-surface:#fff;--ca-ui-text:#20252b;--ca-ui-muted:#626b75;--ca-ui-action:#343d48;--ca-ui-border:#d5dae0;color-scheme:light"><body class="ca-shell" style="margin:0"><iframe title="Webmail" src="/cm/cmail/?readerOnly=1&amp;folder=INBOX&amp;messageId=one" style="width:100%;height:100vh;border:0"></iframe></body></html>'
     host.mount("/cm/cmail", create_app(selected, MailService(selected, ContextMailbox()), principal_resolver=lambda request: {"identifier": "synthetic-workspace", "capabilities": ["mail.read", "mail.manage", "mail.send", "lists.manage"]}))
     server, thread, port = _server(host)
     try:
@@ -228,7 +226,6 @@ def test_context_toolbar_in_embedded_host_inherits_live_theme(tmp_path):
             page = browser.new_page(viewport={"width": 1064, "height": 760})
             page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
             frame = page.frame_locator('iframe[title="Webmail"]')
-            frame.locator(".message-item").first.click()
             frame.locator("#messageActions").wait_for(state="visible")
             frame.locator("#reply").click()
             frame.locator("#body").fill("Rascunho preservado ao trocar de tema.")
@@ -258,8 +255,7 @@ def test_same_delete_button_trashes_then_permanently_deletes_synthetic_message(t
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(channel="msedge", headless=True)
             page = browser.new_page(viewport={"width": 1064, "height": 760})
-            page.goto(f"http://127.0.0.1:{port}/", wait_until="networkidle")
-            page.locator('.message-item[data-id="one"]').click()
+            page.goto(f"http://127.0.0.1:{port}/?readerOnly=1&folder=INBOX&messageId=one", wait_until="networkidle")
             remove = page.get_by_role("button", name="Excluir", exact=True)
             expect(remove).to_be_visible()
             expect(remove).to_be_enabled()
@@ -271,8 +267,7 @@ def test_same_delete_button_trashes_then_permanently_deletes_synthetic_message(t
             expect(page.locator("#messageActions")).not_to_be_visible()
             expect(page.locator("#trashDialog")).not_to_be_visible()
             assert mailbox.locations["one"] == "Trash" and mailbox.deleted == []
-            page.locator('.cm-folder[data-id="Trash"]').click()
-            page.locator('.message-item[data-id="one"]').click()
+            page.goto(f"http://127.0.0.1:{port}/?readerOnly=1&folder=Trash&messageId=one", wait_until="networkidle")
             expect(remove).to_be_enabled()
             assert remove.evaluate("node => getComputedStyle(node).color") == color
             assert remove.get_attribute("title") == "Excluir definitivamente"
@@ -311,7 +306,7 @@ def test_marked_theme_provider_preserves_host_tokens_and_live_draft(tmp_path, pr
             '--ca-ui-on-action:#f1e2d3;--ca-ui-success:#148838;--ca-ui-warning:#998811;'
             '--ca-ui-danger:#aa1122;--ca-ui-focus:#125634;--ca-ui-radius:13px;'
             '--ca-ui-space:16px;--ca-ui-font:Georgia,serif;--ca-ui-selection:#ddeecc">'
-            '<body style="margin:0"><iframe title="Webmail" src="/cm/cmail/" '
+            '<body style="margin:0"><iframe title="Webmail" src="/cm/cmail/?readerOnly=1&amp;folder=INBOX&amp;messageId=one" '
             'style="width:100%;height:100vh;border:0"></iframe></body></html>'
         )
 
@@ -325,7 +320,6 @@ def test_marked_theme_provider_preserves_host_tokens_and_live_draft(tmp_path, pr
             page = browser.new_page(viewport={'width':1064,'height':760})
             page.goto(f'http://127.0.0.1:{port}/', wait_until='networkidle')
             frame = page.frame_locator('iframe[title="Webmail"]')
-            frame.locator('.message-item').first.click()
             expect(frame.locator('#readSubject')).to_have_css('color','rgb(34, 51, 68)')
             expect(frame.locator('#reply')).to_have_css('border-radius','13px')
             expect(frame.locator('.compose-button')).to_have_css('color','rgb(241, 226, 211)')
@@ -347,7 +341,6 @@ def test_marked_theme_provider_preserves_host_tokens_and_live_draft(tmp_path, pr
                 document.dispatchEvent(new Event('ca:theme-change'));
             }""")
             expect(frame.locator('#readSubject')).to_have_css('color','rgb(232, 235, 245)')
-            expect(frame.locator('.message-item').first).to_have_css('background-color','rgb(38, 52, 69)')
             expect(frame.locator('#reply')).to_have_css('border-radius','7px')
             expect(frame.locator('.compose-button')).to_have_css('color','rgb(171, 193, 35)')
             assert frame.locator('#body').input_value() == 'Rascunho com identidade visual do host.'
