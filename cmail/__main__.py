@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import threading
 import webbrowser
 from pathlib import Path
@@ -11,7 +12,7 @@ from typing import Callable
 
 import uvicorn
 
-from .config import Config
+from .config import Config, ConfigError
 from .service import MailService, Principal
 from .web import create_app
 
@@ -25,7 +26,11 @@ def create_server(app, *, host: str, port: int, threads: int = 4):
 def parser() -> argparse.ArgumentParser:
     value = argparse.ArgumentParser(prog="cmail")
     actions = value.add_subparsers(dest="action", required=True)
-    actions.add_parser("check-config")
+    check_config = actions.add_parser("check-config")
+    check_config.add_argument(
+        "--from-host", action="store_true",
+        help="Usa somente CMAIL_CONFIG_FILE fornecido pelo host CM.",
+    )
     actions.add_parser("google-content-contract")
     status = actions.add_parser("status"); status.add_argument("--live", action="store_true")
     folders = actions.add_parser("list-folders")
@@ -102,15 +107,24 @@ def main(argv: list[str] | None = None) -> int:
         from .api import CmailApi
         print(json.dumps(CmailApi.describe()["googleContent"], ensure_ascii=False, indent=2))
         return 0
-    config = Config.load()
+    if args.action == "check-config" and args.from_host:
+        reference = os.environ.get("CMAIL_CONFIG_FILE", "").strip()
+        if not reference:
+            raise ConfigError("CMAIL_CONFIG_FILE do host é obrigatório.")
+        config = Config.from_file(reference, root=Path.cwd())
+    else:
+        config = Config.load()
+    if args.action == "check-config":
+        # Validation must not instantiate a service, open state or read tokens.
+        print(json.dumps({"ok": True, "config": config.public()}, ensure_ascii=False, indent=2))
+        return 0
     if args.action == "serve":
         return _serve(config)
     service = MailService(config)
     local = service.config.mode not in {"microsoft", "gmail"}
     if not local and args.action not in {"check-config", "status", "serve"}:
         raise ValueError("No modo Microsoft, use o login web ou a API Python com Principal autenticado.")
-    if args.action == "check-config": result = {"ok": True, "config": config.public()}
-    elif args.action == "status": result = {"ok": True, **service.status(args.live)}
+    if args.action == "status": result = {"ok": True, **service.status(args.live)}
     elif args.action == "list-folders": result = {"ok": True, "folders": service.folders(Principal.local_operator())}
     elif args.action == "list-messages": result = {"ok": True, "messages": service.messages(Principal.local_operator(), args.folder, args.limit)}
     elif args.action == "lists":

@@ -31,7 +31,7 @@ def describe() -> dict[str, object]:
             "google-content-prepare": {"description": "Prepara alteração Google local vinculada ao proprietário, sem HTTP de escrita.", "argv": [], "effects": ["read-files", "write-files"]},
             "google-content-execute": {"description": "Executa prévia Google com confirmação específica pela API autenticada; sem repetição.", "argv": [], "effects": ["read-files", "write-files", "network-and-external-write-with-execute"]},
             "google-content-contract": {"description": "Contrato e allowlist de conteúdo Google. Execução somente pela API com Principal autenticado.", "argv": ["google-content-contract"], "effects": []},
-            "check-config": {"description": "Valida referências sem abrir conexão.", "argv": ["check-config"], "effects": []},
+            "check-config": {"description": "Valida referências sem abrir conexão.", "argv": ["check-config", "--from-host"], "effects": []},
             "status": {"description": "Mostra configuração e estado local.", "argv": ["status"], "effects": ["read-files"]},
             "list-folders": {"description": "Lista pastas da conta configurada.", "argv": ["list-folders"], "effects": ["read-files", "network-read"]},
             "list-messages": {"description": "Lista mensagens sem executar ação externa.", "argv": ["list-messages"], "effects": ["read-files", "network-read"]},

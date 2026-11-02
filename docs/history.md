@@ -1,5 +1,18 @@
 # Histórico
 
+## 2026-11-02 — validação da configuração hospedada — CES26.11.2c
+
+Python26.11.2.post2: `check-config` pelo Component Manager recebe
+`--from-host` e resolve somente `CMAIL_CONFIG_FILE` injetado pelo host, sem
+interpretar seu `.env` compartilhado como standalone. Referência ausente ou
+inválida falha sem fallback. A validação não instancia MailService nem cria
+estado, lê tokens ou abre conexão. Standalone mantém seu `.env` canônico;
+envio Microsoft continua restrito à API com Principal autenticado.
+Regressões cobrem CLI e invocação real pelo CM, com fontes sintéticas:
+314 testes Python aprovados, excluindo os dois módulos de navegador; 29 testes
+focais de configuração/CM também aprovados. Não houve autenticação, envio real,
+migração de estado ou instalação nesta entrega.
+
 ## 2026-11-02 — compositor integrado — CES26.11.2b
 
 Python26.11.2.post1: a UI hospedada aceita composeOnly=1 para apresentar só
