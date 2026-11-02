@@ -41,6 +41,10 @@ class Database:
     def _initialize(self, db):
         db.executescript("""
           PRAGMA journal_mode=WAL;
+          CREATE TABLE IF NOT EXISTS google_content_previews(
+            id TEXT PRIMARY KEY, owner_id TEXT NOT NULL, identity_id TEXT NOT NULL,
+            expires_at REAL NOT NULL, confirmation_hash TEXT NOT NULL,
+            payload_json TEXT NOT NULL, status TEXT NOT NULL, error TEXT NOT NULL);
           CREATE TABLE IF NOT EXISTS mail_lists(
             id INTEGER PRIMARY KEY, owner_id TEXT NOT NULL, name TEXT NOT NULL,
             created_at TEXT NOT NULL, UNIQUE(owner_id,name));

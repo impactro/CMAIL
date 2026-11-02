@@ -1,5 +1,22 @@
 # Histórico
 
+## 2026-11-02 — Conteúdo Google genérico (tasks12/13) — CES 26.11.2a
+
+- Distribuição Python 26.11.2; GoogleAuthService existente com consentimento
+  incremental por capacidade e grants verificados por operação. Gmail legado
+  preservado; Gmail não implica Drive. Autorização de conteúdo pode ocorrer
+  sem uma caixa de email; callback não concede sessão Webmail.
+- API tipada Drive/Docs/Sheets/Slides vinculada ao owner, leitura/escrita
+  separadas, limites de entrada/resposta/paginação e transporte sem redirects.
+  Sheets inclui metadados de gráficos e formatação de intervalos delimitados.
+- Escritas somente após prévia com validade de 600s e claim SQLite atômico de uso
+  único, inclusive concorrência, crash e falha incerta, sem retry automático.
+- Descritor/skill empacotados; CLI somente descobre contrato, sem identidade
+  inventada. Integração do adaptador e limites em docs/google-content.md.
+- Validação local sintética: 303 testes passaram, excluindo os dois módulos de
+  navegador; wheel construído sem instalar. Email, OAuth e conta Google reais
+  não homologados. Instalação e adoção pelo host são etapas separadas.
+
 ## 2026-10-30 — Herança visual CA/CWH pelo provedor mais próximo — 26.10.30f
 
 - Componente `26.10.30f`, distribuição `26.10.30.post5`. Conserva o hotfix

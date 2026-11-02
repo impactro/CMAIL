@@ -15,6 +15,8 @@ def describe() -> dict[str, object]:
         "id": "cmail", "contractVersion": 2, "version": __version__, "pythonModule": "cmail",
         "description": "Webmail independente com Microsoft SSO/Graph, API Python, listas e envio confirmado.",
         "skillGroups": [
+            {"id": "google-content", "name": "Conteúdo Google", "description": "Drive, Docs, Sheets e Slides pela API autenticada do host.",
+             "skills": [{"path": skill("google-content"), "operations": ["google-content-contract", "google-content-read", "google-content-prepare", "google-content-execute"]}]},
             {"id": "webmail", "name": "Webmail", "description": "Consulta e gestão de conta, pastas e mensagens.",
              "skills": [
                  {"path": skill("consultar-email"), "operations": ["check-config", "status", "list-folders", "list-messages", "attachments", "calendar", "serve"]},
@@ -25,6 +27,10 @@ def describe() -> dict[str, object]:
                         {"path": skill("enviar-email"), "operations": ["send-prepare", "send-execute"]}]},
         ],
         "operations": {
+            "google-content-read": {"description": "Consulta conteúdo Google pela API autenticada do host; sem CLI de identidade.", "argv": [], "effects": ["read-files", "network-read"]},
+            "google-content-prepare": {"description": "Prepara alteração Google local vinculada ao proprietário, sem HTTP de escrita.", "argv": [], "effects": ["read-files", "write-files"]},
+            "google-content-execute": {"description": "Executa prévia Google com confirmação específica pela API autenticada; sem repetição.", "argv": [], "effects": ["read-files", "write-files", "network-and-external-write-with-execute"]},
+            "google-content-contract": {"description": "Contrato e allowlist de conteúdo Google. Execução somente pela API com Principal autenticado.", "argv": ["google-content-contract"], "effects": []},
             "check-config": {"description": "Valida referências sem abrir conexão.", "argv": ["check-config"], "effects": []},
             "status": {"description": "Mostra configuração e estado local.", "argv": ["status"], "effects": ["read-files"]},
             "list-folders": {"description": "Lista pastas da conta configurada.", "argv": ["list-folders"], "effects": ["read-files", "network-read"]},

@@ -304,7 +304,7 @@ class Config:
         return value
 
     def google_client_secret(self) -> str:
-        if self.mode != "gmail" or self.google_client_secret_file is None:
+        if self.google_client_secret_file is None:
             return ""
         if not self.google_client_secret_file.is_file():
             raise ConfigError("A referência google.clientSecretFile não está disponível.")

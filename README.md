@@ -5,7 +5,16 @@ parte da iniciativa única de renderização CCR. Não representa funcionalidade
 
 `CMAIL` é o nome técnico do módulo independente que reúne webmail, leitura de
 pastas e mensagens, listas de destinatários e disparo controlado de e-mail.
-Versão do componente: `26.10.30f` (pacote Python `26.10.30.post5`).
+Versão do componente: CES `26.11.2a` (pacote Python `26.11.2`).
+
+Conteúdo Google genérico: Drive paginado, Docs, valores/formatação e metadados
+de gráficos Sheets e Slides pela
+API Python autenticada. Escritas exigem prévia persistente, confirmação e
+claim único, inclusive quando a resposta é incerta. Gmail não concede Drive;
+consentimento é sempre explícito e pode existir sem caixa de email. Veja o
+[contrato Google e integração do adaptador](docs/google-content.md).
+`python -s -m cmail google-content-contract` publica somente o contrato, sem
+carregar credenciais. Conta Google e email reais **não homologados aqui**.
 
 A apresentação herda o provedor CA/CWH de mesma origem mais próximo, com
 tokens `--ca-ui-*` no html. Fonte, dimensões e cores explícitas do host são

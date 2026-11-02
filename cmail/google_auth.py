@@ -32,6 +32,21 @@ GMAIL_SCOPES = (
     "https://www.googleapis.com/auth/gmail.send",
 )
 
+CONTENT_SCOPES = {
+    f"google.{product}.{mode}": (f"https://www.googleapis.com/auth/{scope}" +
+                                (".readonly" if mode == "read" else ""),)
+    for product, scope in (("drive", "drive"), ("docs", "documents"),
+                           ("sheets", "spreadsheets"), ("slides", "presentations"))
+    for mode in ("read", "write")
+}
+
+
+class ConsentRequired(PermissionError):
+    """Explicit incremental consent is required; never triggers interaction."""
+    def __init__(self, scopes):
+        self.scopes = tuple(sorted(scopes))
+        super().__init__("consent-required")
+
 
 HttpRequester = Callable[[str, str, dict[str, str], bytes | None], tuple[int, object]]
 
@@ -127,9 +142,38 @@ class GoogleAuthService:
         scopes = value.get("scope", value.get("scopes", []))
         return set(scopes.split() if isinstance(scopes, str) else scopes) if isinstance(scopes, (str, list, tuple)) else set()
 
-    def begin(self, owner_id: str = "") -> tuple[str, str]:
-        if self.config.mode != "gmail":
+    def require_scopes(self, identity_id: str, capability: str) -> None:
+        required = CONTENT_SCOPES[capability]
+        granted = self.granted_scopes(identity_id)
+        if not all(scope in granted or scope.removesuffix(".readonly") in granted
+                   for scope in required):
+            raise ConsentRequired(required)
+
+    def begin_content(self, identity_id: str, owner_id: str, capability: str) -> tuple[str, str]:
+        if capability not in CONTENT_SCOPES:
+            raise ValueError("Capacidade Google inválida.")
+        if not identity_id:
+            if not isinstance(owner_id, str) or not owner_id.strip() or len(owner_id) > 256:
+                raise ValueError("Proprietário Google inválido.")
+            existing = self.store.bound_identity("google", owner_id)
+            if existing:
+                identity_id = existing["id"]
+            else:
+                return self.begin(owner_id, _content=("", capability))
+        identity = self.store.identity(identity_id)
+        if (not identity or identity.get("provider") != "google" or
+                (identity.get("owner_id") or identity_id) != owner_id):
+            raise PermissionError("Proprietário Google incompatível.")
+        return self.begin(str(identity.get("owner_id") or ""),
+                          _content=(identity_id, capability))
+
+    def begin(self, owner_id: str = "", *, _content=None) -> tuple[str, str]:
+        if self.config.mode != "gmail" and not _content:
             raise AuthenticationError("Login Google não está habilitado.")
+        if _content and not all((self.config.google_client_id,
+                                 self.config.google_client_secret_file,
+                                 self.config.google_redirect_uri)):
+            raise AuthenticationError("Configuração OAuth Google indisponível.")
         state = secrets.token_urlsafe(32)
         browser_nonce = secrets.token_urlsafe(24)
         with self._lock:
@@ -140,12 +184,14 @@ class GoogleAuthService:
                 "created": self.clock(),
                 "browserHash": hashlib.sha256(browser_nonce.encode()).hexdigest(),
                 "ownerId": str(owner_id or "").strip(),
+                "content": _content,
             }
         parameters = {
             "client_id": self.config.google_client_id,
             "redirect_uri": self.config.google_redirect_uri,
             "response_type": "code",
-            "scope": " ".join(GMAIL_SCOPES),
+            "scope": " ".join(("openid", "email") + CONTENT_SCOPES[_content[1]]
+                              if _content else GMAIL_SCOPES),
             "access_type": "offline",
             "prompt": "consent",
             "include_granted_scopes": "true",
@@ -188,7 +234,8 @@ class GoogleAuthService:
         status, token = self.requester(
             "POST", GOOGLE_TOKEN, {"Content-Type": "application/x-www-form-urlencoded"}, body
         )
-        if status >= 300 or not isinstance(token, dict) or not token.get("refresh_token"):
+        if (status >= 300 or not isinstance(token, dict) or not token.get("access_token") or
+                (not token.get("refresh_token") and not pending.get("content"))):
             raise AuthenticationError("O Google não autorizou acesso permanente ao Gmail.")
         access_token = str(token.get("access_token") or "")
         status, userinfo = self.requester(
@@ -205,19 +252,26 @@ class GoogleAuthService:
             email, self.config.google_account.casefold()
         ):
             raise AuthenticationError("A conta Google escolhida não corresponde a esta instância.")
-        profile_status, profile = self.requester(
-            "GET", GMAIL_API + "/profile",
-            {"Authorization": f"Bearer {access_token}", "Accept": "application/json"}, None,
-        )
-        mailbox = str(profile.get("emailAddress") or "").strip().casefold() if isinstance(profile, dict) else ""
-        if profile_status >= 300 or not mailbox or not secrets.compare_digest(mailbox, email):
-            raise AuthenticationError("O Gmail não confirmou a mesma caixa de e-mail.")
+        content = pending.get("content")
+        if content:
+            expected = self.store.identity(content[0]) if content[0] else None
+            if content[0] and (not expected or expected["subject_id"] != subject or
+                              str(expected.get("owner_id") or "") != owner):
+                raise AuthenticationError("Proprietário Google incompatível.")
+            # Incremental responses can omit refresh_token; retain only for the same identity.
+            previous = (self._token_file(expected["id"]).load() or {}) if expected else {}
+            if not token.get("refresh_token"):
+                token["refresh_token"] = previous.get("refresh_token", "")
+            if not token["refresh_token"]:
+                raise AuthenticationError("O Google não autorizou acesso permanente ao conteúdo.")
+        else:
+            self._verify_mailbox(access_token, email)
         token["expires_at"] = int(time.time()) + int(token.get("expires_in") or 3600)
         token["email"] = email
         identity = self.store.save_identity(
             GOOGLE_ISSUER, subject, email, str(userinfo.get("name") or email)[:160],
-            provider="google", scopes=list(GMAIL_SCOPES), enforce_single_account=True,
-            owner_id=owner,
+            provider="google", scopes=str(token.get("scope") or "").split() if content else list(GMAIL_SCOPES),
+            enforce_single_account=True, owner_id=owner,
         )
         if not identity:
             raise AuthenticationError("A conta Google escolhida não corresponde a esta instância.")
@@ -226,6 +280,15 @@ class GoogleAuthService:
             identity["id"], self.config.session_hours
         )
         return session_token, csrf_token, identity
+
+    def _verify_mailbox(self, access_token: str, email: str) -> None:
+        profile_status, profile = self.requester(
+            "GET", GMAIL_API + "/profile",
+            {"Authorization": f"Bearer {access_token}", "Accept": "application/json"}, None,
+        )
+        mailbox = str(profile.get("emailAddress") or "").strip().casefold() if isinstance(profile, dict) else ""
+        if profile_status >= 300 or not mailbox or not secrets.compare_digest(mailbox, email):
+            raise AuthenticationError("O Gmail não confirmou a mesma caixa de e-mail.")
 
     def current(self, session_token: str) -> dict[str, str] | None:
         identity = self.store.session(session_token)

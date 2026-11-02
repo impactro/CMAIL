@@ -26,6 +26,7 @@ def parser() -> argparse.ArgumentParser:
     value = argparse.ArgumentParser(prog="cmail")
     actions = value.add_subparsers(dest="action", required=True)
     actions.add_parser("check-config")
+    actions.add_parser("google-content-contract")
     status = actions.add_parser("status"); status.add_argument("--live", action="store_true")
     folders = actions.add_parser("list-folders")
     messages = actions.add_parser("list-messages"); messages.add_argument("--folder", default="INBOX"); messages.add_argument("--limit", type=int, default=50)
@@ -97,6 +98,10 @@ def _serve(
 
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
+    if args.action == "google-content-contract":
+        from .api import CmailApi
+        print(json.dumps(CmailApi.describe()["googleContent"], ensure_ascii=False, indent=2))
+        return 0
     config = Config.load()
     if args.action == "serve":
         return _serve(config)

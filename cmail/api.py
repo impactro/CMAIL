@@ -8,13 +8,74 @@ from typing import Mapping
 from .config import Config
 from .service import MailService, Principal
 from .appearance import Appearance
+from .google_auth import GoogleAuthService, CONTENT_SCOPES
+from .google_content import GoogleContent, GoogleRead, GoogleWrite, ReadOperation, WriteOperation
 
 
 class CmailApi:
     """Fachada sem cookies web, tokens OAuth ou dependência de ``ca.*``."""
 
-    def __init__(self, service: MailService) -> None:
+    def __init__(self, service: MailService, *, content_requester=None) -> None:
         self.service = service
+        google = service.auth if isinstance(service.auth, GoogleAuthService) else None
+        if google is None and all((service.config.google_client_id,
+                                   service.config.google_client_secret_file,
+                                   service.config.google_redirect_uri)):
+            google = GoogleAuthService(service.config, service.store)
+        self._content = (GoogleContent(google, service.store, requester=content_requester)
+                         if google else None)
+
+    def _google(self) -> GoogleContent:
+        if self._content is None:
+            raise PermissionError("Conteúdo Google exige conexão OAuth Google do CMAIL.")
+        return self._content
+
+    def google_content_read(self, principal: Principal, request: GoogleRead):
+        return self._google().read(principal, request)
+
+    def google_content_prepare(self, principal: Principal, request: GoogleWrite):
+        return self._google().prepare(principal, request)
+
+    def google_content_execute(self, principal: Principal, preview_id: str,
+                               confirmation_token: str, *, confirmed: bool = False):
+        return self._google().execute(principal, preview_id, confirmation_token, confirmed=confirmed)
+
+    def google_content_begin_consent(self, principal: Principal, capability: str):
+        """Explicit host action only; returns URL and browser nonce, never opens a browser.
+
+        Complete with google_content_complete_consent using the same owner and nonce.
+        The host must protect nonce, callback state and the authenticated owner session.
+        """
+        return self._google().begin_consent(principal, capability)
+
+    def google_content_complete_consent(self, response: dict[str, str], browser_nonce: str,
+                                        owner_id: str) -> dict[str, object]:
+        """Trusted callback: host validates its authenticated owner/nonce first.
+
+        Content consent does not log the browser into Webmail or expose tokens.
+        """
+        google = self._google()
+        session, _csrf, identity = google.auth.complete(response, browser_nonce, owner_id)
+        google.store.revoke_session(session)
+        granted = google.auth.granted_scopes(identity["id"])
+        capabilities = [cap for cap, scopes in CONTENT_SCOPES.items()
+                        if all(scope in granted or scope.removesuffix(".readonly") in granted
+                               for scope in scopes)]
+        return {"connected": True, "provider": "google", "identityId": identity["id"],
+                "ownerId": owner_id, "authorizedCapabilities": capabilities}
+
+    def google_content_principal_for_owner(self, owner_id: str,
+                                           capabilities: frozenset[str]) -> Principal:
+        """Resolve Google identity independently of the configured mailbox provider."""
+        if not isinstance(owner_id, str) or not owner_id.strip() or len(owner_id) > 256:
+            raise ValueError("Proprietário Google inválido.")
+        if not capabilities or not frozenset(capabilities) <= CONTENT_SCOPES.keys():
+            raise ValueError("Capacidades Google explícitas obrigatórias.")
+        google = self._google()
+        identity = google.store.bound_identity("google", owner_id)
+        if not identity or not google.auth.is_connected(identity["id"]):
+            raise PermissionError("Conteúdo Google precisa ser autorizado pelo proprietário.")
+        return Principal(identity["id"], identity["email"], frozenset(capabilities), owner_id)
 
     @staticmethod
     def describe() -> dict[str, object]:
@@ -23,6 +84,20 @@ class CmailApi:
             "schemaVersion": "1.0",
             "factory": "cmail:create_api",
             "principalType": "cmail:Principal",
+            "googleContent": {
+                "readMethod": "google_content_read", "readType": "cmail:GoogleRead",
+                "prepareMethod": "google_content_prepare", "writeType": "cmail:GoogleWrite",
+                "executeMethod": "google_content_execute", "consentMethod": "google_content_begin_consent",
+                "consentCallback": "google_content_complete_consent",
+                "principalResolver": "google_content_principal_for_owner",
+                "readOperations": {op.value: "google." + op.value.split(".")[0] + ".read" for op in ReadOperation},
+                "writeOperations": {op.value: "google." + op.value.split(".")[0] + ".write" for op in WriteOperation},
+                "scopesByCapability": CONTENT_SCOPES.copy(),
+                "limits": {"responseBytes": 1048576, "inputBytes": 65536, "pages": 10,
+                           "pageSize": 100, "batchRequests": 20, "previewSeconds": 600},
+                "execution": "owner-bound-durable-single-use-no-retry",
+                "cli": "contract-only; authenticated component API required",
+            },
             "sendFormats": {"text": True, "html": True, "attachments": False, "inlineImages": True},
             "inlineImageLimits": {"count": 8, "totalBytes": 2097152,
                                   "contentTypes": ["image/png", "image/jpeg"]},

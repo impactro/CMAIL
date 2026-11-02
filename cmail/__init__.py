@@ -2,9 +2,14 @@
 
 from importlib import import_module
 
-__version__ = "26.10.30f"
+__version__ = "26.11.2a"
 
 _EXPORTS = {
+    'GoogleRead': ('google_content', 'GoogleRead'),
+    'GoogleWrite': ('google_content', 'GoogleWrite'),
+    'ReadOperation': ('google_content', 'ReadOperation'),
+    'WriteOperation': ('google_content', 'WriteOperation'),
+    'ConsentRequired': ('google_auth', 'ConsentRequired'),
     'CmailConfiguration': ('configuration', 'CmailConfiguration'),
     'ConfigurationConflict': ('configuration', 'ConfigurationConflict'),
     'Config': ('config', 'Config'),
