@@ -1,5 +1,13 @@
 # Histórico
 
+## 2026-11-02 — compositor integrado — CES26.11.2b
+
+Python26.11.2.post1: a UI hospedada aceita composeOnly=1 para apresentar só
+o compositor na área central do CAW, mantendo autorização, preparação, prévia
+e confirmação nativas. Navegação do host não envia e-mail. Reabertura por
+evento same-origin/parent conserva o rascunho em memória; troca de identidade
+continua responsabilidade do host, que desmonta o frame. Standalone preservado.
+
 ## 2026-11-02 — Conteúdo Google genérico (tasks12/13) — CES 26.11.2a
 
 - Distribuição Python 26.11.2; GoogleAuthService existente com consentimento

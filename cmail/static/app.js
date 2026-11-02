@@ -19,6 +19,17 @@
   let mailFolders = [], messageItems = [], actions = {};
   let busy = false, readerVersion = 0, listVersion = 0;
   let pendingDelete = null;
+  const composeOnly = body.dataset.embedded === 'true' && new URLSearchParams(location.search).get('composeOnly') === '1';
+  if(composeOnly){
+    body.classList.add('cm-compose-only');
+    const pane=document.querySelector('#composePane');pane.hidden=false;pane.prepend(notice);
+    document.querySelector('#composeForm').hidden=true;
+  }
+  window.addEventListener('message',event=>{
+    if(composeOnly && event.origin===location.origin && event.source===window.parent && event.data?.type==='cmail:compose-open' && actions.send===true){
+      document.querySelector('#composePane').hidden=false;
+    }
+  });
 
   function icon(name) {
     const node = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -247,7 +258,10 @@
   document.querySelector('#refresh').addEventListener('click', async () => { try { await loadFolders(); await loadMessages(); } catch (error) { showError(error); } });
   document.querySelector('#messageFilter').addEventListener('input', () => { if (selectedMessage && !visibleMessages().some(item => item.id === selectedMessage.id)) clearSelection(); renderMessages(); });
   document.querySelector('#newMessage').addEventListener('click', () => showCompose());
-  document.querySelector('#closeCompose').addEventListener('click', () => { document.querySelector('#composePane').hidden = true; composeAction = 'send'; });
+  document.querySelector('#closeCompose').addEventListener('click', () => {
+    document.querySelector('#composePane').hidden = true; composeAction = 'send';
+    if(composeOnly && window.parent!==window)window.parent.postMessage({type:'cmail:compose-closed'},location.origin);
+  });
   document.querySelector('#showListForm').addEventListener('click', () => { document.querySelector('#listForm').hidden = false; document.querySelector('#listName').focus(); });
   document.querySelector('#cancelList').addEventListener('click', () => { document.querySelector('#listForm').hidden = true; });
   document.querySelector('#listForm').addEventListener('submit', async event => {
@@ -371,6 +385,9 @@
     document.querySelector('.sidebar-heading').hidden = !actions.lists;
     document.querySelector('#lists').hidden = !actions.lists;
     document.querySelector('#listId').disabled = !actions.lists;
-    await loadFolders(); if (actions.lists) await loadLists(); await loadMessages();
+    if(composeOnly){
+      if(actions.send){document.querySelector('#composeForm').hidden=false;showCompose();setNotice('');} else setNotice('Envio indisponível nesta conta.');
+      if(actions.lists)await loadLists();
+    } else { await loadFolders(); if (actions.lists) await loadLists(); await loadMessages(); }
   })().catch(showError);
 })();
