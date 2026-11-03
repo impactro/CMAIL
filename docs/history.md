@@ -1,5 +1,12 @@
 # Histórico do CMAIL
 
+## 03/11/2026 — caminho canônico hospedado
+
+CAW/CWH padronizam `/cm/cmail/auth/google/callback`; origem varia por host.
+Teste de montagem e importação com esse prefixo, mantendo compatibilidade
+ASGI com prefixos anteriores. Alteração de documentação/teste, sem mudar
+versão, código de runtime, serviços ou cadastro Google nesta revisão.
+
 ## 26.11.3a — onboarding Gmail hospedado
 
 Host pode autorizar administrador humano em `/setup` com principal existente,

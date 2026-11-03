@@ -60,6 +60,12 @@ conta. `redirect_uri_mismatch` exige corrigir o registro/URL, não RESET ou cóp
 de tokens. Gmail não concede Drive automaticamente. Renovação Microsoft é
 opt-in (`microsoft.offlineAccess`); sessão local não prolonga token do provedor.
 
+CAW e CWH adotam a montagem canônica `/cm/cmail`. Para Gmail, o callback é
+`<origem>/cm/cmail/auth/google/callback`, independentemente da porta/domínio
+do host. A origem completa deve coincidir com o cadastro Google e a configuração
+da instância. Prefixos anteriores não devem ser removidos do cadastro de outro
+consumidor por efeito de atualizar este pacote.
+
 ## Leitura, busca e ações
 
 Webmail completo combina lista e conteúdo. CAW/CWH usam a mesma navegação;

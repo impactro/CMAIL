@@ -19,7 +19,7 @@ def client_file(**changes):
     return json.dumps({'web': web}).encode()
 
 
-def fixture(tmp_path, **options):
+def fixture(tmp_path, *, mount='/email', **options):
     editor = CmailConfiguration(tmp_path/'config/cmail.config.json', root=tmp_path)
     editor.initialize()
     config = Config.from_file(editor.path, root=tmp_path)
@@ -28,7 +28,7 @@ def fixture(tmp_path, **options):
     module = create_app(config, principal_resolver=resolver,
         setup_authorizer=lambda request: request.headers.get('x-user') == 'admin',
         setup_origin='http://localhost:2670', **options)
-    host = FastAPI();host.mount('/email', module)
+    host = FastAPI();host.mount(mount, module)
     return TestClient(host), editor, config
 
 
@@ -152,3 +152,16 @@ def test_hosted_upload_form_in_real_browser(tmp_path):
                 browser.close()
     finally:
         server.should_exit=True;thread.join(timeout=5);listener.close()
+
+
+def test_canonical_caw_cwh_mount_callback(tmp_path):
+    canonical='http://localhost:2670/cm/cmail/auth/google/callback'
+    client,editor,config=fixture(tmp_path,mount='/cm/cmail')
+    page=client.get('/cm/cmail/setup',headers={'x-user':'admin'})
+    assert page.status_code == 200 and canonical in page.text
+    values={key:re.search(f'name="{key}" value="([^"]+)"',page.text)[1] for key in ('csrf','revision')}
+    values['provider']='gmail'
+    result=client.post('/cm/cmail/setup',data=values,
+        files={'oauthClientFile':('client.json',client_file(redirect_uris=[canonical]))},headers={'x-user':'admin'})
+    assert result.status_code == 202
+    assert Config.from_file(editor.path,root=tmp_path).google_redirect_uri == canonical

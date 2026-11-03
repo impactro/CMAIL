@@ -19,12 +19,18 @@ create_app(config, principal_resolver=resolve_mail_owner,
            setup_origin="http://localhost:2670")
 ```
 
-A montagem ASGI `/email` determina o callback
-`http://localhost:2670/email/auth/google/callback`. A origem vem do host,
+A montagem canônica CAW/CWH é `/cm/cmail`, com callback
+`http://localhost:2670/cm/cmail/auth/google/callback` neste exemplo.
+Domínio e porta variam por consumidor; o caminho permanece
+`/cm/cmail/auth/google/callback`. A origem vem do host,
 nunca de Host, query ou do arquivo importado. Não incluir caminho/barra final
 em setup_origin. HTTPS ou HTTP loopback são aceitos; o host deve usar a mesma
 origem no navegador para conservar sua sessão. Registrar o callback exato
 no cliente Google Web antes da importação.
+O módulo conserva suporte técnico a outros prefixos ASGI, inclusive o antigo
+`/email` do CWH; isso não o torna o caminho canônico. A mudança de montagem,
+links, configuração e registro OAuth pertence ao host, preservando os callbacks
+existentes de outros consumidores até migração explícita.
 
 O formulário `/setup` é inicial-only (`mode=setup`) e protegido por CSRF de
 sessão próprio e revisão CAS. Aceita upload multipart `oauthClientFile` de
