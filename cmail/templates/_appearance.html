@@ -1,6 +1,7 @@
 <dialog id="appearanceDialog" class="cm-appearance-dialog" aria-labelledby="appearanceTitle">
   <form id="appearanceForm">
-    <div class="section-toolbar"><h2 id="appearanceTitle">Template e assinatura</h2><button id="closeAppearance" class="icon-button" type="button" aria-label="Fechar configuração">{{ icon('close') }}</button></div>
+    <header class="cm-modal-header"><h2 id="appearanceTitle">Template e assinatura</h2><button id="closeAppearance" class="icon-button" type="button" aria-label="Fechar configuração" data-ca-modal-close>{{ icon('close') }}</button></header>
+    <div class="cm-modal-content">
     <p class="form-hint">Escolha cada recurso separadamente. Herdar acompanha as atualizações da empresa ou do padrão CMAIL.</p>
     <p id="appearanceOrigin" class="notice"></p>
     <div class="cm-appearance-modes">
@@ -35,6 +36,7 @@
     </details>
     <p id="appearanceError" class="cm-appearance-error" role="alert"></p>
     <iframe id="appearancePreview" class="cm-mail-preview" title="Prévia do template e assinatura" sandbox hidden></iframe>
-    <div class="dialog-actions"><button id="resetAppearance" class="quiet-button" type="button">Restaurar herança</button><button id="previewAppearance" class="quiet-button" type="button">Visualizar</button><button id="saveAppearance" type="submit">Salvar preferências</button></div>
+    </div>
+    <footer class="cm-modal-footer"><button id="saveAppearance" type="submit">Salvar preferências</button><button id="previewAppearance" class="quiet-button" type="button">Visualizar</button><button id="resetAppearance" class="quiet-button" type="button">Restaurar herança</button></footer>
   </form>
 </dialog>

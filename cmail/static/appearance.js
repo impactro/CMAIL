@@ -3,6 +3,8 @@
   if (document.body.dataset.authenticated !== 'true') return;
   const base = document.body.dataset.base || '';
   const dialog = document.querySelector('#appearanceDialog');
+  const adoptModal=()=>window.CMHostModal?.enhance(dialog,{shell:dialog.querySelector('form'),header:dialog.querySelector('header'),body:dialog.querySelector('.cm-modal-content'),footer:dialog.querySelector('footer'),size:'wide'});
+  adoptModal();
   const errorNode = document.querySelector('#appearanceError');
   const fieldNodes = [...dialog.querySelectorAll('[data-appearance-field]')];
   let original = {}, assets = [], settings = null, busy = false;
@@ -14,7 +16,7 @@
     if (!response.ok) throw new Error(value.error || 'Não foi possível configurar a aparência.');
     return value;
   }
-  const fail = error => { errorNode.textContent = error.message || String(error); };
+  const fail = error => { const message=error.message||String(error);if(window.CMHostMessages?.showError(message,{operation:'appearance',errorType:error.name||'Error'})){errorNode.textContent='';return;}errorNode.textContent=message; };
   function drawAssets() {
     const parent = document.querySelector('#appearanceAssets'); parent.replaceChildren();
     assets.forEach((item, index) => {
@@ -69,8 +71,9 @@
     const origins = {system:'CMAIL',company:'empresa',personal:'pessoal'};
     document.querySelector('#appearanceOrigin').textContent = `Novas mensagens: template ${origins[settings.effective.new.template.source]}, assinatura ${origins[settings.effective.new.signature.source]}.`;
     document.querySelector('#appearanceFiles').textContent = 'Templates e assinaturas são aplicados aos novos e-mails e às respostas.';
-    dialog.showModal();
+    adoptModal();dialog.showModal();
   }).catch(fail));
+  dialog.addEventListener('cancel',event=>{if(busy)event.preventDefault();});
   document.querySelector('#closeAppearance').addEventListener('click', () => { if (!busy) dialog.close(); });
   document.querySelector('#resetAppearance').addEventListener('click', () => { fill({}); errorNode.textContent = 'Herança restaurada na edição. Salve para aplicar.'; });
   document.querySelector('#appearanceForm').addEventListener('submit', event => { event.preventDefault(); locked(async () => {

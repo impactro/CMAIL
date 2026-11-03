@@ -133,3 +133,13 @@ dialog { width: min(480px, calc(100vw - 32px)); padding: 26px; border: 0; border
 .cm-page.cm-webmail.cm-reader-only .cm-mailbox {display:grid;width:100%;grid-column:1;grid-template-columns:minmax(0,1fr);min-height:0}
 .cm-page.cm-webmail.cm-reader-only .cm-reader {width:100%;grid-column:1;min-width:0;min-height:0}
 .cm-page.cm-webmail.cm-reader-only .cm-compose {top:56px;bottom:0;right:0;width:min(760px,100%);max-height:calc(100dvh - 56px)}
+
+/* Native fallback follows the host-modal slots without requiring CA/CWH. */
+.cm-page dialog.cm-appearance-dialog {box-sizing:border-box;padding:0;overflow:hidden;max-height:calc(100dvh - 32px);}
+.cm-page dialog.cm-appearance-dialog[open] {display:flex;flex-direction:column;}
+.cm-page dialog.cm-appearance-dialog>form {display:flex;flex-direction:column;min-height:0;overflow:hidden;width:100%;}
+.cm-appearance-dialog .cm-modal-header {display:flex;align-items:center;justify-content:space-between;flex:none;gap:12px;padding:8px 16px;background:var(--ca-modal-header-bg,var(--ca-ui-surface,#fff));border-bottom:1px solid var(--ca-ui-border,#ccd5dd);}
+.cm-appearance-dialog .cm-modal-header h2 {margin:0;font-size:17px;}
+.cm-appearance-dialog .cm-modal-content {flex:1 1 auto;min-height:0;overflow:auto;padding:16px 20px;overscroll-behavior:contain;}
+.cm-appearance-dialog .cm-modal-footer {display:flex;flex-direction:row-reverse;flex-wrap:wrap;flex:none;gap:10px;padding:10px 16px;background:var(--ca-modal-footer-bg,var(--ca-ui-surface,#fff));border-top:1px solid var(--ca-ui-border,#ccd5dd);}
+.cm-appearance-dialog .cm-modal-footer.ca-dialog-footer {flex-direction:row;}
