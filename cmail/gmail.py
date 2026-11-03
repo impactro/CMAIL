@@ -97,6 +97,55 @@ class GmailProvider:
             raise ValueError("Mensagem Gmail inválida.")
         return self._dto(self._call("GET", f"/messages/{selected}?format=full"), True)
 
+    def annotation_page(self, *, since: str, until: str, cursor: str = '', limit: int = 50):
+        # Rounded outward: consumers apply precise timestamps and deduplicate IDs.
+        import math
+        start = math.floor(datetime.fromisoformat(since).timestamp()) - 1
+        end = math.ceil(datetime.fromisoformat(until).timestamp()) + 1
+        if not isinstance(cursor, str) or len(cursor) > 4096:
+            raise ValueError('CMAIL_ANNOTATION_CURSOR_INVALID')
+        params = {'maxResults': limit, 'q': f'after:{start} before:{end} -in:sent -in:drafts',
+                  **({'pageToken': cursor} if cursor else {})}
+        value = self._call('GET', '/messages?' + urllib.parse.urlencode(params))
+        metadata = urllib.parse.urlencode({'format': 'metadata', 'metadataHeaders':
+            ['From', 'To', 'Subject', 'Date']}, doseq=True)
+        items = [self._dto(self._call('GET', '/messages/' +
+                    urllib.parse.quote(str(item['id']), safe='') + '?' + metadata), False)
+                 for item in value.get('messages', []) if isinstance(item, dict) and item.get('id')]
+        return {'items': items, 'nextCursor': str(value.get('nextPageToken') or '')}
+
+    @staticmethod
+    def _attachment_parts(payload):
+        if not isinstance(payload, dict):
+            return
+        if payload.get('filename'):
+            yield payload
+        for child in payload.get('parts', []) if isinstance(payload.get('parts'), list) else []:
+            yield from GmailProvider._attachment_parts(child)
+
+    def attachment(self, identifier: str, attachment_id: str) -> dict:
+        selected = urllib.parse.quote(str(identifier or ''), safe='')
+        if not selected or not attachment_id:
+            raise ValueError('Anexo Gmail inválido.')
+        message = self._call('GET', f'/messages/{selected}?format=full')
+        part = next((p for p in self._attachment_parts(message.get('payload'))
+                     if str((p.get('body') or {}).get('attachmentId') or 'part:' + str(p.get('partId') or '')) == attachment_id), None)
+        if part is None:
+            raise ValueError('Anexo não pertence à mensagem.')
+        body = part.get('body') or {}
+        if int(body.get('size') or 0) > 25 * 1024 * 1024:
+            raise ValueError('Anexo excede o limite de 25 MiB.')
+        data = str(body.get('data') or '')
+        if body.get('attachmentId'):
+            payload = self._call('GET', f'/messages/{selected}/attachments/' + urllib.parse.quote(attachment_id, safe=''))
+            data = str(payload.get('data') or '')
+        raw = base64.urlsafe_b64decode(data + '=' * (-len(data) % 4))
+        if len(raw) > 25 * 1024 * 1024:
+            raise ValueError('Anexo excede o limite de 25 MiB.')
+        return {'id': attachment_id, 'name': str(part.get('filename') or ''),
+                'contentType': str(part.get('mimeType') or 'application/octet-stream'),
+                'size': len(raw), 'contentBase64': base64.b64encode(raw).decode('ascii')}
+
     def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None) -> dict[str, object]:
         from .inline_images import add_body
         message = EmailMessage()
@@ -168,6 +217,8 @@ class GmailProvider:
         def content(part: object) -> str:
             if not isinstance(part, dict):
                 return ""
+            if part.get('filename'):
+                return ''  # Attachment text is evidence of its own, never the message body.
             mime = str(part.get("mimeType") or "")
             body = part.get("body") if isinstance(part.get("body"), dict) else {}
             encoded = str(body.get("data") or "")
@@ -188,8 +239,9 @@ class GmailProvider:
 
         body_text = content(payload) if include_body else ""
         attachments = [
-            {"name": str(item.get("filename") or ""), "contentType": str(item.get("mimeType") or ""), "size": int((item.get("body") or {}).get("size") or 0)}
-            for item in payload.get("parts", []) if isinstance(item, dict) and item.get("filename")
+            {"id": str((item.get('body') or {}).get('attachmentId') or 'part:' + str(item.get('partId') or '')),
+             "name": str(item.get("filename") or ""), "contentType": str(item.get("mimeType") or ""), "size": int((item.get("body") or {}).get("size") or 0)}
+            for item in GmailProvider._attachment_parts(payload)
         ]
         return {
             "id": str(value.get("id") or ""), "subject": headers.get("subject", ""),

@@ -1,5 +1,26 @@
 # API Python do CMAIL
 
+## Leitura para anotações (v1)
+
+`CmailApi(service_existente).annotation_reader(owner_id)` fornece um leitor
+vinculado à conta já autorizada do host, somente com `mail.read`:
+
+- `account_id`: hash opaco de provedor, owner e identidade; não é credencial.
+- `page(since=ISO, until=ISO, cursor='', limit=50)`: janela fixa com datas
+  conscientes de fuso; devolve `items` normalizados e `nextCursor`.
+- `message(id)`: texto, remetente, data, assunto e descritores de anexos.
+- `attachment(id, attachment_id)`: `contentBase64`, nome, tipo e tamanho.
+
+Gmail tem paginação e anexos MIME aninhados/embutidos, até 25 MiB por arquivo.
+Somente GET é usado: não envia, não marca como lido, não altera a caixa.
+Rebind/desconexão falha explicitamente; consumidores não devem avançar cursor
+em falha. O host precisa reconstruir o reader para uma nova identidade.
+Outros provedores ainda não implementam a paginação deste contrato e retornam
+`CMAIL_ANNOTATION_PAGINATION_UNAVAILABLE`; não se simula sucesso vazio.
+Datas têm arredondamento externo de segundos no Gmail; consumidor aplica
+janela exata e deduplicação. Referências de anexos são validadas contra a
+mensagem antes do download. Não passar owner vindo de query/formulário.
+
 Configuração administrativa é uma API Python separada das capabilities da caixa:
 `CmailConfiguration` / `ConfigurationConflict`, disponíveis em `cmail`.
 Leitura, validação, revisão, catálogo CES e aplicação estão documentados em

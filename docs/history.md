@@ -1,3 +1,12 @@
+## 26.11.3c — leitor para anotações
+
+API pública `annotation_reader(owner_id)` com vínculo à identidade autorizada,
+capacidade somente de leitura, janela/paginação Gmail e download de anexos
+MIME aninhados. Nenhuma dependência do host/CCI, envio ou mudança de OAuth.
+Contrato e limites em API.md. Dois testes focais e 340 testes de regressão
+passaram; quatro testes foram pulados. A falha de toolbar móvel foi reproduzida
+também no HEAD anterior e não integra esta entrega.
+
 ## 2026-11-03 — Contratos de apresentação e feedback
 
 Template/assinatura adota slots fixos e ca.modal.v1. Feedback de aparência, leitor e navegação usa ca.messages.v1 do host; fallback nativo preservado. Quatro testes crosshost390/1440px,29regressões e7Node passaram, sem conta/envio real.

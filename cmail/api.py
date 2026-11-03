@@ -25,6 +25,11 @@ class CmailApi:
         self._content = (GoogleContent(google, service.store, requester=content_requester)
                          if google else None)
 
+    def annotation_reader(self, owner_id: str):
+        """Read-only facade bound to the host's already authorized mailbox owner."""
+        from .annotation_reader import AnnotationReader
+        return AnnotationReader(self, owner_id)
+
     def _google(self) -> GoogleContent:
         if self._content is None:
             raise PermissionError("Conteúdo Google exige conexão OAuth Google do CMAIL.")
@@ -84,6 +89,9 @@ class CmailApi:
             "schemaVersion": "1.0",
             "factory": "cmail:create_api",
             "principalType": "cmail:Principal",
+            "annotationReader": {"contractVersion": 1, "factory": "annotation_reader",
+                "capability": "mail.read", "providerPagination": ["gmail"],
+                "methods": ["page", "message", "attachment"], "mutatesMailbox": False},
             "googleContent": {
                 "readMethod": "google_content_read", "readType": "cmail:GoogleRead",
                 "prepareMethod": "google_content_prepare", "writeType": "cmail:GoogleWrite",

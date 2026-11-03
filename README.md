@@ -1,5 +1,8 @@
 # CMAIL
 
+Integrações de análise podem usar o [leitor de anotações v1](API.md), vinculado
+ao owner já autorizado, com paginação Gmail e leitura de anexos sem alterar a caixa.
+
 [Webmail, lista compartilhada, busca e composição CAW/CWH](docs/webmail-layout.md).
 
 Comece por [operação pelo pacote instalado](docs/installed-package.md).
