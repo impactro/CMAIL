@@ -7,13 +7,13 @@ function syncProvider() {
   const provider = choices.find(item => item.checked)?.value || "outlook";
   const isImap = provider === "imap";
   oauth.hidden = isImap;
-  imap.hidden = !isImap;
-  tenant.hidden = provider !== "outlook";
+  if (imap) imap.hidden = !isImap;
+  if (tenant) tenant.hidden = provider !== "outlook";
   oauth.querySelectorAll("input").forEach(input => {
     const retainedSecret = input.type === "password" && input.dataset.configured === "true";
     input.required = !isImap && !retainedSecret && (!input.closest('[data-outlook-only]') || provider === "outlook");
   });
-  imap.querySelectorAll("input,select").forEach(input => {
+  imap?.querySelectorAll("input,select").forEach(input => {
     const retainedPassword = input.type === "password" && input.dataset.configured === "true";
     input.required = isImap && !retainedPassword;
   });

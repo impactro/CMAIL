@@ -125,13 +125,16 @@ ficam bloqueadas e `/health` informa `configured=false`. Isso é diferente de
 um host que não encontrou o JSON e acusou `CM_API_NOT_CONFIGURED`.
 Não mudar para demo para mascarar esse diagnóstico.
 
-O formulário nativo `/setup` é **somente standalone** e devolve 404 quando
+Até26.11.2e, o formulário nativo `/setup` é **somente standalone** e devolve 404 quando
 há `principalResolver`. A raiz em setup redireciona para ele; portanto não
 anunciar o webmail embutido como pronto nessa fase. O painel administrativo
 do CA/CWH deve apresentar a configuração pelo provider do host, usar
 `CmailConfiguration.read/validate/save(expected_revision=...)`, provisionar
 referências de segredo pelo trilho autorizado e aplicar reload/restart.
 Não remover o principal para liberar o setup nem usar sessão comum como admin.
+Desde26.11.3a, há opt-in explícito para onboarding inicial Gmail hospedado;
+ver [contrato de autorização e aplicação](configuration-host.md#onboarding-gmail-hospedado).
+Sem esse opt-in, a restrição404 permanece.
 
 ## Evidências e limites
 

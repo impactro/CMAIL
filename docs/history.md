@@ -1,5 +1,19 @@
 # Histórico do CMAIL
 
+## 26.11.3a — onboarding Gmail hospedado
+
+Host pode autorizar administrador humano em `/setup` com principal existente,
+CSRF e origem/callback ASGI explícitos. Upload de cliente Google Web limitado,
+sem ecoar segredo; configuração inicial salva por CAS e segredo restrito.
+Sem reinício automático, reset de grants ou OAuth implícito. Consentimento
+usa o fluxo nativo após aplicação pelo operador. Sem hook,404 preservado.
+Não implementa coleta de e-mails/anotações CCI nem altera fontes CWH.
+Validação própria: 12 testes do onboarding, incluindo formulário no Edge e
+consentimento simulado; regressão sem a suíte Playwright legada:332 aprovados.
+Na suíte ampla inicial:336 aprovados e1 falha de toolbar em viewport estreita;
+mesma falha reproduzida no baseline ac0fc46 (6 casos aprovados,1 falha).
+Sem OAuth real, leitura de caixa, instalação global ou operação CWH nesta entrega.
+
 Registros completos anteriores no Git, tag
 `archive/docs-before-package-review-20261102`. Instalação e aceite pertencem
 ao consumidor; este histórico não é inventário de máquinas.

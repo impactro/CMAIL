@@ -1,5 +1,50 @@
 # Configuração administrativa pelo host
 
+## Onboarding Gmail hospedado
+
+Desde CMAIL26.11.3a/Python26.11.3, `create_app` aceita `setup_authorizer`
+(callback síncrono Request→bool) e `setup_origin` (origem explícita confiável).
+Na factory CM, os nomes são `setupAuthorizer` e `setupOrigin` em host_services.
+São opcionais; sem authorizer, `/setup` hospedado continua404. O host deve
+conferir sessão humana, papel administrador e alcance da instância em CADA
+chamada antes de retornar exatamente True. Uma capacidade mail.manage ou uma
+credencial MCP não comprovam essa autorização. O principalResolver existente
+é preservado e também consultado; não é necessário estar conectado ao Gmail.
+
+Exemplo de composição (o host implementa a autorização, sem roles inferidos):
+
+```python
+create_app(config, principal_resolver=resolve_mail_owner,
+           setup_authorizer=authorize_current_human_admin,
+           setup_origin="http://localhost:2670")
+```
+
+A montagem ASGI `/email` determina o callback
+`http://localhost:2670/email/auth/google/callback`. A origem vem do host,
+nunca de Host, query ou do arquivo importado. Não incluir caminho/barra final
+em setup_origin. HTTPS ou HTTP loopback são aceitos; o host deve usar a mesma
+origem no navegador para conservar sua sessão. Registrar o callback exato
+no cliente Google Web antes da importação.
+
+O formulário `/setup` é inicial-only (`mode=setup`) e protegido por CSRF de
+sessão próprio e revisão CAS. Aceita upload multipart `oauthClientFile` de
+até64KiB; formulário inteiro até96KiB. Somente JSON com raiz `web`, client_id,
+client_secret e callback em redirect_uris. Tokens/authorized_user/installed
+são recusados; URLs de autorização do arquivo não são usadas. O segredo não
+é devolvido à UI: arquivo UUID com ACL restrita em state/security/google,
+referência no JSON. Não cria caixa, scheduler ou sessão OAuth nem reseta grants.
+
+O POST retorna202 HTML: salvo, mas aplicação/reinício do host pendente.
+Nenhum restart_callback é chamado nesse modo. A configuração ativa permanece
+setup até o operador recriar o componente. Após aplicar, `/connection` oferece
+Conectar Gmail, com consentimento na janela principal e owner do host pelo
+fluxo nativo existente. Reconfiguração de caixa já configurada fica fora deste
+onboarding e retorna409; não usar setup para reparar ou transferir contas.
+
+Fixtures não comprovam cadastro do aplicativo, consentimento Google real ou
+leitura da caixa no consumidor. Não houve alteração de CWH/CA ou instalação
+de runtime por esta entrega. CCI/anotações não fazem parte deste contrato.
+
 Componente `26.10.30c`, distribuição `26.10.30.post2`. Continuação aditiva da
 refatoração `088b427` / `26.10.30a`, para configuração pelo CWH/CA e standalone.
 Não inclui instalação, migração de instâncias existentes ou implementação no CWH.

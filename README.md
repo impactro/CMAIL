@@ -8,7 +8,13 @@ são aceites próprios de cada consumidor, não consequência de atualizar fonte
 
 `CMAIL` é o nome técnico do módulo independente que reúne webmail, leitura de
 pastas e mensagens, listas de destinatários e disparo controlado de e-mail.
-Versão do componente: CES `26.11.2e` (pacote Python `26.11.2.post4`).
+Versão do componente: CES `26.11.3a` (pacote Python `26.11.3`).
+
+Configuração inicial Gmail hospedada: o administrador pode importar o JSON
+de um cliente Google Web quando o host habilita explicitamente o contrato
+de [onboarding hospedado](docs/configuration-host.md#onboarding-gmail-hospedado).
+Salvar exige aplicação pelo host; o consentimento Google acontece depois,
+pelo fluxo OAuth nativo, e não é concedido ao importar o arquivo.
 
 Conteúdo Google genérico: Drive paginado, Docs, valores/formatação e metadados
 de gráficos Sheets e Slides pela

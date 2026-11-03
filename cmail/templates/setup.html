@@ -12,28 +12,34 @@
       <div class="brand-mark" aria-hidden="true">C</div>
       <div><p class="eyebrow">Instância local · uma conta</p><h1>Configurar CMAIL</h1></div>
     </header>
-    <p>Escolha a única conta desta pasta. Para outra conta, crie outra pasta operacional e use outra porta.</p>
+    {% if hosted %}<p>Importe o aplicativo Google desta instância. A conta será escolhida no consentimento Google, após aplicar a configuração.</p>{% else %}<p>Escolha a única conta desta pasta. Para outra conta, crie outra pasta operacional e use outra porta.</p>{% endif %}
     {% if error %}<p class="setup-error" role="alert">{{ error }}</p>{% endif %}
-    <form method="post" action="{{ base_path }}/setup" class="setup-form">
+    <form method="post" enctype="multipart/form-data" action="{{ base_path }}/setup" class="setup-form">
       <input type="hidden" name="csrf" value="{{ csrf }}">
+      {% if hosted %}<input type="hidden" name="revision" value="{{ setup_revision }}">{% endif %}
       <fieldset class="provider-options">
         <legend>Tipo da conta</legend>
-        <label><input type="radio" name="provider" value="outlook" {% if values.provider == 'outlook' %}checked{% endif %}> Outlook / Microsoft 365</label>
-        <label><input type="radio" name="provider" value="gmail" {% if values.provider == 'gmail' %}checked{% endif %}> Gmail / Google Workspace</label>
-        <label><input type="radio" name="provider" value="imap" {% if values.provider == 'imap' %}checked{% endif %}> IMAP + SMTP</label>
+        {% if not hosted %}<label><input type="radio" name="provider" value="outlook" {% if values.provider == 'outlook' %}checked{% endif %}> Outlook / Microsoft 365</label>{% endif %}
+        <label><input type="radio" name="provider" value="gmail" {% if hosted or values.provider == 'gmail' %}checked{% endif %}> Gmail / Google Workspace</label>
+        {% if not hosted %}<label><input type="radio" name="provider" value="imap" {% if values.provider == 'imap' %}checked{% endif %}> IMAP + SMTP</label>{% endif %}
       </fieldset>
 
       <section data-provider-panel="oauth">
         <h2>Aplicativo OAuth</h2>
         {% if values.oauthAccount %}<p class="setup-current-account">Conta vinculada atualmente: <strong>{{ values.oauthAccount }}</strong></p>{% endif %}
         <p class="setup-hint">Não é necessário digitar o e-mail. A identidade verificada será devolvida pelo provedor e vinculada após o login.</p>
+        {% if hosted %}
+        <label>JSON do cliente OAuth Google Web<input type="file" name="oauthClientFile" accept=".json,application/json" required></label>
+        <p>Cadastre este retorno no cliente Google: <code>{{ google_callback }}</code>. Após aplicar a configuração, use Conectar Gmail para autorizar sua conta.</p>
+        {% else %}
         <label>Client ID<input name="clientId" autocomplete="off" value="{{ values.clientId }}"></label>
         <label>Client secret<input type="password" name="clientSecret" autocomplete="new-password" data-configured="{{ 'true' if values.hasOAuthSecret else 'false' }}" placeholder="{{ 'Deixe em branco para manter o atual' if values.hasOAuthSecret else 'Obrigatório na primeira configuração' }}"></label>
         <label data-outlook-only>Tenant ID<input name="tenantId" autocomplete="off" value="{{ values.tenantId }}"></label>
         <p class="setup-hint">Callback Microsoft desta instância: <code>http://localhost:{{ port }}/auth/callback</code>. Após salvar, o login do provedor será obrigatório.</p>
+        {% endif %}
       </section>
 
-      <section data-provider-panel="imap" hidden>
+      {% if not hosted %}<section data-provider-panel="imap" hidden>
         <h2>Servidores IMAP e SMTP</h2>
         <label>Conta de e-mail<input type="email" name="account" autocomplete="email" value="{{ values.account }}" placeholder="voce@empresa.com"></label>
         <label>Usuário<input name="username" autocomplete="username" value="{{ values.username }}"></label>
@@ -48,7 +54,7 @@
         </div>
         <label>Pasta de enviados<input name="sentFolder" value="{{ values.sentFolder }}"></label>
         <p class="setup-hint">A senha será gravada em arquivo local com acesso restrito ao usuário atual; o JSON terá apenas a referência.</p>
-      </section>
+      </section>{% endif %}
       <button class="setup-submit" type="submit">Salvar esta conta</button>
     </form>
   </main>

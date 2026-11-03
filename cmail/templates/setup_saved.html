@@ -13,7 +13,7 @@
     <p class="eyebrow">Configuração salva</p>
     <h1>{{ account }}</h1>
     <p>Provedor: {{ provider }}. Esta pasta continua vinculada a uma única conta.</p>
-    {% if automatic %}<p>O CMAIL está reiniciando; em seguida começará a autenticação obrigatória quando aplicável.</p>{% else %}<p>Reinicie o processo CMAIL para aplicar a conta.</p>{% endif %}
+    {% if hosted %}<p>Configuração salva. Aguarda aplicação pelo administrador do host; depois abra Conectar Gmail para autorizar sua conta. Nenhuma caixa foi conectada ainda.</p>{% elif automatic %}<p>O CMAIL está reiniciando; em seguida começará a autenticação obrigatória quando aplicável.</p>{% else %}<p>Reinicie o processo CMAIL para aplicar a conta.</p>{% endif %}
     <a class="microsoft-login" href="{{ base_path }}/">Continuar</a>
   </main>
 </body>

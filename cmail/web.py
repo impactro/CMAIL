@@ -43,6 +43,8 @@ def _create_module_app(
     restart_callback: Callable[[], None] | None = None,
     principal_resolver: HostPrincipalResolver | None = None,
     oauth_success_path: str = "",
+    setup_authorizer=None,
+    setup_origin: str = "",
 ) -> FastAPI:
     current = service or MailService(config)
     app = FastAPI(title="CMAIL", docs_url=None, redoc_url=None, openapi_url=None)
@@ -61,7 +63,8 @@ def _create_module_app(
     security = WebSecurity(current, principal_resolver)
     context = WebContext(current, security.require_principal, security.require_csrf, previews)
     register_auth_routes(app, context, security, TEMPLATES, oauth_success_path=oauth_success_path)
-    register_setup_routes(app, context, security, TEMPLATES, restart_callback=restart_callback)
+    register_setup_routes(app, context, security, TEMPLATES, restart_callback=restart_callback,
+                          setup_authorizer=setup_authorizer, setup_origin=setup_origin)
     register_mail_routes(app, context)
     register_calendar_routes(app, context)
     register_appearance_routes(app, context)
@@ -130,16 +133,25 @@ def create_app(
     restart_callback: Callable[[], None] | None = None,
     principal_resolver: HostPrincipalResolver | None = None,
     oauth_success_path: str = "",
+    setup_authorizer=None,
+    setup_origin: str = "",
 ) -> FastAPI:
     """Create a mountable CMAIL ASGI app or a prefixed standalone host."""
     if config.mode == "gmail-file":
         raise ValueError("gmail-file é headless: use CLI ou API Python local.")
+    if setup_authorizer is not None:
+        if principal_resolver is None or not callable(setup_authorizer):
+            raise ValueError('setup_authorizer exige host autenticado e callback chamável.')
+        from .hosted_setup import setup_origin as validate_origin
+        setup_origin = validate_origin(setup_origin)
     module = _create_module_app(
         config,
         service,
         restart_callback=restart_callback,
         principal_resolver=principal_resolver,
         oauth_success_path=oauth_success_path,
+        setup_authorizer=setup_authorizer,
+        setup_origin=setup_origin,
     )
     prefix = "/" + str(url_prefix or "").strip("/") if str(url_prefix or "").strip("/") else ""
     if not prefix:
@@ -200,4 +212,6 @@ def create_component_app(
         )),
         principal_resolver=resolver,
         oauth_success_path=oauth_success_path,
+        setup_authorizer=services.get('setupAuthorizer'),
+        setup_origin=services.get('setupOrigin', ''),
     )
