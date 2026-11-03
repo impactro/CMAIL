@@ -1,3 +1,7 @@
+## 2026-11-03 — Contratos de apresentação e feedback
+
+Template/assinatura adota slots fixos e ca.modal.v1. Feedback de aparência, leitor e navegação usa ca.messages.v1 do host; fallback nativo preservado. Quatro testes crosshost390/1440px,29regressões e7Node passaram, sem conta/envio real.
+
 # Histórico do CMAIL
 
 ## 26.11.3a — onboarding Gmail hospedado

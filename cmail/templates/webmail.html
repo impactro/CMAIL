@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CMAIL · Webmail</title>
-<link rel="stylesheet" href="{{ base_path }}/static/cm-theme.css?v=26.11.2e"><link rel="stylesheet" href="{{ base_path }}/static/mailbox-navigation.css?v=26.11.2e"><link rel="stylesheet" href="{{ base_path }}/static/mailbox-shell.css?v=26.11.2e">
-<script src="{{ base_path }}/static/cm-theme.js" defer></script><script src="{{ base_path }}/static/mailbox-shell.mjs?v=26.11.2e" type="module"></script></head>
+<link rel="stylesheet" href="{{ base_path }}/static/cm-theme.css?v=26.11.3b"><link rel="stylesheet" href="{{ base_path }}/static/mailbox-navigation.css?v=26.11.3b"><link rel="stylesheet" href="{{ base_path }}/static/mailbox-shell.css?v=26.11.3b">
+<script src="{{ base_path }}/static/cm-theme.js?v=26.11.3b" defer></script><script src="{{ base_path }}/static/modal-host.js?v=26.11.3b" defer></script><script src="{{ base_path }}/static/mailbox-shell.mjs?v=26.11.3b" type="module"></script></head>
 <body class="cm-page cm-mailbox-page" data-csrf="{{ csrf }}" data-hosted="{{ 'true' if hosted else 'false' }}" data-base="{{ base_path }}"><main class="cm-mailbox-shell">
 <header><strong>CMAIL</strong><span>{{ identity.email if identity else '' }}</span><details><summary aria-label="Configurações" title="Configurações">⚙</summary><a href="{{ base_path }}/connection">Autenticação</a><button id="mail-template" type="button">Template e assinatura</button></details></header>
 <aside id="mail-navigation" aria-label="Mensagens de e-mail"></aside>

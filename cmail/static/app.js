@@ -101,7 +101,8 @@
 
   function endpoint(path) { return `${base}${path}`; }
   function setNotice(message, error = false) {
-    notice.textContent = message;
+    if(error&&window.CMHostMessages?.showError(message,{operation:'webmail'})){notice.textContent='';notice.hidden=true;return;}
+    notice.hidden=false;notice.textContent = message;
     notice.dataset.error = error ? 'true' : 'false';
   }
   async function json(path, options = {}) {

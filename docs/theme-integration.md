@@ -102,3 +102,11 @@ capturas sintéticas de CWH escuro e standalone claro. O wheel foi conferido
 byte a byte com os 60 arquivos do módulo; não inclui testes nem staging.
 Permanece o aviso conhecido de depreciação Starlette/httpx no ambiente de testes.
 Nenhuma instância foi instalada/reiniciada e nenhum e-mail real foi operado.
+
+## Contratos comuns de modais e mensagens
+
+Template/assinatura pode consumir CAModal ca.modal.v1 do host mais próximo;
+modal-host.js resolve apenas mesma origem e conserva formulário/IDs. Erros de
+aparência/leitor/navegação usam ca.messages.v1 quando disponível. Sem host,
+permanecem apresentação e feedback nativos. Teste integrado requer
+CA_MODAL_ASSET_ROOT apontando aos assets revisados do CA.
