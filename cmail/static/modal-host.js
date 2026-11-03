@@ -33,8 +33,9 @@
   let localFeedback,localTimer;
   function clearLocal(){clearTimeout(localTimer);if(localFeedback){localFeedback.hidden=true;localFeedback.style.display='none';}}
   function localMessage(level,message,seconds=0){
+    if(!document.body){document.addEventListener('DOMContentLoaded',()=>localMessage(level,message,seconds),{once:true});return;}
     clearLocal();
-    if(!localFeedback){localFeedback=document.createElement('div');localFeedback.dataset.caComponentFeedback='';localFeedback.style.cssText='position:fixed;top:8px;left:8px;right:8px;z-index:4000;padding:8px 12px;border:1px solid currentColor;background:var(--ca-ui-surface,#fff);font:inherit;display:flex;gap:8px;align-items:center';document.body.prepend(localFeedback);}
+    if(!localFeedback?.isConnected){localFeedback=document.createElement('div');localFeedback.dataset.caComponentFeedback='';localFeedback.style.cssText='position:fixed;top:8px;left:8px;right:8px;z-index:4000;padding:8px 12px;border:1px solid currentColor;background:var(--ca-ui-surface,#fff);font:inherit;display:flex;gap:8px;align-items:center';document.body.prepend(localFeedback);}
     localFeedback.replaceChildren();localFeedback.hidden=false;localFeedback.style.display='flex';localFeedback.setAttribute('role',level==='error'?'alert':'status');localFeedback.style.color=level==='error'?'var(--ca-ui-danger,#a12626)':'var(--ca-ui-info,#155576)';
     const text=document.createElement('span');text.textContent=String(message??'');text.style.flex='1';const close=document.createElement('button');close.type='button';close.textContent='×';close.setAttribute('aria-label','Fechar mensagem');close.onclick=clearLocal;localFeedback.append(text,close);
     if(level==='info')localTimer=setTimeout(clearLocal,Math.min(3600,Math.max(0,Number(seconds)||0))*1000);
