@@ -12,6 +12,17 @@ e `.agents/tasks.md` passou a acompanhar o Git conforme o padrão CServer de
 04/11. Corrigida a nota antiga que tratava SMTP XOAUTH2 como inexistente;
 isso não comprova homologação no consumidor Vitrine.
 
+## 2026-11-04 — Fila compartilhada de tarefas
+
+- `.agents/tasks.md` passa a ser versionada, com referência relativa à governança CES; demais contextos privados continuam ignorados.
+- Pendências anteriores foram organizadas sem executar seus escopos ou revalidar automaticamente estados antigos. Recuperação integral anterior permanece local, fora do Git.
+- Validação documental: categorias, referências, UTF-8 e exceções de ignore; nenhuma alteração de runtime.
+- Registros que já declaravam conclusão saíram da fila (conclusões anteriores, não novas implementações):
+  - CMAIL-EXTRACTION — Captura por título, REGEX e janela recente.
+
+Conciliação com `aacbd2f`: preservados o bug de viewport do UniServer, os
+aceites locais de renderização/Gmail e a proposta de contas nomeadas.
+
 ## 26.11.3c — leitor para anotações
 
 API pública `annotation_reader(owner_id)` com vínculo à identidade autorizada,

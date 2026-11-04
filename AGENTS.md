@@ -14,3 +14,6 @@ externas; `.env`, estado, logs e conteúdo de e-mail não entram no Git.
 Leituras podem ser executadas quando configuradas. Envio unitário ou em lote é
 efeito externo e exige prévia, confirmação específica e `--execute`. Falha após
 início do SMTP é tratada como estado incerto; não repetir automaticamente.
+
+Fila pendente e histórico seguem a [governança CES](../../CServer/CES/padroes/project-governance.md).
+Começar por `.agents/tasks.md`; contexto privado permanece fora do Git.

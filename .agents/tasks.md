@@ -1,8 +1,19 @@
-# Tarefas locais
+# Tarefas pendentes
 
-Somente bugs, ideias e trabalho pendente.
+Fila única do projeto. Seguir a [governança CES](../../../CServer/CES/padroes/project-governance.md).
+Concluídos saem desta fila e vão para [histórico](../docs/history.md).
+
+Pendências preexistentes preservadas; a padronização documental não revalida
+seus estados nem autoriza efeitos operacionais. Conferir baseline antes da retomada.
 
 ## BUG
+
+### BUG-CMAIL-NATIVE-READER-VIEWPORT-20261102 — Barra de ações excede o leitor estreito
+
+- Fonte `feeabb8`, pacote `26.11.2.post4` com hash novo instalado no UniServer.
+- Bateria completa: 327 aprovados e 1 falha.
+  `test_context_toolbar_selection_mutations_and_responsive_layout`:
+  `#toggleRead` em x=532, largura=40, dentro de iframe com 488 px.
 
 ## SUGESTÃO
 
