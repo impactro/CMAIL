@@ -1,5 +1,13 @@
 ## 26.11.3c — leitor para anotações
 
+## 2026-11-04 — Fila compartilhada de tarefas
+
+- `.agents/tasks.md` passa a ser versionada, com referência relativa à governança CES; demais contextos privados continuam ignorados.
+- Pendências anteriores foram organizadas sem executar seus escopos ou revalidar automaticamente estados antigos. Recuperação integral anterior permanece local, fora do Git.
+- Validação documental: categorias, referências, UTF-8 e exceções de ignore; nenhuma alteração de runtime.
+- Registros que já declaravam conclusão saíram da fila (conclusões anteriores, não novas implementações):
+  - CMAIL-EXTRACTION — Captura por título, REGEX e janela recente.
+
 API pública `annotation_reader(owner_id)` com vínculo à identidade autorizada,
 capacidade somente de leitura, janela/paginação Gmail e download de anexos
 MIME aninhados. Nenhuma dependência do host/CCI, envio ou mudança de OAuth.

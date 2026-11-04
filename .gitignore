@@ -13,3 +13,10 @@ build/
 dist/
 *.egg-info/
 
+# CES: fila compartilhada e avisos; demais contextos continuam privados.
+!/.agents/
+/.agents/*
+!/.agents/tasks.md
+!/.agents/updates/
+/.agents/updates/*
+!/.agents/updates/*.md
