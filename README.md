@@ -1,5 +1,9 @@
 # CMAIL
 
+Evolução em análise: [contas nomeadas e convergência dos conectores](docs/named-connectors-proposal.md).
+Proposta de backend com Webmail fixo, sem alteração de UI nesta etapa; ainda
+não implementada.
+
 Integrações de análise podem usar o [leitor de anotações v1](API.md), vinculado
 ao owner já autorizado, com paginação Gmail e leitura de anexos sem alterar a caixa.
 

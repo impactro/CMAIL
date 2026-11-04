@@ -1,5 +1,6 @@
 .env
 .agents/*
+!.agents/tasks.md
 !.agents/updates/
 .agents/updates/*
 !.agents/updates/*.md

@@ -1,3 +1,17 @@
+## 04/11/2026 — análise de contas nomeadas
+
+[Proposta arquitetural](named-connectors-proposal.md) distingue o contrato
+atual da evolução: registro de conectores, isolamento por owner, anexos,
+templates e convergência de CA/CX/CWH/CCI/CVAI. Webmail permanece fixo;
+desenvolvimento e seletor visual não foram implementados. Fontes relacionadas
+sincronizadas e pacotes locais comparados; diagnóstico final da LIA .154
+acompanha o chat responsável por sua implantação.
+
+A análise concluída saiu da fila. A evolução ficou em SUGESTÃO para revisão,
+e `.agents/tasks.md` passou a acompanhar o Git conforme o padrão CServer de
+04/11. Corrigida a nota antiga que tratava SMTP XOAUTH2 como inexistente;
+isso não comprova homologação no consumidor Vitrine.
+
 ## 26.11.3c — leitor para anotações
 
 API pública `annotation_reader(owner_id)` com vínculo à identidade autorizada,
