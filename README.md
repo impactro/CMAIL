@@ -1,8 +1,11 @@
 # CMAIL
 
 Primeira etapa de [contas nomeadas](docs/named-connectors.md) disponível como
-API Python opcional: registro isolado e compatibilidade legada. Consumidores,
-OAuth por conector e anexos comuns seguem em etapas posteriores.
+API Python opcional: registro isolado e compatibilidade legada. Consumidores
+e OAuth por conector seguem em etapas posteriores.
+
+[Anexos comuns de saída](docs/outgoing-attachments.md) já podem ser preparados
+pela API, com bytes e hashes congelados e execução confirmada, sem nova UI.
 
 Evolução em análise: [contas nomeadas e convergência dos conectores](docs/named-connectors-proposal.md).
 Escopo completo futuro, com Webmail fixo nesta etapa. O registro Python já

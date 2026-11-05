@@ -24,7 +24,9 @@ seus estados nem autoriza efeitos operacionais. Conferir baseline antes da retom
 Primeira etapa autorizada em04/11 e entregue na fonte: registro Python,
 estado isolado e adaptador legado, conforme [contrato](../docs/named-connectors.md).
 Permanecem: editor do registro, onboarding/callback por conector, aliases,
-conta de serviço gmail-file, anexos comuns e consumidores CA/CAX/CWH/CCI/CVAI.
+conta de serviço gmail-file e consumidores CA/CAX/CWH/CCI/CVAI. Anexos comuns
+em envio novo estão entregues; respostas/encaminhamentos e uploads grandes
+permanecem fora desse contrato.
 Webmail/instalações não migrados. Reabrir pelo contrato e testes, sem copiar
 tokens, alterar autenticação ou executar envio por efeito desta fila.
 

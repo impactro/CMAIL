@@ -106,7 +106,10 @@ class CmailApi:
                 "execution": "owner-bound-durable-single-use-no-retry",
                 "cli": "contract-only; authenticated component API required",
             },
-            "sendFormats": {"text": True, "html": True, "attachments": False, "inlineImages": True},
+            "sendFormats": {"text": True, "html": True, "attachments": True, "inlineImages": True},
+            "attachmentLimits": {"count": 8, "totalBytesIncludingInline": 2097152,
+                                 "snapshotBytes": 3145728, "newMessageOnly": True,
+                                 "input": "host-supplied-contentBase64-no-paths-or-urls"},
             "inlineImageLimits": {"count": 8, "totalBytes": 2097152,
                                   "contentTypes": ["image/png", "image/jpeg"]},
             "operations": {

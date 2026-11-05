@@ -254,7 +254,9 @@ class MailService:
             if payload.get('bodyHtml') or payload.get('inlineImages'):
                 raise ValueError('Use aparência ou HTML pronto, sem aplicar o modelo duas vezes.')
             payload = {**payload, **self.render_appearance(selected, payload)}
-        result = self.store.prepare(payload, self._owner(selected))
+        if payload.get('attachments') and not getattr(self.provider_for(selected), 'supports_attachments', False):
+            raise ValueError('O provedor não declara suporte a anexos comuns.')
+        result = self.store.prepare(payload, self._owner(selected), delivery_binding=self._delivery_binding(selected))
         return ({**result, "sender": self.config.gmail_file_account}
                 if self.config.mode == "gmail-file" else result)
 
@@ -276,6 +278,8 @@ class MailService:
         )
 
     def prepare_message_action(self, principal: Principal, identifier: str, payload: dict[str, object]):
+        if payload.get('attachments'):
+            raise ValueError('Anexos em resposta/encaminhamento ainda não são suportados.')
         principal.require(SEND_MAIL)
         principal.require(READ_MAIL)
         kind = payload.get('kind')
@@ -301,12 +305,19 @@ class MailService:
         return self.store.prepare({**packet, 'recipients': recipients, 'subject': subject},
                                   self._owner(principal), message_action=action)
 
+    def _delivery_binding(self, principal):
+        c = self.config
+        return [c.mode, self._owner(principal), principal.identity_id, principal.email.casefold(),
+                *[getattr(c, key, None) for key in ('account', 'username', 'google_account',
+                  'microsoft_account', 'gmail_file_account', 'gmail_file_transport',
+                  'smtp_host', 'smtp_port', 'smtp_security', 'microsoft_tenant_id')]]
+
     def execute(self, identifier: str, token: str, principal: Principal | None = None) -> dict[str, object]:
         selected = principal or Principal.local_operator()
         selected.require(SEND_MAIL)
         self._invalidate_recent(selected)
         owner = self._owner(selected)
-        payload = self.store.claim(identifier, token, owner)
+        payload = self.store.claim(identifier, token, owner, delivery_binding=self._delivery_binding(selected))
         recipients = list(payload["recipients"])
         try:
             mail_provider = self.provider_for(selected)
@@ -316,6 +327,10 @@ class MailService:
                 options["body_html"] = str(payload["bodyHtml"])
             if payload.get("inlineImages"):
                 options["inline_images"] = payload["inlineImages"]
+            if payload.get('attachments'):
+                if not getattr(mail_provider, 'supports_attachments', False):
+                    raise ValueError('O provedor não declara suporte a anexos comuns.')
+                options['attachments'] = payload['attachments']
             action = payload.get('messageAction')
             if action:
                 if self.config.mode == 'imap':

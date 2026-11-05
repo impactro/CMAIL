@@ -135,7 +135,7 @@ class Store:
             ).fetchall()
         return [str(row[0]) for row in rows]
 
-    def prepare(self, payload: dict[str, object], owner_id: str = "", *, message_action=None) -> dict[str, object]:
+    def prepare(self, payload: dict[str, object], owner_id: str = "", *, message_action=None, delivery_binding=None) -> dict[str, object]:
         recipients = [str(item).strip().casefold() for item in payload.get("recipients", []) if str(item).strip()]
         if payload.get("listId"):
             recipients.extend(self.list_recipients(int(payload["listId"]), owner_id))
@@ -150,13 +150,20 @@ class Store:
         body_html = payload.get("bodyHtml", "")
         if not isinstance(body_html, str) or len(body_html) > 200_000:
             raise ValueError("Corpo HTML inválido ou acima do limite.")
-        if payload.get("attachments"):
-            raise ValueError("Anexos de envio ainda não são suportados por esta operação.")
+        from .outgoing_attachments import normalize, summaries, validate_snapshot
+        attachments = normalize(payload.get('attachments', []))
         if body_html:
             clean["bodyHtml"] = body_html
         inline_images = normalize_inline_images(payload.get("inlineImages", []), body_html)
         if inline_images:
             clean["inlineImages"] = inline_images
+        if attachments:
+            if message_action is not None:
+                raise ValueError('Anexos em resposta/encaminhamento ainda não são suportados.')
+            clean.update(attachments=attachments, attachmentManifest=summaries(attachments))
+            if delivery_binding is not None:
+                clean['deliveryBinding'] = delivery_binding
+            validate_snapshot(clean)
         if message_action is not None:
             clean['messageAction'] = message_action
         # Keep opaque values usable as CLI arguments even when randomness starts '-'.
@@ -165,18 +172,19 @@ class Store:
         with self.connect() as db:
             db.execute("INSERT INTO mail_drafts(id,created_at,expires_at,payload_json,confirmation_hash,status,owner_id) VALUES(?,?,?,?,?,?,?)",
                        (identifier, _now().isoformat(), expires.isoformat(), json.dumps(clean, ensure_ascii=False),
-                        hashlib.sha256(token.encode()).hexdigest(), "prepared", owner_id))
+                        hashlib.sha256(token.encode()).hexdigest(), "prepared-files-v1" if attachments else "prepared", owner_id))
             self._audit(db, "send-prepare", "prepared", {"draftId": identifier, "recipientCount": len(recipients)}, owner_id)
         return {"draftId": identifier, "confirmationToken": token, "expiresAt": expires.isoformat(),
                 "recipientCount": len(recipients), "subject": subject, "bodyPreview": body[:240],
-                "bodyType": "html" if body_html else "text", "preview": clean,
+                "bodyType": "html" if body_html else "text", "preview": ({k: v for k, v in clean.items() if k not in {'attachments', 'deliveryBinding'}} if attachments else clean),
+                **({'attachmentSummary': summaries(attachments)} if attachments else {}),
                 "inlineImageSummary": inline_summaries(inline_images)}
 
-    def claim(self, identifier: str, token: str, owner_id: str = "") -> dict[str, object]:
+    def claim(self, identifier: str, token: str, owner_id: str = "", *, delivery_binding=None) -> dict[str, object]:
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
             row = db.execute("SELECT * FROM mail_drafts WHERE id=? AND owner_id=?", (identifier, owner_id)).fetchone()
-            if not row or row["status"] != "prepared":
+            if not row or row["status"] not in {"prepared", "prepared-files-v1"}:
                 raise ValueError("Rascunho ausente, consumido ou incerto.")
             expired = datetime.fromisoformat(row["expires_at"]) < _now()
             if expired:
@@ -184,9 +192,15 @@ class Store:
             else:
                 if not secrets.compare_digest(row["confirmation_hash"], hashlib.sha256(token.encode()).hexdigest()):
                     raise ValueError("Confirmação inválida.")
+                payload = json.loads(row['payload_json'])
+                if row['status'] == 'prepared-files-v1' and not payload.get('attachments'):
+                    raise ValueError('Integridade dos anexos diverge da prévia.')
+                from .outgoing_attachments import validate_snapshot
+                validate_snapshot(payload)
+                if payload.get('deliveryBinding') is not None and payload['deliveryBinding'] != delivery_binding:
+                    raise ValueError('A conta de envio mudou; prepare uma nova prévia.')
                 db.execute("UPDATE mail_drafts SET status='sending' WHERE id=? AND owner_id=?", (identifier, owner_id))
                 self._audit(db, "send-execute", "sending", {"draftId": identifier}, owner_id)
-                payload = json.loads(row["payload_json"])
         if expired:
             raise ValueError("Confirmação expirada.")
         return payload

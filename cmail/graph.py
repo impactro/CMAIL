@@ -11,6 +11,7 @@ from .graph_models import _identifier, _address, _recipients, _summary, _contact
 
 
 class MicrosoftGraphProvider(Provider):
+    supports_attachments = True
     """Opera somente a caixa da identidade autenticada recebida."""
 
     def __init__(
@@ -113,9 +114,11 @@ class MicrosoftGraphProvider(Provider):
         )
         return _summary(result, include_body=True)
 
-    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None) -> dict[str, object]:
+    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None, attachments=None) -> dict[str, object]:
         from .inline_images import normalize
         images = normalize([] if inline_images is None else inline_images, body_html)
+        from .outgoing_attachments import bundle, MAX_SNAPSHOT_BYTES
+        files = bundle(attachments, images)
         message = {
             "subject": subject[:500],
             "body": {"contentType": "HTML" if body_html else "Text", "content": (body_html or body)[:200_000]},
@@ -128,6 +131,14 @@ class MicrosoftGraphProvider(Provider):
                 "name": item["name"], "contentType": item["contentType"],
                 "contentId": item["contentId"], "isInline": True,
                 "contentBytes": item["contentBase64"]} for item in images]
+        if files:
+            import json
+            message.setdefault('attachments', []).extend(
+                {'@odata.type': '#microsoft.graph.fileAttachment', 'name': a['name'],
+                 'contentType': a['contentType'], 'contentBytes': a['contentBase64'], 'isInline': False}
+                for a in files)
+            if len(json.dumps(message).encode('utf-8')) > MAX_SNAPSHOT_BYTES + 1024 * 1024 - 1024:
+                raise ValueError('Mensagem Graph com anexos excede o limite de requisição pequena.')
         self._call("POST", "/me/sendMail", {"message": message, "saveToSentItems": True}, expected=(202,))
         return {"accepted": True, "recipientCount": len(recipients)}
 

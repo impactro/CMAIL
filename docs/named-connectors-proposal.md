@@ -4,6 +4,8 @@ Data: 04/11/2026. **Proposta de evolução; implementação por etapas.**
 Atualização: a [primeira etapa opcional](named-connectors.md) implementa registro
 Python, isolamento de estado e adaptador legado. O restante deste documento
 continua proposta; não representa migração dos consumidores nem OAuth por conector.
+Outra etapa disponível: [anexos comuns no envio novo](outgoing-attachments.md),
+com prévia congelada. Não inclui respostas/encaminhamentos ou migração dos hosts.
 Pedido de Fábio: concentrar o e-mail no CMAIL, admitir várias contas de cada
 tipo e exigir a escolha do conector nas operações. Nesta primeira etapa,
 o Webmail conserva uma conta fixa configurada pelo host e sua interface atual.

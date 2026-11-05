@@ -37,10 +37,11 @@ class Provider(Protocol):
     def folders(self) -> list[dict[str, object]]: ...
     def messages(self, folder: str, limit: int = 50) -> list[dict[str, object]]: ...
     def message(self, folder: str, identifier: str) -> dict[str, object]: ...
-    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None) -> dict[str, object]: ...
+    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None, attachments=None) -> dict[str, object]: ...
 
 
 class DemoProvider:
+    supports_attachments = True
     def status(self) -> dict[str, object]:
         return {"provider": "demo", "connected": True, "externalEffects": False}
 
@@ -57,12 +58,15 @@ class DemoProvider:
     def message(self, folder: str, identifier: str) -> dict[str, object]:
         raise MailError("Mensagem não existe no modo demo.")
 
-    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None) -> dict[str, object]:
-        normalize_inline_images([] if inline_images is None else inline_images, body_html)
+    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None, attachments=None) -> dict[str, object]:
+        images = normalize_inline_images([] if inline_images is None else inline_images, body_html)
+        from .outgoing_attachments import bundle
+        bundle(attachments, images)
         return {"accepted": False, "demo": True, "recipientCount": len(recipients)}
 
 
 class ImapSmtpProvider:
+    supports_attachments = True
     def __init__(self, config: Config, *, imap_ssl_factory: Callable[..., object] = imaplib.IMAP4_SSL,
                  imap_factory: Callable[..., object] = imaplib.IMAP4,
                  smtp_ssl_factory: Callable[..., object] = smtplib.SMTP_SSL,
@@ -296,7 +300,7 @@ class ImapSmtpProvider:
         finally:
             client.logout()
 
-    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None, reply_message_id: str = "") -> dict[str, object]:
+    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None, reply_message_id: str = "", attachments=None) -> dict[str, object]:
         message = EmailMessage()
         message["From"] = self.config.account
         if len(recipients) == 1:
@@ -310,7 +314,7 @@ class ImapSmtpProvider:
         if reply_message_id and re.fullmatch(r"<[^<>\s]+>", reply_message_id):
             message["In-Reply-To"] = reply_message_id
             message["References"] = reply_message_id
-        add_body(message, body, body_html, inline_images)
+        add_body(message, body, body_html, inline_images, attachments)
         password = self.config.password()
         client = self.smtp_ssl_factory(self.config.smtp_host, self.config.smtp_port, timeout=30) if self.config.smtp_security == "ssl" else self.smtp_factory(self.config.smtp_host, self.config.smtp_port, timeout=30)
         try:

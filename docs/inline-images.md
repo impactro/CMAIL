@@ -10,7 +10,8 @@ Não altera o schema do banco nem o limite de 200 mil caracteres do HTML.
 
 `CmailApi.describe().sendFormats.inlineImages` anuncia suporte real na API.
 Consumidores devem verificar esse campo, não inferir pela versão ou ignorar
-a ausência. `attachments` continua `false`: não há envio de arquivos gerais.
+a ausência. Arquivos gerais têm [contrato separado](outgoing-attachments.md),
+disponível a partir de26.11.4b; não confundir CID com anexo comum.
 
 ```json
 {

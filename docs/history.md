@@ -1,3 +1,21 @@
+## 26.11.4b — anexos comuns no envio novo
+
+Prévia nativa aceita arquivos fornecidos pelo host, normaliza/congela bytes,
+expõe manifesto de metadados/SHA256 e verifica integridade e vínculo de conta
+antes do claim. Arquivos comuns e inline são distintos em MIME/Graph.
+Gmail API, Gmail SMTP/XOAUTH2, IMAP/SMTP e Graph suportam a opção aditiva;
+provedor sem capacidade declarada é recusado antes de preparar.
+
+Até8 arquivos e2MiB somados com inline; snapshot limitado a3MiB. Sem leitura
+de paths/URLs, novos grants ou upload sessions. Novo status de draft impede
+execução por versões antigas que descartariam anexos. Falha após início segue
+incerta, sem repetição. Resposta/forward com arquivos são recusados.
+
+367regressões aprovadas/4puladas fora das2suíteslayout; conferência posterior
+71focais aprovada com proteção de rollback. Testes exclusivamente sintéticos,
+sem envio, OAuth, migração de host ou instalação real. Limites e contrato em
+[outgoing-attachments.md](outgoing-attachments.md).
+
 ## 26.11.4a — registro opcional de contas nomeadas
 
 Primeira etapa autorizada: ConnectorConfig2.0 reutiliza configurações nativas

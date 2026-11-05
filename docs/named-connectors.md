@@ -61,7 +61,8 @@ O objeto vinculado oferece `folders`, `messages(folder, limit)`,
 O reader exige `mail.read`; preparar/enviar preserva as verificações nativas.
 Preparação identifica `connectorId`; confirmar exige o mesmo objeto/conta.
 Prévia de outra conta/owner não pode ser executada, nem autoriza retry.
-Não foi adicionado envio de anexos comuns.
+Envio novo também aceita [anexos comuns](outgoing-attachments.md), conforme
+o contrato aditivo da etapa seguinte e a capacidade do provedor.
 
 `list_connectors({id: principal_nativo})` lista somente os conectores que o
 host já autorizou e forneceu, com ID/provedor/capacidades/seleção fixa, sem

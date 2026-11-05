@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "crania-cmail"
-version = "26.11.4"
+version = "26.11.4.post1"
 description = "Componente independente de webmail, listas e disparos controlados"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -52,4 +52,4 @@ testpaths = ["tests"]
 "share/doc/crania-cmail/cmail/skills/gerir-listas-email" = ["cmail/skills/gerir-listas-email/SKILL.md"]
 "share/doc/crania-cmail/cmail/skills/google-content" = ["cmail/skills/google-content/SKILL.md"]
 "share/doc/crania-cmail/contracts" = ["contracts/capabilities.json", "contracts/list.example.json", "contracts/message.example.json"]
-"share/doc/crania-cmail/docs" = ["docs/named-connectors.md", "docs/named-connectors-proposal.md", "docs/configuration-host.md", "docs/configuration-migration.md", "docs/email-templates.md", "docs/gmail-file.md", "docs/google-content.md", "docs/history.md", "docs/host-navigation.md", "docs/inline-images.md", "docs/installed-package.md", "docs/mail-appearance.md", "docs/maintenance.md", "docs/reader-embedding.md", "docs/state-storage.md", "docs/theme-integration-review.md", "docs/theme-integration.md", "docs/webmail-layout.md"]
+"share/doc/crania-cmail/docs" = ["docs/outgoing-attachments.md", "docs/named-connectors.md", "docs/named-connectors-proposal.md", "docs/configuration-host.md", "docs/configuration-migration.md", "docs/email-templates.md", "docs/gmail-file.md", "docs/google-content.md", "docs/history.md", "docs/host-navigation.md", "docs/inline-images.md", "docs/installed-package.md", "docs/mail-appearance.md", "docs/maintenance.md", "docs/reader-embedding.md", "docs/state-storage.md", "docs/theme-integration-review.md", "docs/theme-integration.md", "docs/webmail-layout.md"]

@@ -17,6 +17,7 @@ from .google_auth import (
 
 
 class GmailProvider:
+    supports_attachments = True
     def __init__(self, auth: GoogleAuthService, identity_id: str):
         self.auth = auth
         self.identity_id = identity_id
@@ -146,12 +147,12 @@ class GmailProvider:
                 'contentType': str(part.get('mimeType') or 'application/octet-stream'),
                 'size': len(raw), 'contentBase64': base64.b64encode(raw).decode('ascii')}
 
-    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None) -> dict[str, object]:
+    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None, attachments=None) -> dict[str, object]:
         from .inline_images import add_body
         message = EmailMessage()
         message["To"] = ", ".join(recipients)
         message["Subject"] = str(subject)[:500]
-        add_body(message, str(body)[:200_000], body_html, inline_images)
+        add_body(message, str(body)[:200_000], body_html, inline_images, attachments)
         raw = base64.urlsafe_b64encode(message.as_bytes()).decode("ascii").rstrip("=")
         result = self._call("POST", "/messages/send", {"raw": raw})
         return {"accepted": True, "id": str(result.get("id") or ""), "recipientCount": len(recipients)}

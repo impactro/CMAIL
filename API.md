@@ -1,5 +1,9 @@
 # API Python do CMAIL
 
+[Anexos comuns de saída](docs/outgoing-attachments.md): `attachments` na
+preparação, manifesto/hash e bytes congelados; até8 arquivos e2MiB incluindo
+inline. Apenas envio novo nesta etapa; sem paths/URLs ou alteração de OAuth.
+
 Composição opcional de [contas nomeadas](docs/named-connectors.md):
 `ConnectorConfig` e `ConnectorRegistry`, com `connectorId` explícito e adaptador
 da API legada existente. Não migra Webmail/hosts ou configurações reais.
@@ -193,5 +197,5 @@ livres enviados pelo usuário, nem repassar cookies ou tokens OAuth ao agente.
 como alternativa em texto. HTML e texto pertencem ao mesmo rascunho confirmado;
 Gmail/SMTP produzem MIME multipart/alternative e Graph envia body HTML.
 O consumidor renderiza o template antes de preparar e mostra a prévia completa.
-Anexos de envio não estão implementados; a preparação rejeita `attachments` não
-vazio para evitar confirmar uma mensagem que perderia seus documentos.
+Anexos comuns em envio novo usam o [contrato de arquivos](docs/outgoing-attachments.md).
+Resposta/encaminhamento ainda recusam arquivos; não há descarte silencioso.

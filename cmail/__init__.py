@@ -2,7 +2,7 @@
 
 from importlib import import_module
 
-__version__ = "26.11.4a"
+__version__ = "26.11.4b"
 
 _EXPORTS = {
     'ConnectorConfig': ('connectors', 'ConnectorConfig'),

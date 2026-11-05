@@ -80,9 +80,11 @@ def summaries(images):
             for item in images]
 
 
-def add_body(message, body, body_html='', images=None):
+def add_body(message, body, body_html='', images=None, attachments=None):
     """One multipart/related representation shared by SMTP and Gmail API."""
     assets = normalize([] if images is None else images, body_html)
+    from .outgoing_attachments import bundle
+    attachments = bundle(attachments, assets)
     message.set_content(body)
     if body_html:
         message.add_alternative(body_html, subtype='html')
@@ -92,3 +94,5 @@ def add_body(message, body, body_html='', images=None):
             related.add_related(base64.b64decode(item['contentBase64']), maintype='image',
                 subtype=item['contentType'].split('/')[1], cid='<' + item['contentId'] + '>',
                 disposition='inline', filename=item['name'])
+    from .outgoing_attachments import add_files
+    add_files(message, attachments)
