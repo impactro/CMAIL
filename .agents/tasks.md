@@ -19,22 +19,22 @@ seus estados nem autoriza efeitos operacionais. Conferir baseline antes da retom
 
 ## BACKLOG
 
-### CMAIL-VALIDACAO-DEVSERVER-20261105 — aceite visual restante
+### CMAIL-VALIDACAO-DEVSERVER-20261105 — imagem inline e downloads
 
-VALIDATION: validar UI no Edge externo quando o controle estiver disponível.
-As seis rotas do run CMAIL-20261105-FD-01 já tiveram recebimento confirmado.
-Instalação, correções e testes concluídos estão em docs/validation/devserver-20261105.md
-e docs/history.md; não repetir implementação ou os seis envios concluídos.
+VALIDATION: resta conferir a apresentação visual de imagem inline recebida e
+downloads PDF/XML no leitor. Lista Gmail25 e-mails, pasta INBOX, leitor da
+mensagem sintética Dorotech e nomes dos três anexos já conferidos no Edge.
+As seis rotas do run CMAIL-20261105-FD-01 tiveram recebimento confirmado.
+Não repetir os envios. Detalhes em docs/validation/devserver-20261105.md.
 
-### CMAIL-ADAPTADOR-PESSOAL — convergir rotas do agente consumidor
+### CMAIL-CC-BCC-DEV-FSND — atualizar e validar o consumidor
 
-Conferir a versão atual do mail_agent.py do FSND_FabioDell antes da migração.
-Cc/Bcc de novas mensagens estão implementados no CMAIL 26.11.5d; transportar
-os campos no adaptador e na ferramenta CAW sem descartá-los, com testes de
-snapshot e identidade por conta. Instalação e homologação no consumidor são
-separadas da entrega do módulo; não duplicar transportes SMTP.
-Gmail/IMAP nativos já foram validados; Outlook Graph pertence ao host do grant.
-Não copiar cache Microsoft nem habilitar disparos fiscais como efeito do SYNC.
+Cc/Bcc em novas mensagens implementados no CMAIL26.11.5d e CA26.11.5e.
+Validar instalação e preservação dos grupos na prévia oficial no DEV-FSND
+pelo chat FSND CA Fábio, conforme pedido. A validação anterior Gmail/IMAP
+permanece no histórico; não repetir sua migração nem habilitar Outlook.
+Envio real exige prévia e confirmação específica; testes de desenvolvimento
+foram sintéticos. Não duplicar transportes SMTP no adaptador pessoal.
 
 ### CMAIL-CONTAS-NOMEADAS — etapas restantes
 

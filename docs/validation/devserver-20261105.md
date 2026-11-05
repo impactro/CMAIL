@@ -1,5 +1,73 @@
 # Validação CMAIL — devServer, 05/11/2026
 
+## Conclusão Gmail e IMAP no chat nativo
+
+CA26.11.5d/post4 e CAIXQ26.11.5 instalados; CMAIL26.11.5c preservado.
+O consumidor CAW usa política privada v1 de contas e APIs nativas existentes,
+sem migrar a caixa Webmail para o registro2.0. Gmail permanece fixo no Webmail;
+IMAP Dorotech é a segunda conta. Outlook local desabilitado por pedido de Fábio,
+sem copiar autorização Microsoft da LIA. Detalhes em CA:docs/email-accounts.md.
+
+O aceite real encontrou módulo email e URL do Host ausentes no agente pessoal;
+ambos foram configurados, preservando as demais chaves. No Edge externo,
+accounts/status vivo/list/read passaram nas duas caixas. O SDK chamou somente
+tools.cmail; uma prévia oficial por conta com template default e anexo sintético
+de74 bytes do Explorador privado passou. Manifesto/hash idênticos e journal
+com1 send-prepare/prepared por conta e0 send-execute após a atualização.
+Nenhum novo e-mail enviado. Paths em outputs/temp são recusados neste host
+por junction administrativa; fileId privado aceito, limite registrado no CA.
+109 testes focais do consumidor passaram e8 bancos conservaram schema/quick_check.
+Consumidores restantes e onboarding por conta continuam fora deste aceite.
+
+Webmail no Edge: Gmail conectado, conta pessoal e INBOX com25 e-mails.
+Leitor abriu a mensagem sintética recebida da Dorotech no teste anterior e
+listou canary.png/teste.pdf/teste.xml. Isso comprova lista/leitor/manifesto;
+não comprova, nesta revisão, renderização da imagem inline ou download dos bytes.
+
+## Aceite posterior do CAW Outlook na LIA
+
+Depois da falha relatada abaixo, CA26.11.5b/CAIXQ26.11.5 foram promovidos na
+LIA. Teste no mesmo Edge autenticado e na mesma conversa: leitura concluída,
+seguida de prévia oficial com corpo/assinatura Lakatos. A frente de suporte
+confirmou um send-prepare, rascunho persistido em prepared, vínculo Microsoft,
+assunto e destinatário corretos e zero send-execute. Nenhum e-mail enviado.
+O fluxo funcional passou; não há prova de ganho ou da causa exata do timeout
+anterior. Logger de fases5b não emitiu no serviço; hotfix de diagnóstico5c
+publicado separadamente, ainda sujeito a promoção por consumidor.
+
+## Revalidação pelo agente e Edge externo
+
+Após o recibo das seis rotas abaixo, Fábio relatou indisponibilidade no agente.
+Revalidação em05/11 pelo Edge externo autenticado:
+
+- Perfil pessoal: Gmail autorizado. API viva confirmou Gmail e leitura INBOX
+  Gmail/Dorotech; o Outlook SMTP local não autenticou. São três contas locais
+  de tipos diferentes, além do Outlook Graph no host LIA, não três Gmail.
+- Adaptador pessoal existente corrigido: Gmail e Dorotech pelo CMAIL, anexos
+  congelados preservados, Cc recusado e leitura por alias.22 testes passaram.
+  Duas prévias nativas com arquivo sintético aceitas, sem execução.
+- Conversa CAW pessoal confirmou autenticação das duas contas e leitura real
+  de uma mensagem Dorotech. A instrução antiga "transmissão desabilitada" e o
+  diagnóstico falso de ausência de anexos foram corrigidos nas skills do agente.
+- Conversa nova da LIA informou leitura concluída; não há trilha suficiente
+  para provar quais chamadas de leitura esse turno invocou. Separadamente,
+  suporte conferiu o binding real sob LocalSystem e GET INBOX1 com sucesso.
+  Nenhum cache foi copiado.
+  O timeout da tentativa antiga permanece ocorrência histórica, sem replay.
+- Prévia pelo chat pessoal passou com conta Gmail, template neutral e anexo
+  sintético de59 bytes; packet local prepared/ready conferido. Preparação pela
+  conversa nova da LIA terminou em erro do motor, após leitura bem-sucedida.
+  Ocorrência encaminhada ao suporte para correlação; não declarar aceite total
+  de preparação/envio do CAW Outlook nem repetir a tentativa sem conciliação.
+  Suporte confirmou zero drafts e zero send-prepare/send-execute no período.
+
+O consumidor dinâmico CA26.11.4b ainda é de uma caixa por workspace e não
+recebe conta/anexos como parâmetros. A correção do adaptador pessoal não é
+migração completa desse consumidor. Outlook local pendente de autenticação e
+convergência própria; Graph LIA não é fallback automático. Configurações de
+e-mail do agente agora permitem execução confirmada; fiscal continua desligado.
+Nenhum novo e-mail foi transmitido nesta revalidação.
+
 ## Escopo e autoridade
 
 Fábio autorizou integração e testes entre suas três contas, com templates,
