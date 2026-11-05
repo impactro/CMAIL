@@ -24,6 +24,14 @@ vinculado à conta já autorizada do host, somente com `mail.read`:
 - `attachment(id, attachment_id)`: `contentBase64`, nome, tipo e tamanho.
 
 Gmail tem paginação e anexos MIME aninhados/embutidos, até 25 MiB por arquivo.
+Desde26.11.5b, descritores Gmail usam `part:<partId>`: o identificador de
+download do Google pode mudar entre leituras e é resolvido novamente dentro
+da mensagem. IDs antigos ainda são aceitos se corresponderem à resposta atual;
+caso contrário, atualizar a lista, sem remover a verificação de pertencimento.
+IMAP também permite download de anexos comuns/inline na INBOX pelo contrato
+`api.attachment`, com ID `part:<índice MIME>` e limite de25MiB. A leitura usa
+`BODY.PEEK[]` em caixa aberta somente para leitura. Outras pastas e paginação
+do AnnotationReader IMAP permanecem fora desse contrato.
 Somente GET é usado: não envia, não marca como lido, não altera a caixa.
 Rebind/desconexão falha explicitamente; consumidores não devem avançar cursor
 em falha. O host precisa reconstruir o reader para uma nova identidade.

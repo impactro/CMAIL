@@ -1,3 +1,15 @@
+## 26.11.5b — leitura real de anexos Gmail e IMAP
+
+Validação entre contas autorizadas encontrou identificadores de download Gmail
+variando a cada GET da mesma mensagem. Descritores agora expõem a parte MIME
+estável e o download resolve o identificador atual, verificando pertencimento.
+IMAP passa a fornecer IDs/download para anexos comuns e inline na INBOX, com
+limite de25MiB. Leitura completa usa BODY.PEEK[], preservando flags.
+
+Nenhum transporte de envio novo, token copiado ou alteração de interface.
+Regressões simulam rotação de identificador e MIME aninhado. Evidência por
+ambiente e limites em [validation/devserver-20261105.md](validation/devserver-20261105.md).
+
 ## 26.11.5a — testes por provedor e validação distribuída
 
 Testes separados fisicamente em IMAP/SMTP, Gmail API/OAuth web, Gmail

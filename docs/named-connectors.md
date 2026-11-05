@@ -97,5 +97,6 @@ Receber um ID/owner por si só não autentica o chamador.
 
 Próximas etapas: edição administrativa versionada do registro; onboarding e
 callback por conector; aliases/deduplicação de caixas; conta de serviço
-gmail-file; anexos comuns; consumidores e migração testada. O documento de
+gmail-file; consumidores e migração testada. Anexos comuns de envio já estão
+implementados no contrato vinculado acima. O documento de
 [proposta](named-connectors-proposal.md) preserva o escopo completo futuro.

@@ -25,7 +25,12 @@ são aceites próprios de cada consumidor, não consequência de atualizar fonte
 
 `CMAIL` é o nome técnico do módulo independente que reúne webmail, leitura de
 pastas e mensagens, listas de destinatários e disparo controlado de e-mail.
-Versão do componente: CES `26.11.5a` (pacote Python `26.11.5`).
+Versão do componente: CES `26.11.5b` (pacote Python `26.11.5.post1`).
+
+Download de anexos recebidos: Gmail resolve a parte MIME estável antes de
+obter o identificador atual do provedor; IMAP oferece download na INBOX por
+`BODY.PEEK[]`, sem marcar leitura. Limite de25MiB por arquivo. Validação real
+e limitações: [recibo do devServer](docs/validation/devserver-20261105.md).
 
 Configuração inicial Gmail hospedada: o administrador pode importar o JSON
 de um cliente Google Web quando o host habilita explicitamente o contrato

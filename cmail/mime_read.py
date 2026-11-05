@@ -50,11 +50,11 @@ def _dto(message: Message, identifier: str, include_body: bool, flags: bytes = b
     except (TypeError, ValueError, OverflowError):
         pass
     attachments = []
-    for part in message.walk() if message.is_multipart() else []:
+    for index, part in enumerate(message.walk()):
         name = part.get_filename()
         if name:
             raw = part.get_payload(decode=True) or b""
-            attachments.append({"name": _decoded(name), "contentType": part.get_content_type(), "size": len(raw)})
+            attachments.append({"id": f"part:{index}", "name": _decoded(name), "contentType": part.get_content_type(), "size": len(raw)})
     body = _plain_body(message) if include_body else ""
     return {
         "id": identifier, "subject": _decoded(message.get("Subject")),

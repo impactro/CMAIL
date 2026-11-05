@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import email
+import base64
 import html
 import imaplib
 import re
@@ -166,19 +167,39 @@ class ImapSmtpProvider:
             client.logout()
 
     def message(self, folder: str, identifier: str) -> dict[str, object]:
-        if not str(identifier).isdigit():
+        message, flags = self._read_message(folder, identifier)
+        return _dto(message, identifier, True, flags)
+
+    def _read_message(self, folder: str, identifier: str):
+        if not str(identifier).isascii() or not str(identifier).isdigit():
             raise MailError("Identificador de mensagem inválido.")
         client = self._imap()
         try:
             if client.select(_mailbox(folder), readonly=True)[0] != "OK":
                 raise MailError("Pasta de e-mail inválida.")
-            status, fetched = client.uid("fetch", identifier, "(RFC822 FLAGS)")
+            status, fetched = client.uid("fetch", identifier, "(BODY.PEEK[] FLAGS)")
             entry = next((item for item in fetched or [] if isinstance(item, tuple) and isinstance(item[1], bytes)), None)
             if status != "OK" or not entry:
                 raise MailError("Mensagem não encontrada.")
-            return _dto(email.message_from_bytes(entry[1], policy=default), identifier, True, entry[0])
+            return email.message_from_bytes(entry[1], policy=default), entry[0]
         finally:
             client.logout()
+
+    def attachment(self, identifier: str, attachment_id: str) -> dict[str, object]:
+        """Download somente leitura na INBOX, contrato atual da API de anexos."""
+        if not re.fullmatch(r"part:(0|[1-9][0-9]{0,5})", str(attachment_id)):
+            raise MailError("Identificador de anexo inválido.")
+        message, _ = self._read_message("INBOX", identifier)
+        part = next((part for index, part in enumerate(message.walk())
+                     if f"part:{index}" == attachment_id and part.get_filename()), None)
+        if part is None:
+            raise MailError("Anexo não pertence à mensagem.")
+        raw = part.get_payload(decode=True) or b""
+        if len(raw) > 25 * 1024 * 1024:
+            raise MailError("Anexo excede o limite de 25 MiB.")
+        return {"id": attachment_id, "name": _decoded(part.get_filename()),
+                "contentType": part.get_content_type(), "size": len(raw),
+                "contentBase64": base64.b64encode(raw).decode("ascii")}
 
     def message_actions(self) -> dict[str, bool]:
         client = self._imap()

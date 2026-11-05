@@ -37,7 +37,7 @@ def test_gmail_nested_parts_page_and_attachments_are_get_only():
     assert result['nextCursor'] == 'third-page'
     dto = provider.message('INBOX', 'message-id')
     assert dto['body'] == 'proposta de teste'
-    assert dto['attachments'][0]['id'] == 'attachment-id'
+    assert dto['attachments'][0]['id'] == 'part:1.1'
     value = provider.attachment('message-id', 'attachment-id')
     assert base64.b64decode(value['contentBase64']) == b'proposta de teste'
     with pytest.raises(ValueError, match='não pertence'):

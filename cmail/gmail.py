@@ -129,8 +129,11 @@ class GmailProvider:
         if not selected or not attachment_id:
             raise ValueError('Anexo Gmail inválido.')
         message = self._call('GET', f'/messages/{selected}?format=full')
+        # attachmentId pode mudar entre dois GETs da mesma mensagem. O partId
+        # permanece relativo à mensagem e é resolvido novamente antes do download.
         part = next((p for p in self._attachment_parts(message.get('payload'))
-                     if str((p.get('body') or {}).get('attachmentId') or 'part:' + str(p.get('partId') or '')) == attachment_id), None)
+                     if attachment_id in {'part:' + str(p.get('partId') or ''),
+                                          str((p.get('body') or {}).get('attachmentId') or '')}), None)
         if part is None:
             raise ValueError('Anexo não pertence à mensagem.')
         body = part.get('body') or {}
@@ -138,7 +141,7 @@ class GmailProvider:
             raise ValueError('Anexo excede o limite de 25 MiB.')
         data = str(body.get('data') or '')
         if body.get('attachmentId'):
-            payload = self._call('GET', f'/messages/{selected}/attachments/' + urllib.parse.quote(attachment_id, safe=''))
+            payload = self._call('GET', f'/messages/{selected}/attachments/' + urllib.parse.quote(str(body['attachmentId']), safe=''))
             data = str(payload.get('data') or '')
         raw = base64.urlsafe_b64decode(data + '=' * (-len(data) % 4))
         if len(raw) > 25 * 1024 * 1024:
@@ -240,7 +243,7 @@ class GmailProvider:
 
         body_text = content(payload) if include_body else ""
         attachments = [
-            {"id": str((item.get('body') or {}).get('attachmentId') or 'part:' + str(item.get('partId') or '')),
+            {"id": 'part:' + str(item.get('partId') or ''),
              "name": str(item.get("filename") or ""), "contentType": str(item.get("mimeType") or ""), "size": int((item.get("body") or {}).get("size") or 0)}
             for item in GmailProvider._attachment_parts(payload)
         ]
