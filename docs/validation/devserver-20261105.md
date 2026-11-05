@@ -1,5 +1,16 @@
 # Validação CMAIL — devServer, 05/11/2026
 
+## Aceite posterior do CAW Outlook na LIA
+
+Depois da falha relatada abaixo, CA26.11.5b/CAIXQ26.11.5 foram promovidos na
+LIA. Teste no mesmo Edge autenticado e na mesma conversa: leitura concluída,
+seguida de prévia oficial com corpo/assinatura Lakatos. A frente de suporte
+confirmou um send-prepare, rascunho persistido em prepared, vínculo Microsoft,
+assunto e destinatário corretos e zero send-execute. Nenhum e-mail enviado.
+O fluxo funcional passou; não há prova de ganho ou da causa exata do timeout
+anterior. Logger de fases5b não emitiu no serviço; hotfix de diagnóstico5c
+publicado separadamente, ainda sujeito a promoção por consumidor.
+
 ## Revalidação pelo agente e Edge externo
 
 Após o recibo das seis rotas abaixo, Fábio relatou indisponibilidade no agente.
