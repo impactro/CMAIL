@@ -1,5 +1,9 @@
 # API Python do CMAIL
 
+Composição opcional de [contas nomeadas](docs/named-connectors.md):
+`ConnectorConfig` e `ConnectorRegistry`, com `connectorId` explícito e adaptador
+da API legada existente. Não migra Webmail/hosts ou configurações reais.
+
 ## Leitura para anotações (v1)
 
 `CmailApi(service_existente).annotation_reader(owner_id)` fornece um leitor

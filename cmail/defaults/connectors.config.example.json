@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "2.0",
+  "webmailConnectorId": "first",
+  "connectors": {
+    "first": {
+      "schemaVersion": "1.0", "mode": "demo",
+      "server": {"host": "127.0.0.1", "port": 8020, "openBrowser": false, "sessionHours": 12, "cookieSecure": false},
+      "state": {"directory": "security/cmail/accounts/first"},
+      "microsoft": {"clientId": "", "tenantId": "", "clientSecretFile": "", "redirectUri": ""},
+      "imap": {"account": "first@example.test", "username": "", "passwordFile": "", "imapHost": "", "imapPort": 993, "imapSecurity": "ssl", "smtpHost": "", "smtpPort": 587, "smtpSecurity": "starttls", "sentFolder": "Sent"}
+    },
+    "second": {
+      "schemaVersion": "1.0", "mode": "demo",
+      "server": {"host": "127.0.0.1", "port": 8020, "openBrowser": false, "sessionHours": 12, "cookieSecure": false},
+      "state": {"directory": "security/cmail/accounts/second"},
+      "microsoft": {"clientId": "", "tenantId": "", "clientSecretFile": "", "redirectUri": ""},
+      "imap": {"account": "second@example.test", "username": "", "passwordFile": "", "imapHost": "", "imapPort": 993, "imapSecurity": "ssl", "smtpHost": "", "smtpPort": 587, "smtpSecurity": "starttls", "sentFolder": "Sent"}
+    }
+  }
+}

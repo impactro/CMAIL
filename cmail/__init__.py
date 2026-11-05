@@ -2,9 +2,11 @@
 
 from importlib import import_module
 
-__version__ = "26.11.3c"
+__version__ = "26.11.4a"
 
 _EXPORTS = {
+    'ConnectorConfig': ('connectors', 'ConnectorConfig'),
+    'ConnectorRegistry': ('connectors', 'ConnectorRegistry'),
     'GoogleRead': ('google_content', 'GoogleRead'),
     'GoogleWrite': ('google_content', 'GoogleWrite'),
     'ReadOperation': ('google_content', 'ReadOperation'),

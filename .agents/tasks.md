@@ -17,16 +17,16 @@ seus estados nem autoriza efeitos operacionais. Conferir baseline antes da retom
 
 ## SUGESTÃO
 
-### CMAIL-CONTAS-NOMEADAS — convergência dos conectores
-
-Proposta solicitada por Fábio em 04/11/2026, registrada em
-[contas nomeadas](../docs/named-connectors-proposal.md). Benefício: várias
-contas do mesmo provedor, transporte único, templates/inline/anexos no CMAIL,
-sem duplicar disparadores nos consumidores. Webmail mantém conector fixo.
-O desenvolvimento depende da revisão da proposta; análise concluída não
-autoriza implementação, nova UI, migração de credenciais ou envio real.
-
 ## BACKLOG
+
+### CMAIL-CONTAS-NOMEADAS — etapas restantes
+
+Primeira etapa autorizada em04/11 e entregue na fonte: registro Python,
+estado isolado e adaptador legado, conforme [contrato](../docs/named-connectors.md).
+Permanecem: editor do registro, onboarding/callback por conector, aliases,
+conta de serviço gmail-file, anexos comuns e consumidores CA/CX/CWH/CCI/CVAI.
+Webmail/instalações não migrados. Reabrir pelo contrato e testes, sem copiar
+tokens, alterar autenticação ou executar envio por efeito desta fila.
 
 ### CMAIL-RENDER-CONTEXTUAL — aceite restante
 

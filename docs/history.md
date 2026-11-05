@@ -1,3 +1,17 @@
+## 26.11.4a — registro opcional de contas nomeadas
+
+Primeira etapa autorizada: ConnectorConfig2.0 reutiliza configurações nativas
+por conector e valida estado separado. ConnectorRegistry cria serviços sob
+demanda, exige seleção explícita, conserva o resolvedor nativo de owner e
+permite reaproveitar exatamente a API/serviço legados sem mover arquivos.
+Webmail, callbacks, permissões e consumidores permanecem inalterados.
+
+348testes de regressão aprovados/4pulados, excluindo as duas suítes de layout
+Playwright; conferência final41focais aprovada, incluindo registro, OAuth
+sintético, revogação, contas/owners cruzados, prévias e configuração exemplar.
+Nenhuma conta, sessão, token, envio ou instalação real participou dos testes.
+Contrato, configuração e limites em [named-connectors.md](named-connectors.md).
+
 ## 04/11/2026 — Revalidação do SYNC Full no LAB
 
 Fetch e revisão confirmaram main alinhada, sem alterações locais pendentes.

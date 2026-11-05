@@ -1,8 +1,12 @@
 # CMAIL
 
+Primeira etapa de [contas nomeadas](docs/named-connectors.md) disponível como
+API Python opcional: registro isolado e compatibilidade legada. Consumidores,
+OAuth por conector e anexos comuns seguem em etapas posteriores.
+
 Evolução em análise: [contas nomeadas e convergência dos conectores](docs/named-connectors-proposal.md).
-Proposta de backend com Webmail fixo, sem alteração de UI nesta etapa; ainda
-não implementada.
+Escopo completo futuro, com Webmail fixo nesta etapa. O registro Python já
+está disponível; migração dos hosts e seletor visual ainda não foram implementados.
 
 Integrações de análise podem usar o [leitor de anotações v1](API.md), vinculado
 ao owner já autorizado, com paginação Gmail e leitura de anexos sem alterar a caixa.
