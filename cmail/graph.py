@@ -201,7 +201,9 @@ class MicrosoftGraphProvider(Provider):
 
     def attachments(self, identifier: str) -> list[dict[str, object]]:
         selected = _identifier(identifier, "Mensagem")
-        query = urllib.parse.urlencode({"$top": "100", "$select": "id,name,contentType,size,isInline,contentId"})
+        # A coleção é microsoft.graph.attachment; contentId pertence ao tipo
+        # derivado fileAttachment e causa HTTP400 no $select da coleção base.
+        query = urllib.parse.urlencode({"$top": "100", "$select": "id,name,contentType,size,isInline"})
         result = self._call("GET", f"/me/messages/{selected}/attachments?{query}")
         values = result.get("value") if isinstance(result, dict) else []
         return [
@@ -230,6 +232,8 @@ class MicrosoftGraphProvider(Provider):
             "id": str(value.get("id") or attachment_id), "name": str(value.get("name") or "anexo")[:255],
             "contentType": str(value.get("contentType") or "application/octet-stream")[:160],
             "size": size, "contentBase64": encoded,
+            "isInline": bool(value.get("isInline")),
+            "contentId": str(value.get("contentId") or "")[:512],
         }
 
     def contacts(self, query: str = "", limit: int = 25) -> list[dict[str, object]]:

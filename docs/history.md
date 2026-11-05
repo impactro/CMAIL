@@ -1,3 +1,12 @@
+## 26.11.5c — consulta de anexos Microsoft Graph
+
+Validação na LIA encontrou HTTP400 ao selecionar contentId na coleção base
+de attachments. A listagem usa somente campos do tipo base; o download do
+arquivo devolve contentId/isInline quando disponíveis. Nenhuma mudança de
+OAuth ou reenvio. Regressão reproduz a restrição da consulta OData.
+Contrato oficial: [attachment](https://learn.microsoft.com/en-us/graph/api/resources/attachment?view=graph-rest-1.0)
+e [fileAttachment](https://learn.microsoft.com/en-us/graph/api/resources/fileattachment?view=graph-rest-1.0).
+
 ## 26.11.5b — leitura real de anexos Gmail e IMAP
 
 Validação entre contas autorizadas encontrou identificadores de download Gmail

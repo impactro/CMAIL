@@ -6,6 +6,7 @@ from unittest.mock import Mock
 
 import pytest
 from cmail.gmail import GmailProvider
+from cmail.graph import MicrosoftGraphProvider
 from cmail.mail import ImapSmtpProvider, MailError
 
 
@@ -52,3 +53,24 @@ def test_imap_nested_inline_and_file_download_are_peek_only():
     with pytest.raises(MailError, match='inválido'):
         provider.attachment('42','../file')
     client.logout.assert_called()
+
+
+def test_graph_attachment_collection_uses_base_properties_and_download_keeps_cid():
+    from urllib.parse import parse_qs, urlsplit
+    provider = MicrosoftGraphProvider(Mock(), 'test')
+    def request(method, path):
+        assert method == 'GET'
+        if '/attachments?' in path:
+            selected = parse_qs(urlsplit(path).query)['$select'][0].split(',')
+            # O Graph real rejeita propriedades derivadas na coleção base.
+            assert set(selected) <= {'id','name','contentType','size','isInline','lastModifiedDateTime'}
+            return {'value':[{'id':'a', 'name':'img.png', 'isInline':True,'size':5}]}
+        assert path == '/me/messages/m/attachments/a'
+        return {'id':'a','name':'img.png','isInline':True,'contentId':'image',
+                'contentBytes':base64.b64encode(b'image').decode()}
+    provider._call = request
+    row = provider.attachments('m')[0]
+    assert row['id'] == 'a' and row['isInline'] is True
+    value = provider.attachment('m', row['id'])
+    assert value['contentId'] == 'image' and value['isInline'] is True
+    assert base64.b64decode(value['contentBase64']) == b'image'
