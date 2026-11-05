@@ -19,22 +19,13 @@ seus estados nem autoriza efeitos operacionais. Conferir baseline antes da retom
 
 ## BACKLOG
 
-### CMAIL-VALIDACAO-DEVSERVER-20261105 — aceite visual restante
+### CMAIL-VALIDACAO-DEVSERVER-20261105 — imagem inline e downloads
 
-VALIDATION: validar UI no Edge externo quando o controle estiver disponível.
-As seis rotas do run CMAIL-20261105-FD-01 já tiveram recebimento confirmado.
-Instalação, correções e testes concluídos estão em docs/validation/devserver-20261105.md
-e docs/history.md; não repetir implementação ou os seis envios concluídos.
-
-### CMAIL-ADAPTADOR-PESSOAL — convergir rotas do agente consumidor
-
-Em05/11 o mail_agent.py FSND recebeu anexos nativos, Cc recusado, testes de
-snapshot/execução única e leitura por conta; Gmail/Dorotech migrados e verificados
-também pela conversa CAW. Restante: Outlook local ainda usa a rota anterior e
-não autenticou; convergir com autorização própria. Tool dinâmica CAW ainda não
-recebe connectorId/anexos: adaptar consumidor sem duplicar autenticação.
-Outlook Graph pertence ao host do grant. Registro em FSND:docs/history.md.
-Não copiar cache Microsoft nem habilitar disparos fiscais como efeito do SYNC.
+VALIDATION: resta conferir a apresentação visual de imagem inline recebida e
+downloads PDF/XML no leitor. Lista Gmail25 e-mails, pasta INBOX, leitor da
+mensagem sintética Dorotech e nomes dos três anexos já conferidos no Edge.
+As seis rotas do run CMAIL-20261105-FD-01 tiveram recebimento confirmado.
+Não repetir os envios. Detalhes em docs/validation/devserver-20261105.md.
 
 ### CMAIL-CONTAS-NOMEADAS — etapas restantes
 

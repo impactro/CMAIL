@@ -1,5 +1,29 @@
 # Validação CMAIL — devServer, 05/11/2026
 
+## Conclusão Gmail e IMAP no chat nativo
+
+CA26.11.5d/post4 e CAIXQ26.11.5 instalados; CMAIL26.11.5c preservado.
+O consumidor CAW usa política privada v1 de contas e APIs nativas existentes,
+sem migrar a caixa Webmail para o registro2.0. Gmail permanece fixo no Webmail;
+IMAP Dorotech é a segunda conta. Outlook local desabilitado por pedido de Fábio,
+sem copiar autorização Microsoft da LIA. Detalhes em CA:docs/email-accounts.md.
+
+O aceite real encontrou módulo email e URL do Host ausentes no agente pessoal;
+ambos foram configurados, preservando as demais chaves. No Edge externo,
+accounts/status vivo/list/read passaram nas duas caixas. O SDK chamou somente
+tools.cmail; uma prévia oficial por conta com template default e anexo sintético
+de74 bytes do Explorador privado passou. Manifesto/hash idênticos e journal
+com1 send-prepare/prepared por conta e0 send-execute após a atualização.
+Nenhum novo e-mail enviado. Paths em outputs/temp são recusados neste host
+por junction administrativa; fileId privado aceito, limite registrado no CA.
+109 testes focais do consumidor passaram e8 bancos conservaram schema/quick_check.
+Consumidores restantes e onboarding por conta continuam fora deste aceite.
+
+Webmail no Edge: Gmail conectado, conta pessoal e INBOX com25 e-mails.
+Leitor abriu a mensagem sintética recebida da Dorotech no teste anterior e
+listou canary.png/teste.pdf/teste.xml. Isso comprova lista/leitor/manifesto;
+não comprova, nesta revisão, renderização da imagem inline ou download dos bytes.
+
 ## Aceite posterior do CAW Outlook na LIA
 
 Depois da falha relatada abaixo, CA26.11.5b/CAIXQ26.11.5 foram promovidos na

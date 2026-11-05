@@ -1,3 +1,12 @@
+## 2026-11-05 — aceite das contas pessoais no CAW
+
+Consumidor CA26.11.5d/CAIXQ26.11.5 instalado e testado no Edge: Gmail padrão e
+IMAP Dorotech com leitura nativa e prévia por conta/template/anexo. OAuth e
+bytes/journal permanecem no CMAIL26.11.5c;0 envios nesta etapa. Outlook local
+desabilitado por Fábio, sem reativação automática pendente. Ver
+[evidências e limites](validation/devserver-20261105.md). Não implica aceite de
+outros hosts, seletor visual ou migração para o registro2.0.
+
 ## 26.11.5c — consulta de anexos Microsoft Graph
 
 Validação na LIA encontrou HTTP400 ao selecionar contentId na coleção base
