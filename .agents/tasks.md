@@ -19,6 +19,21 @@ seus estados nem autoriza efeitos operacionais. Conferir baseline antes da retom
 
 ## BACKLOG
 
+### CMAIL-VALIDACAO-DEVSERVER-20261105 — aceite visual restante
+
+VALIDATION: validar UI no Edge externo quando o controle estiver disponível.
+As seis rotas do run CMAIL-20261105-FD-01 já tiveram recebimento confirmado.
+Instalação, correções e testes concluídos estão em docs/validation/devserver-20261105.md
+e docs/history.md; não repetir implementação ou os seis envios concluídos.
+
+### CMAIL-ADAPTADOR-PESSOAL — convergir rotas do agente consumidor
+
+O mail_agent.py do FSND_FabioDell ainda bloqueia anexos CMAIL com diagnóstico
+legado e conserva SMTP próprio para outras contas. Migrar pelo contrato nativo,
+com testes de snapshot, Cc recusado explicitamente e identidade por conta.
+Gmail/IMAP nativos já foram validados; Outlook Graph pertence ao host do grant.
+Não copiar cache Microsoft nem habilitar disparos fiscais como efeito do SYNC.
+
 ### CMAIL-CONTAS-NOMEADAS — etapas restantes
 
 Primeira etapa autorizada em04/11 e entregue na fonte: registro Python,

@@ -7,6 +7,13 @@ OAuth ou reenvio. Regressão reproduz a restrição da consulta OData.
 Contrato oficial: [attachment](https://learn.microsoft.com/en-us/graph/api/resources/attachment?view=graph-rest-1.0)
 e [fileAttachment](https://learn.microsoft.com/en-us/graph/api/resources/fileattachment?view=graph-rest-1.0).
 
+Validação:372 testes simulados aprovados;2 probes reais portáteis Gmail/IMAP
+aprovados fora do checkout. Instalação e health confirmados no devServer;
+LIA confirmou instalação e regressões Graph. Seis canários aceitos, seis
+recebimentos/dezoito hashes confirmados. Nenhum cliente real,
+documento fiscal real ou reenvio. Aceites restantes ficam na fila; evidência
+completa em [validation/devserver-20261105.md](validation/devserver-20261105.md).
+
 ## 26.11.5b — leitura real de anexos Gmail e IMAP
 
 Validação entre contas autorizadas encontrou identificadores de download Gmail
