@@ -1,5 +1,25 @@
 # Validação CMAIL — devServer, 05/11/2026
 
+## Aceite Cc/Bcc
+
+Fontes CMAIL4e80a99 (feature9f5048c) e CAb7aa882 integradas por ff-only.
+Instalados globalmente CMAIL26.11.5.post3/26.11.5d e CA26.11.5.post5/26.11.5e,
+com365/81 arquivos idênticos aos wheels e pip check íntegro. CAIXQ26.11.5
+preservado.47 testes focais CMAIL,116 CA e24 do adaptador pessoal passaram.
+
+Edge externo autenticado: prévia oficial por conta Gmail/IMAP com Para/Cc/Bcc,
+template e anexo sintético74 bytes. Os snapshots persistidos conservaram owner
+e os três grupos exatos; Bcc não foi copiado ao corpo. O SDK chamou somente
+tools.cmail. Webmail Gmail mostrou campos e grupos na confirmação; cancelada.
+Journal após atualização:2 send-prepare/prepared Gmail (chat e Webmail),1 IMAP
+e0 send-execute. Sem envio, entrega real ou novo grant Microsoft nesta etapa.
+
+158 configurações e12 schemas preservados; bancos passaram quick_check antes
+e depois. CA/5884 retomados pelo CMonitor, seis agentes e três contas CWH
+conectados. Outlook local permanece desabilitado. Adaptador pessoal existente
+passa cc/bcc ao CMAIL e bloqueia execute se a prévia nativa omitir os grupos;
+não houve novo transporte. Rollback e recibos privados no dono da operação.
+
 ## Conclusão Gmail e IMAP no chat nativo
 
 CA26.11.5d/post4 e CAIXQ26.11.5 instalados; CMAIL26.11.5c preservado.

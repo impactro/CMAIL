@@ -1,3 +1,12 @@
+## 2026-11-05 — aceite Cc/Bcc no DEV-FSND
+
+CMAIL26.11.5d/post3 e CA26.11.5e/post5 instalados:47 testes focais CMAIL,
+116 CA e24 do adaptador pessoal passaram. Edge autenticado exibiu os três
+grupos nas prévias oficiais Gmail/IMAP e na confirmação Webmail, cancelada.
+Zero send-execute; preservados contas, autorizações,158 configurações e12
+schemas de bancos. Outlook local segue desabilitado. Evidência em
+[validação do consumidor](validation/devserver-20261105.md).
+
 ## 26.11.5d — Cc e Bcc em novas mensagens
 
 API, CLI e Webmail preservam os grupos na prévia confirmada e os encaminham

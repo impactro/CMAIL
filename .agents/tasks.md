@@ -27,15 +27,6 @@ mensagem sintética Dorotech e nomes dos três anexos já conferidos no Edge.
 As seis rotas do run CMAIL-20261105-FD-01 tiveram recebimento confirmado.
 Não repetir os envios. Detalhes em docs/validation/devserver-20261105.md.
 
-### CMAIL-CC-BCC-DEV-FSND — atualizar e validar o consumidor
-
-Cc/Bcc em novas mensagens implementados no CMAIL26.11.5d e CA26.11.5e.
-Validar instalação e preservação dos grupos na prévia oficial no DEV-FSND
-pelo chat FSND CA Fábio, conforme pedido. A validação anterior Gmail/IMAP
-permanece no histórico; não repetir sua migração nem habilitar Outlook.
-Envio real exige prévia e confirmação específica; testes de desenvolvimento
-foram sintéticos. Não duplicar transportes SMTP no adaptador pessoal.
-
 ### CMAIL-CONTAS-NOMEADAS — etapas restantes
 
 Primeira etapa autorizada em04/11 e entregue na fonte: registro Python,
