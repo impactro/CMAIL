@@ -1,5 +1,35 @@
 # Validação CMAIL — devServer, 05/11/2026
 
+## Revalidação pelo agente e Edge externo
+
+Após o recibo das seis rotas abaixo, Fábio relatou indisponibilidade no agente.
+Revalidação em05/11 pelo Edge externo autenticado:
+
+- Perfil pessoal: Gmail autorizado. API viva confirmou Gmail e leitura INBOX
+  Gmail/Dorotech; o Outlook SMTP local não autenticou. São três contas locais
+  de tipos diferentes, além do Outlook Graph no host LIA, não três Gmail.
+- Adaptador pessoal existente corrigido: Gmail e Dorotech pelo CMAIL, anexos
+  congelados preservados, Cc recusado e leitura por alias.22 testes passaram.
+  Duas prévias nativas com arquivo sintético aceitas, sem execução.
+- Conversa CAW pessoal confirmou autenticação das duas contas e leitura real
+  de uma mensagem Dorotech. A instrução antiga "transmissão desabilitada" e o
+  diagnóstico falso de ausência de anexos foram corrigidos nas skills do agente.
+- Conversa nova da LIA concluiu leitura nativa Outlook; suporte conferiu o
+  binding real do host sob LocalSystem e GET INBOX1. Nenhum cache foi copiado.
+  O timeout da tentativa antiga permanece ocorrência histórica, sem replay.
+- Prévia pelo chat pessoal passou com conta Gmail, template neutral e anexo
+  sintético de59 bytes; packet local prepared/ready conferido. Preparação pela
+  conversa nova da LIA terminou em erro do motor, após leitura bem-sucedida.
+  Ocorrência encaminhada ao suporte para correlação; não declarar aceite total
+  de preparação/envio do CAW Outlook nem repetir a tentativa sem conciliação.
+
+O consumidor dinâmico CA26.11.4b ainda é de uma caixa por workspace e não
+recebe conta/anexos como parâmetros. A correção do adaptador pessoal não é
+migração completa desse consumidor. Outlook local pendente de autenticação e
+convergência própria; Graph LIA não é fallback automático. Configurações de
+e-mail do agente agora permitem execução confirmada; fiscal continua desligado.
+Nenhum novo e-mail foi transmitido nesta revalidação.
+
 ## Escopo e autoridade
 
 Fábio autorizou integração e testes entre suas três contas, com templates,

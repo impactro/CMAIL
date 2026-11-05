@@ -28,10 +28,12 @@ e docs/history.md; não repetir implementação ou os seis envios concluídos.
 
 ### CMAIL-ADAPTADOR-PESSOAL — convergir rotas do agente consumidor
 
-O mail_agent.py do FSND_FabioDell ainda bloqueia anexos CMAIL com diagnóstico
-legado e conserva SMTP próprio para outras contas. Migrar pelo contrato nativo,
-com testes de snapshot, Cc recusado explicitamente e identidade por conta.
-Gmail/IMAP nativos já foram validados; Outlook Graph pertence ao host do grant.
+Em05/11 o mail_agent.py FSND recebeu anexos nativos, Cc recusado, testes de
+snapshot/execução única e leitura por conta; Gmail/Dorotech migrados e verificados
+também pela conversa CAW. Restante: Outlook local ainda usa a rota anterior e
+não autenticou; convergir com autorização própria. Tool dinâmica CAW ainda não
+recebe connectorId/anexos: adaptar consumidor sem duplicar autenticação.
+Outlook Graph pertence ao host do grant. Registro em FSND:docs/history.md.
 Não copiar cache Microsoft nem habilitar disparos fiscais como efeito do SYNC.
 
 ### CMAIL-CONTAS-NOMEADAS — etapas restantes
