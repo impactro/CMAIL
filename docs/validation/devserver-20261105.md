@@ -14,14 +14,17 @@ Revalidação em05/11 pelo Edge externo autenticado:
 - Conversa CAW pessoal confirmou autenticação das duas contas e leitura real
   de uma mensagem Dorotech. A instrução antiga "transmissão desabilitada" e o
   diagnóstico falso de ausência de anexos foram corrigidos nas skills do agente.
-- Conversa nova da LIA concluiu leitura nativa Outlook; suporte conferiu o
-  binding real do host sob LocalSystem e GET INBOX1. Nenhum cache foi copiado.
+- Conversa nova da LIA informou leitura concluída; não há trilha suficiente
+  para provar quais chamadas de leitura esse turno invocou. Separadamente,
+  suporte conferiu o binding real sob LocalSystem e GET INBOX1 com sucesso.
+  Nenhum cache foi copiado.
   O timeout da tentativa antiga permanece ocorrência histórica, sem replay.
 - Prévia pelo chat pessoal passou com conta Gmail, template neutral e anexo
   sintético de59 bytes; packet local prepared/ready conferido. Preparação pela
   conversa nova da LIA terminou em erro do motor, após leitura bem-sucedida.
   Ocorrência encaminhada ao suporte para correlação; não declarar aceite total
   de preparação/envio do CAW Outlook nem repetir a tentativa sem conciliação.
+  Suporte confirmou zero drafts e zero send-prepare/send-execute no período.
 
 O consumidor dinâmico CA26.11.4b ainda é de uma caixa por workspace e não
 recebe conta/anexos como parâmetros. A correção do adaptador pessoal não é
