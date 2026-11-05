@@ -1,3 +1,27 @@
+## 26.11.5a — testes por provedor e validação distribuída
+
+Testes separados fisicamente em IMAP/SMTP, Gmail API/OAuth web, Gmail
+API/OAuth por arquivo, Gmail SMTP/XOAUTH2 e Outlook/Graph. Contratos
+compartilhados continuam explícitos; markers distinguem simulado, browser e
+live. Comparação da coleta preservou os 382 casos anteriores sem perda ou
+duplicação por nome/parametrização. Incluídos teste da chave física e probe live.
+
+369 testes sintéticos aprovados, 15 desmarcados (browser e probe live).
+Probe real fica pulado por padrão; opt-in sem plano é recusado na coleta.
+Bundle com manifesto SHA256 validado fora do checkout: zero implementação,
+skip sem conexão. Não foram usados Gmail real, Outlook, IMAP, consentimento,
+envio ou contas locais; homologação por perfil segue para a máquina dona.
+
+AnnotationReader expõe mailbox_id opcional pelo subject nativo verificado,
+mantendo account_id e checkpoints anteriores. CCI pode rejeitar aliases entre
+Stores sem presumir identidade pelo endereço. Não muda grants/autenticação.
+
+Documentação embarcada inclui plano JSON/MD, roteiro de homologação, limites
+por transporte, recibo sanitizado e descoberta via metadata. Cliente somente
+pacote, engenharia, homologação e OPS têm percursos próprios; referências de
+manutenção ao CServer não exigem checkout no cliente. Wheels são candidatas
+DEV, sem instalação/reinício. Contrato: [validation/README](validation/README.md).
+
 ## 26.11.4b — anexos comuns no envio novo
 
 Prévia nativa aceita arquivos fornecidos pelo host, normaliza/congela bytes,

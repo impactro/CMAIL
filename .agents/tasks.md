@@ -27,8 +27,19 @@ Permanecem: editor do registro, onboarding/callback por conector, aliases,
 conta de serviço gmail-file e consumidores CA/CAX/CWH/CCI/CVAI. Anexos comuns
 em envio novo estão entregues; respostas/encaminhamentos e uploads grandes
 permanecem fora desse contrato.
+CCI já aceita o mapa de readers na fonte 26.11.5a; adaptação/implantação pelo
+host e homologação com múltiplas caixas reais continuam pendentes.
 Webmail/instalações não migrados. Reabrir pelo contrato e testes, sem copiar
 tokens, alterar autenticação ou executar envio por efeito desta fila.
+
+### CMAIL-VALIDACAO-DISTRIBUIDA — Homologar provedores na máquina dona das contas
+
+Testes categorizados, plano privado exemplo e bundle de leitura foram entregues
+em 26.11.5a. DEV executou apenas cenários sintéticos. Conferir por perfil
+IMAP, Gmail OAuth web, Gmail API/arquivo, Gmail SMTP/XOAUTH2 e Outlook/Graph,
+seguindo docs/validation/README.md. Contas ausentes ficam não executadas;
+status SMTP não comprova envio. Instalação/execução real exigem autorização
+do ambiente. Entregar recibo sanitizado e documentação validada fora do checkout.
 
 ### CMAIL-RENDER-CONTEXTUAL — aceite restante
 

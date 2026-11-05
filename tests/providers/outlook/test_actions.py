@@ -60,4 +60,3 @@ def test_graph_move_unauthorized_still_requires_reconnection():
     assert raised.value.requires_reconnect
     auth.store.set_connection_status.assert_called_once_with("synthetic", "reauthorize", "provider-401")
     assert requester.call_count == 1
-

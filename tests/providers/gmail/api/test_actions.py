@@ -25,4 +25,3 @@ def test_gmail_exposes_trash_and_can_restore_to_inbox():
     assert provider._call.call_args.args[2] == {"addLabelIds": ["INBOX"], "removeLabelIds": ["TRASH"]}
     provider.move("42", "Label_Target", folder="Label_Source")
     assert provider._call.call_args.args[2] == {"addLabelIds": ["Label_Target"], "removeLabelIds": ["Label_Source", "TRASH"]}
-

@@ -28,4 +28,3 @@ def test_gmail_listing_requests_only_needed_headers_and_enforces_result_limit():
         query = parse_qs(urlsplit(path).query)
         assert query['format'] == ['metadata']
         assert set(query['metadataHeaders']) == {'From','To','Cc','Reply-To','Subject','Date','Message-ID'}
-

@@ -47,4 +47,3 @@ def test_oversized_imap_preview_is_not_parsed_or_retained():
         list_summary([(b'BODY[HEADER]',b'x'*(HEADER_BYTES+1))],'1')
     with pytest.raises(ValueError,match='limite'):
         list_summary([(b'BODY[HEADER]',b''),(b'BODY[TEXT]',b'x'*(PREVIEW_BYTES+1))],'1')
-

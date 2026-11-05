@@ -15,4 +15,3 @@ def test_gmail_search_is_sent_to_the_provider_with_its_folder_scope():
     params = parse_qs(urlsplit(calls[0]).query)
     assert params['q'] == ['cliente antigo'] and params['labelIds'] == ['Label_private']
     assert params['maxResults'] == ['10']
-

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "crania-cmail"
-version = "26.11.4.post1"
+version = "26.11.5"
 description = "Componente independente de webmail, listas e disparos controlados"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -56,6 +56,8 @@ markers = [
 
 # Portable consumer documentation; no checkout or private instance files.
 [tool.setuptools.data-files]
+"share/doc/crania-cmail/docs/validation" = ["docs/validation/README.md", "docs/validation/live-plan.example.json", "docs/validation/live-plan.example.md"]
+"share/doc/crania-cmail/tests" = ["tests/README.md"]
 "share/doc/crania-cmail" = [".env.example", "API.md", "ARCHITECTURE.md", "README.md", "config.example.json", "config.gmail-file.example.json", "config.gmail-smtp.example.json"]
 "share/doc/crania-cmail/cmail/defaults" = ["cmail/defaults/cmail.config.md"]
 "share/doc/crania-cmail/cmail/skills/consultar-email" = ["cmail/skills/consultar-email/SKILL.md"]

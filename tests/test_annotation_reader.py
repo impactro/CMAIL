@@ -38,5 +38,3 @@ def test_physical_mailbox_key_detects_alias_without_changing_existing_cursor_id(
     a,b=reader('local-id-one'),reader('local-id-two')
     assert a.account_id != b.account_id and a.mailbox_id == b.mailbox_id
     assert a.account_id == hashlib.sha256(json.dumps(['gmail','owner','local-id-one','same@example.test']).encode()).hexdigest()
-
-

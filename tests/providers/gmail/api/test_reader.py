@@ -42,4 +42,3 @@ def test_gmail_nested_parts_page_and_attachments_are_get_only():
     assert base64.b64decode(value['contentBase64']) == b'proposta de teste'
     with pytest.raises(ValueError, match='não pertence'):
         provider.attachment('message-id', 'other-id')
-

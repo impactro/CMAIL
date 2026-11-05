@@ -150,4 +150,3 @@ def test_msal_client_only_requests_offline_access_after_explicit_opt_in(tmp_path
     build_microsoft_client(selected, tmp_path / "cache.bin")
     assert captured["exclude_scopes"] == ([] if offline_access else ["offline_access"])
     assert captured["authority"].endswith("/tenant-lakatos")
-

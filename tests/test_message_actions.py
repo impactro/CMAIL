@@ -54,23 +54,3 @@ def test_api_actions_respect_principal_and_web_mutations_require_csrf(tmp_path):
     imap.select.assert_called_with('"Projects"', readonly=False)
     assert web.post("/api/messages/42/move", headers={"X-CSRF-Token": csrf}, json={"destinationId": "Trash", "folder": "Projects"}).status_code == 200
     assert service.history(Principal("local-imap", "", frozenset({"mail.read"})))[0]["action"] == "move"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

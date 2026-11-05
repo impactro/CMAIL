@@ -44,4 +44,3 @@ def test_gmail_oauth_is_mandatory_and_bound_to_single_account(tmp_path):
     assert callback.status_code == 303
     assert client.get("/api/folders").json()["folders"][0]["id"] == "INBOX"
     assert all("pessoa@gmail.test" not in str(body) for method, url, headers, body in calls if url.endswith("/token"))
-

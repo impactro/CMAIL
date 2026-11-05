@@ -16,13 +16,3 @@ def fetched(identifier='2'):
     return [(identifier.encode()+b' (FLAGS (\\Seen) BODYSTRUCTURE (("TEXT" "PLAIN") '
              b'("APPLICATION" "PDF" ("NAME" "file.pdf")) "MIXED") BODY[HEADER]<0> {100}',header),
             (b' BODY[TEXT]<0> {20}',b'Preview without attachment bytes'),b')']
-
-
-
-
-
-
-
-
-
-

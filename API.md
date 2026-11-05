@@ -14,6 +14,10 @@ da API legada existente. Não migra Webmail/hosts ou configurações reais.
 vinculado à conta já autorizada do host, somente com `mail.read`:
 
 - `account_id`: hash opaco de provedor, owner e identidade; não é credencial.
+- `mailbox_id` (26.11.5): chave opaca adicional do provedor/owner e subject
+  verificado para detectar aliases entre Stores. Não substitui account_id nem
+  muda checkpoints existentes. Sem subject verificado, equivale a account_id;
+  não deduzir identidade pela grafia do endereço.
 - `page(since=ISO, until=ISO, cursor='', limit=50)`: janela fixa com datas
   conscientes de fuso; devolve `items` normalizados e `nextCursor`.
 - `message(id)`: texto, remetente, data, assunto e descritores de anexos.

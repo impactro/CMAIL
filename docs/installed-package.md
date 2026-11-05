@@ -98,7 +98,9 @@ O segundo comando só cabe depois de apresentar e autorizar a prévia exata.
 Não registrar o token. Claim é único; falha após iniciar o efeito pode ser
 incerta e não deve ser repetida automaticamente. Formato em
 [templates e envio](email-templates.md); imagens CID em [imagens](inline-images.md).
-Anexos arbitrários de envio não são suportados. Encaminhamento Gmail/IMAP
+Arquivos comuns de envio novo são opcionais pela API, com limites e prévia no
+[contrato de anexos](outgoing-attachments.md); CLI/UI não oferecem upload.
+Encaminhamento Gmail/IMAP
 preserva texto, não anexos. Fora da lixeira, Excluir move; dentro dela,
 exclusão definitiva exige confirmação e capacidade do provedor.
 

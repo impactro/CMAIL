@@ -43,13 +43,3 @@ def test_store_binds_first_verified_oauth_identity_until_reconfigured(tmp_path):
     assert independent["email"] == "primeira@empresa.test"
     assert store.bound_identity("microsoft")["email"] == "segunda@empresa.test"
     assert other_instance.bound_identity("microsoft")["email"] == "primeira@empresa.test"
-
-
-
-
-
-
-
-
-
-

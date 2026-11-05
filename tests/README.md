@@ -3,7 +3,7 @@
 ## Testes simulados
 
 Nenhum destes grupos homologa uma conta real. SMTP, Graph, Gmail, tokens e
-arquivos são sintéticos; testes de navegador estão separados pelo markerbrowser.
+arquivos são sintéticos; testes de navegador estão separados pelo marker `browser`.
 
 | Categoria | Diretório / seleção |
 | --- | --- |
@@ -31,7 +31,7 @@ python -s -m pytest tests --collect-only -q
 
 Suite integral inclui os testes de navegador e as pendências visuais antigas;
 não a apresentar como equivalente à suite sem browser. A organização preservou
-os382casos existentes, comparados por nome/parametrização sem perda/duplicação.
+os 382 casos existentes, comparados por nome/parametrização sem perda/duplicação.
 Não baixar browsers automaticamente para satisfazer esse comando.
 
 ## Homologação real — outra máquina

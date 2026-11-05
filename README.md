@@ -17,12 +17,15 @@ ao owner já autorizado, com paginação Gmail e leitura de anexos sem alterar a
 [Webmail, lista compartilhada, busca e composição CAW/CWH](docs/webmail-layout.md).
 
 Comece por [operação pelo pacote instalado](docs/installed-package.md).
+Testes por provedor e autenticação: [categorias](tests/README.md).
+Para validar em outra máquina, use o [protocolo distribuído](docs/validation/README.md)
+e seu bundle de leitura sem implementação; conta indisponível fica não executada.
 A navegação compartilhada está no módulo; instalação, configuração e OAuth
 são aceites próprios de cada consumidor, não consequência de atualizar fontes.
 
 `CMAIL` é o nome técnico do módulo independente que reúne webmail, leitura de
 pastas e mensagens, listas de destinatários e disparo controlado de e-mail.
-Versão do componente: CES `26.11.3a` (pacote Python `26.11.3`).
+Versão do componente: CES `26.11.5a` (pacote Python `26.11.5`).
 
 Configuração inicial Gmail hospedada: o administrador pode importar o JSON
 de um cliente Google Web quando o host habilita explicitamente o contrato

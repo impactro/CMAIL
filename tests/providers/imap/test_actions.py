@@ -122,4 +122,3 @@ def test_imap_forward_is_text_only_and_requires_confirmation_in_service(tmp_path
     provider.message.assert_called_once_with("Projects", "42")
     assert "Original text" in provider.send.call_args.args[2]
     assert "not-forwarded.pdf" not in provider.send.call_args.args[2]
-

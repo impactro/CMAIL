@@ -16,4 +16,3 @@ def test_outlook_search_targets_subject_body_and_recipient_without_incompatible_
     assert 'subject:proposta' in params['$search'][0]
     assert 'body:proposta' in params['$search'][0] and 'to:proposta' in params['$search'][0]
     assert '$orderby' not in params
-

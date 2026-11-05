@@ -60,5 +60,6 @@ atualiza o pacote instalado: verificar sua versão e seu template antes de
 inicializar outra instância.
 
 Referências: [configuração pelo host](configuration-host.md),
-[bootstrap e migração](configuration-migration.md),
-[OPS do CES](../../../CServer/CES/padroes/OPS-agent.md).
+[bootstrap e migração](configuration-migration.md).
+Referência opcional para mantenedores: CServer/CES/padroes/OPS-agent.md;
+o checkout CServer não é dependência do pacote instalado.
