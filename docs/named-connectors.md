@@ -89,7 +89,7 @@ não apagar estados de contas criadas em testes/migrações posteriores.
 
 ## Limites e próximos contratos
 
-Esta etapa não adapta CA/CX/CWH/CCI/CVAI, não adiciona seletor visual nem muda
+Esta etapa não adapta CA/CAX/CWH/CCI/CVAI, não adiciona seletor visual nem muda
 permissões, ACL, OAuth ou sessão. O host continua responsável pela autoridade
 de cada usuário sobre conectores IMAP/contas corporativas compartilhadas.
 Receber um ID/owner por si só não autentica o chamador.
