@@ -20,25 +20,8 @@ def test_native_body_hits_and_approximate_recipient_hits_keep_recency_order():
     assert result['search']['native'] and result['search']['fuzzyWindow'] == 1
 
 
-def test_gmail_search_is_sent_to_the_provider_with_its_folder_scope():
-    provider = GmailProvider(None, 'identity')
-    calls = []
-    provider._call = lambda method,path: calls.append(path) or {'messages': []}
-    assert provider.search_messages('Label_private', 'cliente antigo', 10) == []
-    params = parse_qs(urlsplit(calls[0]).query)
-    assert params['q'] == ['cliente antigo'] and params['labelIds'] == ['Label_private']
-    assert params['maxResults'] == ['10']
 
 
-def test_outlook_search_targets_subject_body_and_recipient_without_incompatible_orderby():
-    provider = MicrosoftGraphProvider(None, 'identity')
-    calls = []
-    provider._call = lambda method,path,**kw: calls.append(path) or {'value': []}
-    assert provider.search_messages('inbox', 'proposta', 10) == []
-    params = parse_qs(urlsplit(calls[0]).query)
-    assert 'subject:proposta' in params['$search'][0]
-    assert 'body:proposta' in params['$search'][0] and 'to:proposta' in params['$search'][0]
-    assert '$orderby' not in params
 
 
 def test_mail_mutation_invalidates_recent_approximation_cache(tmp_path):

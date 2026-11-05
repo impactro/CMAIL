@@ -1,3 +1,4 @@
+from helpers import PROJECT_ROOT
 """Synthetic SMTP/OAuth only; no real credentials, network or delivery."""
 import json
 import smtplib
@@ -16,12 +17,12 @@ from cmail.gmail import GOOGLE_TOKEN
 from cmail.gmail_file import create_file_auth, main as gmail_main
 from cmail.gmail_smtp import GmailSmtpAuth, GmailSmtpProvider
 from cmail.gmail_consent import GmailFileConsent
-from test_gmail_file import credentials
+from providers.gmail.oauth_file.test_api import credentials
 
 
 @pytest.fixture
 def settings(tmp_path):
-    value = json.loads((Path(__file__).parents[1] / 'config.gmail-file.example.json').read_text(encoding='utf-8'))
+    value = json.loads((PROJECT_ROOT / 'config.gmail-file.example.json').read_text(encoding='utf-8'))
     value['schemaVersion'] = '1.3'
     value['gmailFile']['transport'] = 'smtp'
     value['gmailFile']['account'] = 'sender@example.com'

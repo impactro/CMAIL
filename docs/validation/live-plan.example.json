@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "accounts": [
+    {"id":"gmail-web", "profile":"gmail_api", "configFile":"C:/Dados/Instancia/config/cmail.config.json", "root":"C:/Dados/Instancia", "ownerId":"OWNER-NATIVO-CONFIRMADO"},
+    {"id":"gmail-arquivo", "profile":"gmail_file_api", "configFile":"C:/Dados/TesteGmailApi/config.json"},
+    {"id":"gmail-smtp", "profile":"gmail_file_smtp", "configFile":"C:/Dados/TesteGmailSmtp/config.json"},
+    {"id":"outlook", "profile":"outlook", "configFile":"C:/Dados/TesteOutlook/config.json", "ownerId":"OWNER-NATIVO-CONFIRMADO"},
+    {"id":"imap", "profile":"imap", "configFile":"C:/Dados/TesteImap/config.json", "ownerId":"OWNER-NATIVO-CONFIRMADO"}
+  ]
+}

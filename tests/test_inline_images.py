@@ -19,8 +19,8 @@ from cmail.mail import ImapSmtpProvider
 from cmail.store import Store
 from cmail import Principal, create_api
 from cmail.enviar import main as enviar_main
-from test_gmail_smtp import settings, smtp
-from test_gmail_file import credentials
+from providers.gmail.oauth_smtp.test_smtp import settings, smtp
+from providers.gmail.oauth_file.test_api import credentials
 
 
 PNG = base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jhZkAAAAASUVORK5CYII=')

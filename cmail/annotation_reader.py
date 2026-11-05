@@ -18,6 +18,13 @@ class AnnotationReader:
         self._api, self._owner = api, owner_id
         self._binding = self._identity()
         self.account_id = hashlib.sha256(json.dumps(self._binding).encode()).hexdigest()
+        # Preserve the existing cursor/account ID. A second, optional physical
+        # identity key detects aliases authorized into different local Stores.
+        store = getattr(self._api.service, 'store', None)
+        identity = store.identity(self._binding[2]) if store is not None and self._binding[2] else None
+        self.mailbox_id = (hashlib.sha256(json.dumps([self._binding[0], self._binding[1],
+            identity.get('tenant_id'), identity.get('subject_id')]).encode()).hexdigest()
+            if identity and identity.get('subject_id') else self.account_id)
 
     def _identity(self):
         principal = self._api.principal_for_owner(self._owner, frozenset({READ_MAIL}))

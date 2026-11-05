@@ -7,6 +7,12 @@ provedor, prévias e recibos. Não depende dos fontes do CA.
 
 ## Descoberta e instalação
 
+O percurso operacional abaixo é para **cliente sem checkout**: não requer Git,
+Node ou build, e não exige ler implementação. Para testar/revisar/implantar em
+máquinas distintas, usar o [contrato de validação distribuída](validation/README.md).
+O bundle de leitura pública é separado do wheel; testes de engenharia com
+inspeção de fontes pertencem ao ambiente validador, não ao cliente de produção.
+
 No Python do consumidor, fora de um checkout:
 
 ```powershell
@@ -21,6 +27,12 @@ Instale wheel aprovado e dependências no Python global com
 Isso não configura provedor nem autoriza uma conta.
 
 ## Configuração e persistência
+
+Contratos opt-in novos: [contas nomeadas](named-connectors.md), com referência
+JSON/MD embarcada, e [anexos de saída](outgoing-attachments.md). Config/CLI1.x
+e montagem legada continuam válidas. Não aplicar o schema2 ao host sem sua
+adaptação explícita. O CMeio citado operacionalmente é o módulo de e-mail
+CMAIL/crania-cmail neste contrato; não corresponde a outro pacote ou transporte.
 
 - Standalone: uma conta por processo/raiz; `.env` contém somente
   `CMAIL_CONFIG_FILE=config/cmail.config.json`. JSONs têm schema fechado.

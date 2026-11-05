@@ -1,3 +1,4 @@
+from helpers import PROJECT_ROOT
 """Synthetic credentials only. No real network, consent, browser or delivery."""
 import json
 from dataclasses import replace
@@ -21,7 +22,7 @@ from cmail.web import create_app
 
 @pytest.fixture
 def settings(tmp_path):
-    value = json.loads((Path(__file__).parents[1] / 'config.example.json').read_text(encoding='utf-8'))
+    value = json.loads((PROJECT_ROOT / 'config.example.json').read_text(encoding='utf-8'))
     value.update(schemaVersion='1.2', mode='gmail-file',
                  gmailFile={'account':'sender@example.com','tokenFile':'authorized.json'})
     value['server']['openBrowser'] = False

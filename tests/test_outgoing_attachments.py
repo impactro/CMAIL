@@ -22,8 +22,8 @@ from cmail.mail import ImapSmtpProvider
 from cmail.outgoing_attachments import normalize, MAX_BYTES
 from helpers import config, FakeMail
 from test_inline_images import image, HTML, PNG
-from test_gmail_smtp import settings, smtp
-from test_gmail_file import credentials
+from providers.gmail.oauth_smtp.test_smtp import settings, smtp
+from providers.gmail.oauth_file.test_api import credentials
 
 
 def file(raw=b'%PDF-1.4 synthetic', name='Proposta.pdf'):

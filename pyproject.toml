@@ -41,6 +41,18 @@ cmail = ["templates/*.html", "static/*.css", "static/*.js", "static/*.mjs", "ski
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["tests"]
+markers = [
+  "simulated: provedor sintético, sem conta real",
+  "live: leitura real opt-in em ambiente autorizado",
+  "imap: IMAP e SMTP",
+  "gmail_api: Gmail API com OAuth web",
+  "gmail_file_api: Gmail API com OAuth por arquivo",
+  "gmail_file_smtp: Gmail SMTP XOAUTH2 por arquivo",
+  "outlook: Microsoft Graph OAuth",
+  "shared: contratos compartilhados",
+  "browser: interface com navegador",
+]
 
 # Portable consumer documentation; no checkout or private instance files.
 [tool.setuptools.data-files]
