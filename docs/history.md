@@ -1,3 +1,13 @@
+## 04/11/2026 — Revalidação do SYNC Full no LAB
+
+Fetch e revisão confirmaram main alinhada, sem alterações locais pendentes.
+Desde a fonte instalada2de2ec0 (26.11.3.post2), os commits seguintes são
+documentais: proposta de contas nomeadas e conciliação da fila compartilhada.
+Nenhum delta em cmail/ ou nos requisitos; pacote e serviços preservados,
+sem reinstalação ou reinício.19testes focais aprovados e pip check limpo.
+Contas nomeadas continuam proposta; aceite de leitura/importação real e
+pendência de viewport não foram executados nem encerrados por este SYNC.
+
 ## 04/11/2026 — análise de contas nomeadas
 
 [Proposta arquitetural](named-connectors-proposal.md) distingue o contrato
