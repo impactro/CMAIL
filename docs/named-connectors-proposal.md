@@ -40,7 +40,7 @@ o transporte SMTP não ganha leitura de caixa automaticamente.
 ```mermaid
 flowchart TD
     W[CAW: Webmail com conector fixo] --> F[CMAIL: fachada de contas]
-    X[CA/CX: ferramentas com connectorId] --> F
+    X[CA/CAX: ferramentas com connectorId] --> F
     H[CWH: caixa corporativa autorizada] --> F
     R[CCI: leitor autorizado] --> F
     V[CVAI e rotinas: composição de conteúdo] --> F
@@ -176,7 +176,7 @@ de provedor. Recibo aceito não comprova entrega ou leitura.
 | --- | --- |
 | CMAIL | Registro, contratos, capacidades, estado por conector e anexos; dono de todo transporte |
 | CA/CAW | Contexto autenticado e ferramentas com conector explícito; Webmail fixo; compatibilidade controlada |
-| CX | Mesmo CMAIL por ferramenta autorizada; definir principal do executor sem reaproveitar tokens curtos do navegador |
+| CAX | Mesmo CMAIL por ferramenta autorizada; definir principal do executor sem reaproveitar tokens curtos do navegador |
 | CWH | Conector fixo da empresa e grants aos atendentes; preservar autenticação humana e isolamento da conta WhatsApp |
 | CCI | Seleção de fonte de leitura por conector/owner, cursores isolados; sem habilitação automática de novas contas |
 | CVAI | Conteúdo/campanha e template no consumidor; preparação/envio exclusivamente no CMAIL |
@@ -235,7 +235,7 @@ herda a caixa da LIA por estar no mesmo servidor.
    provedor e dois owners, incluindo negação de acesso cruzado.
 3. Estender composição/preparação/provedores para anexos, reaproveitando
    templates e inline; validar estrutura MIME/Graph sem envio real.
-4. Adaptar CA/CX, CWH e leitores CCI/CVAI; substituir transportes duplicados
+4. Adaptar CA/CAX, CWH e leitores CCI/CVAI; substituir transportes duplicados
    somente após equivalência funcional e contrato de autorização.
 5. Migrar uma instância de teste; preservar Gmail pessoal e Microsoft LIA,
    paths, owners, preferências e consentimentos. Conferir rollback.
