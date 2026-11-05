@@ -99,6 +99,31 @@ def test_demo_webmail_remains_accessible_at_supported_viewports(tmp_path):
         thread.join(timeout=5)
 
 
+def test_compose_cc_bcc_are_shown_in_official_confirmation(tmp_path):
+    sync_playwright = pytest.importorskip('playwright.sync_api').sync_playwright
+    server, thread, port = _server(create_app(_demo_config(tmp_path)))
+    try:
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.launch(channel='msedge', headless=True)
+            try:
+                page = browser.new_page()
+                page.goto(f'http://127.0.0.1:{port}/?composeOnly=1', wait_until='networkidle')
+                for field, value in {'to': 'to@example.test', 'cc': 'copy@example.test',
+                                     'bcc': 'hidden@example.test', 'subject': 'Teste', 'body': 'Corpo'}.items():
+                    page.locator('#' + field).fill(value)
+                page.locator('#prepare').click()
+                page.locator('#confirm[open]').wait_for()
+                text = page.locator('#confirmText').inner_text()
+                assert 'Cc: copy@example.test' in text
+                assert 'Bcc: hidden@example.test' in text
+                # No execute click: synthetic preview only, no delivery.
+            finally:
+                browser.close()
+    finally:
+        server.should_exit = True
+        thread.join(timeout=5)
+
+
 def test_single_account_setup_is_responsive_and_switches_provider_fields(tmp_path):
     sync_playwright = pytest.importorskip("playwright.sync_api").sync_playwright
     server, thread, port = _server(create_app(_setup_config(tmp_path)))

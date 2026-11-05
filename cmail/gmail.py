@@ -150,15 +150,22 @@ class GmailProvider:
                 'contentType': str(part.get('mimeType') or 'application/octet-stream'),
                 'size': len(raw), 'contentBase64': base64.b64encode(raw).decode('ascii')}
 
-    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None, attachments=None) -> dict[str, object]:
+    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None, attachments=None, cc=None, bcc=None) -> dict[str, object]:
         from .inline_images import add_body
+        from .recipient_fields import groups
+        recipients, cc, bcc = groups(recipients, cc, bcc)
         message = EmailMessage()
         message["To"] = ", ".join(recipients)
+        if cc:
+            message['Cc'] = ', '.join(cc)
+        if bcc:
+            # Gmail API resolves envelope recipients from the submitted MIME.
+            message['Bcc'] = ', '.join(bcc)
         message["Subject"] = str(subject)[:500]
         add_body(message, str(body)[:200_000], body_html, inline_images, attachments)
         raw = base64.urlsafe_b64encode(message.as_bytes()).decode("ascii").rstrip("=")
         result = self._call("POST", "/messages/send", {"raw": raw})
-        return {"accepted": True, "id": str(result.get("id") or ""), "recipientCount": len(recipients)}
+        return {"accepted": True, "id": str(result.get("id") or ""), "recipientCount": len(recipients) + len(cc) + len(bcc)}
 
     def set_read(self, identifier: str, is_read: bool) -> dict[str, object]:
         selected = urllib.parse.quote(str(identifier or ""), safe="")

@@ -38,7 +38,7 @@ class Provider(Protocol):
     def folders(self) -> list[dict[str, object]]: ...
     def messages(self, folder: str, limit: int = 50) -> list[dict[str, object]]: ...
     def message(self, folder: str, identifier: str) -> dict[str, object]: ...
-    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None, attachments=None) -> dict[str, object]: ...
+    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None, attachments=None, cc=None, bcc=None) -> dict[str, object]: ...
 
 
 class DemoProvider:
@@ -59,11 +59,12 @@ class DemoProvider:
     def message(self, folder: str, identifier: str) -> dict[str, object]:
         raise MailError("Mensagem não existe no modo demo.")
 
-    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None, attachments=None) -> dict[str, object]:
+    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None, attachments=None, cc=None, bcc=None) -> dict[str, object]:
         images = normalize_inline_images([] if inline_images is None else inline_images, body_html)
         from .outgoing_attachments import bundle
         bundle(attachments, images)
-        return {"accepted": False, "demo": True, "recipientCount": len(recipients)}
+        from .recipient_fields import groups
+        return {"accepted": False, "demo": True, "recipientCount": sum(map(len, groups(recipients, cc, bcc)))}
 
 
 class ImapSmtpProvider:
@@ -321,10 +322,19 @@ class ImapSmtpProvider:
         finally:
             client.logout()
 
-    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None, reply_message_id: str = "", attachments=None) -> dict[str, object]:
+    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None, reply_message_id: str = "", attachments=None, cc=None, bcc=None) -> dict[str, object]:
+        explicit = cc is not None or bcc is not None
+        from .recipient_fields import groups
+        recipients, cc, bcc = groups(recipients, cc, bcc)
         message = EmailMessage()
         message["From"] = self.config.account
-        if len(recipients) == 1:
+        if explicit:
+            message['To'] = ', '.join(recipients)
+            if cc:
+                message['Cc'] = ', '.join(cc)
+            if bcc:
+                message['Bcc'] = ', '.join(bcc)
+        elif len(recipients) == 1:
             message["To"] = recipients[0]
         else:
             # send_message usa Bcc no envelope SMTP e remove esse cabeçalho dos
@@ -345,7 +355,7 @@ class ImapSmtpProvider:
             refused = client.send_message(message)
             if refused:
                 raise MailError("Servidor recusou um ou mais destinatários.")
-            return {"accepted": True, "recipientCount": len(recipients)}
+            return {"accepted": True, "recipientCount": len(recipients) + len(cc) + len(bcc)}
         finally:
             try: client.quit()
             except Exception: pass

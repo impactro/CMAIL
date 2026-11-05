@@ -25,7 +25,10 @@ são aceites próprios de cada consumidor, não consequência de atualizar fonte
 
 `CMAIL` é o nome técnico do módulo independente que reúne webmail, leitura de
 pastas e mensagens, listas de destinatários e disparo controlado de e-mail.
-Versão do componente: CES `26.11.5c` (pacote Python `26.11.5.post2`).
+Versão do componente: CES `26.11.5d` (pacote Python `26.11.5.post3`).
+
+Envio de novas mensagens aceita `cc` e `bcc` na API, CLI e Webmail, com
+prévia e confirmação dos três grupos. Veja [Cc e Bcc](docs/cc-bcc.md).
 
 Download de anexos recebidos: Gmail resolve a parte MIME estável antes de
 obter o identificador atual do provedor; IMAP oferece download na INBOX por

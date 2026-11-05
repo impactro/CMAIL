@@ -278,6 +278,8 @@ class MailService:
         )
 
     def prepare_message_action(self, principal: Principal, identifier: str, payload: dict[str, object]):
+        if payload.get('cc') or payload.get('bcc'):
+            raise ValueError('Cc/Bcc disponíveis somente em novas mensagens.')
         if payload.get('attachments'):
             raise ValueError('Anexos em resposta/encaminhamento ainda não são suportados.')
         principal.require(SEND_MAIL)
@@ -323,6 +325,8 @@ class MailService:
             mail_provider = self.provider_for(selected)
             arguments = (recipients, str(payload["subject"]), str(payload["body"]))
             options = {}
+            if 'cc' in payload or 'bcc' in payload:
+                options.update(cc=payload.get('cc', []), bcc=payload.get('bcc', []))
             if payload.get("bodyHtml"):
                 options["body_html"] = str(payload["bodyHtml"])
             if payload.get("inlineImages"):
@@ -345,7 +349,7 @@ class MailService:
                 result = mail_provider.send(*arguments, **options)
         except Exception as exc:
             uncertain = {"accepted": False, "uncertain": True, "error": str(exc)[:240],
-                         "recipientCount": len(recipients)}
+                         "recipientCount": len(recipients) + len(payload.get('cc', [])) + len(payload.get('bcc', []))}
             self.store.finish(identifier, "uncertain", uncertain, owner)
             raise
         self.store.finish(

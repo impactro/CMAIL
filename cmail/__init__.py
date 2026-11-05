@@ -2,9 +2,10 @@
 
 from importlib import import_module
 
-__version__ = "26.11.5c"
+__version__ = "26.11.5d"
 
 _EXPORTS = {
+    'normalize_recipient_groups': ('recipient_fields', 'groups'),
     'ConnectorConfig': ('connectors', 'ConnectorConfig'),
     'ConnectorRegistry': ('connectors', 'ConnectorRegistry'),
     'GoogleRead': ('google_content', 'GoogleRead'),

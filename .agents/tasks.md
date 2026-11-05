@@ -28,9 +28,11 @@ e docs/history.md; não repetir implementação ou os seis envios concluídos.
 
 ### CMAIL-ADAPTADOR-PESSOAL — convergir rotas do agente consumidor
 
-O mail_agent.py do FSND_FabioDell ainda bloqueia anexos CMAIL com diagnóstico
-legado e conserva SMTP próprio para outras contas. Migrar pelo contrato nativo,
-com testes de snapshot, Cc recusado explicitamente e identidade por conta.
+Conferir a versão atual do mail_agent.py do FSND_FabioDell antes da migração.
+Cc/Bcc de novas mensagens estão implementados no CMAIL 26.11.5d; transportar
+os campos no adaptador e na ferramenta CAW sem descartá-los, com testes de
+snapshot e identidade por conta. Instalação e homologação no consumidor são
+separadas da entrega do módulo; não duplicar transportes SMTP.
 Gmail/IMAP nativos já foram validados; Outlook Graph pertence ao host do grant.
 Não copiar cache Microsoft nem habilitar disparos fiscais como efeito do SYNC.
 

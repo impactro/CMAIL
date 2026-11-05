@@ -83,14 +83,20 @@ class GmailSmtpProvider:
     def status(self):
         return {**self.auth.status(), "externalEffects": True}
 
-    def send(self, recipients, subject, body, *, body_html="", inline_images=None, attachments=None):
+    def send(self, recipients, subject, body, *, body_html="", inline_images=None, attachments=None, cc=None, bcc=None):
+        explicit = cc is not None or bcc is not None
+        from .recipient_fields import groups
+        recipients, cc, bcc = groups(recipients, cc, bcc)
+        envelope = recipients + cc + bcc
         if (not recipients or any(not isinstance(x, str) or not x.isascii()
-                or not EMAIL.fullmatch(x) for x in recipients)):
+                or not EMAIL.fullmatch(x) for x in envelope)):
             raise ValueError("Destinatários inválidos.")
         message = EmailMessage()
         account = self.auth.config.gmail_file_account
         message["From"] = account
-        message["To"] = recipients[0] if len(recipients) == 1 else "undisclosed-recipients:;"
+        message["To"] = ', '.join(recipients) if explicit else (recipients[0] if len(recipients) == 1 else "undisclosed-recipients:;")
+        if cc:
+            message['Cc'] = ', '.join(cc)
         message["Subject"] = subject
         message["Date"] = formatdate(localtime=False, usegmt=True)
         message["Message-ID"] = make_msgid(domain=account.split("@", 1)[1])
@@ -98,14 +104,14 @@ class GmailSmtpProvider:
         token = self.auth.access_token()
         try:
             with self.auth.connection(token) as client:
-                refused = client.send_message(message, from_addr=account, to_addrs=recipients)
+                refused = client.send_message(message, from_addr=account, to_addrs=envelope)
                 if refused:
                     raise ValueError("Recusa parcial de destinatários; resultado incerto, sem repetição.")
         except Exception:
             # Never include SMTP challenge, bearer, raw provider body or recipient map.
             raise ValueError("Envio SMTP não confirmado; resultado incerto, sem repetição.") from None
         return {"accepted": True, "id": str(message["Message-ID"]),
-                "recipientCount": len(recipients), "provider": "gmail-file-smtp",
+                "recipientCount": len(envelope), "provider": "gmail-file-smtp",
                 "delivery": "submitted"}
 
     def folders(self):

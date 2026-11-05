@@ -95,6 +95,8 @@
         <form id="composeForm">
           <label for="listId">Lista opcional</label><select id="listId"><option value="">Nenhuma</option></select>
           <label for="to">Destinatários adicionais</label><input id="to" type="text" autocomplete="off" placeholder="email@dominio.com; outro@dominio.com">
+          <label for="cc">Cc (cópia)</label><input id="cc" type="text" autocomplete="off" placeholder="email@dominio.com; outro@dominio.com">
+          <label for="bcc">Bcc (cópia oculta)</label><input id="bcc" type="text" autocomplete="off" placeholder="email@dominio.com; outro@dominio.com">
           <label for="subject">Assunto</label><input id="subject" maxlength="500" required>
           <label for="body">Mensagem</label><textarea id="body" rows="12" maxlength="200000" required></textarea>
           <div class="cm-appearance-choices"><div><label for="messageTemplate">Template da mensagem</label><select id="messageTemplate"><option value="inherit">Usar minha preferência</option><option value="none">Nenhum</option><option value="default">Padrão CMAIL</option><option value="custom">Meu HTML personalizado</option></select></div><div><label for="messageSignature">Assinatura</label><select id="messageSignature"><option value="inherit">Usar minha preferência</option><option value="none">Nenhuma</option><option value="default">Padrão CMAIL</option><option value="custom">Meu HTML personalizado</option></select></div></div>
@@ -128,6 +130,6 @@
   {% include '_appearance.html' %}
 {% endif %}
 <script src="{{ base_path }}/static/modal-host.js?v=26.11.3b" defer></script><script src="{{ base_path }}/static/appearance.js?v=26.11.3b" defer></script>
-<script src="{{ base_path }}/static/app.js?v=26.11.3b" defer></script>
+<script src="{{ base_path }}/static/app.js?v=26.11.5d" defer></script>
 </body>
 </html>

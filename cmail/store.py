@@ -136,6 +136,8 @@ class Store:
         return [str(row[0]) for row in rows]
 
     def prepare(self, payload: dict[str, object], owner_id: str = "", *, message_action=None, delivery_binding=None) -> dict[str, object]:
+        if not isinstance(payload.get('recipients', []), list):
+            raise ValueError('Destinatários devem ser uma lista.')
         recipients = [str(item).strip().casefold() for item in payload.get("recipients", []) if str(item).strip()]
         if payload.get("listId"):
             recipients.extend(self.list_recipients(int(payload["listId"]), owner_id))
@@ -147,6 +149,14 @@ class Store:
         if not subject or not body:
             raise ValueError("Assunto e corpo são obrigatórios.")
         clean = {"recipients": recipients, "subject": subject, "body": body}
+        if 'cc' in payload or 'bcc' in payload:
+            if any(not isinstance(payload.get(key, []), list) for key in ('cc', 'bcc')):
+                raise ValueError('Cc/Bcc devem ser listas de endereços.')
+            if message_action is not None and (payload.get('cc') or payload.get('bcc')):
+                raise ValueError('Cc/Bcc disponíveis somente em novas mensagens.')
+            from .recipient_fields import groups
+            recipients, cc, bcc = groups(recipients, payload.get('cc', []), payload.get('bcc', []))
+            clean.update(recipients=recipients, cc=cc, bcc=bcc)
         body_html = payload.get("bodyHtml", "")
         if not isinstance(body_html, str) or len(body_html) > 200_000:
             raise ValueError("Corpo HTML inválido ou acima do limite.")
@@ -173,9 +183,9 @@ class Store:
             db.execute("INSERT INTO mail_drafts(id,created_at,expires_at,payload_json,confirmation_hash,status,owner_id) VALUES(?,?,?,?,?,?,?)",
                        (identifier, _now().isoformat(), expires.isoformat(), json.dumps(clean, ensure_ascii=False),
                         hashlib.sha256(token.encode()).hexdigest(), "prepared-files-v1" if attachments else "prepared", owner_id))
-            self._audit(db, "send-prepare", "prepared", {"draftId": identifier, "recipientCount": len(recipients)}, owner_id)
+            self._audit(db, "send-prepare", "prepared", {"draftId": identifier, "recipientCount": len(recipients) + len(clean.get('cc', [])) + len(clean.get('bcc', []))}, owner_id)
         return {"draftId": identifier, "confirmationToken": token, "expiresAt": expires.isoformat(),
-                "recipientCount": len(recipients), "subject": subject, "bodyPreview": body[:240],
+                "recipientCount": len(recipients) + len(clean.get('cc', [])) + len(clean.get('bcc', [])), "subject": subject, "bodyPreview": body[:240],
                 "bodyType": "html" if body_html else "text", "preview": ({k: v for k, v in clean.items() if k not in {'attachments', 'deliveryBinding'}} if attachments else clean),
                 **({'attachmentSummary': summaries(attachments)} if attachments else {}),
                 "inlineImageSummary": inline_summaries(inline_images)}

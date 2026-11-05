@@ -114,7 +114,9 @@ class MicrosoftGraphProvider(Provider):
         )
         return _summary(result, include_body=True)
 
-    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None, attachments=None) -> dict[str, object]:
+    def send(self, recipients: list[str], subject: str, body: str, *, body_html: str = "", inline_images=None, attachments=None, cc=None, bcc=None) -> dict[str, object]:
+        from .recipient_fields import groups
+        recipients, cc, bcc = groups(recipients, cc, bcc)
         from .inline_images import normalize
         images = normalize([] if inline_images is None else inline_images, body_html)
         from .outgoing_attachments import bundle, MAX_SNAPSHOT_BYTES
@@ -126,6 +128,10 @@ class MicrosoftGraphProvider(Provider):
                 {"emailAddress": {"address": address}} for address in recipients
             ],
         }
+        if cc:
+            message['ccRecipients'] = [{'emailAddress': {'address': a}} for a in cc]
+        if bcc:
+            message['bccRecipients'] = [{'emailAddress': {'address': a}} for a in bcc]
         if images:
             message["attachments"] = [{"@odata.type": "#microsoft.graph.fileAttachment",
                 "name": item["name"], "contentType": item["contentType"],
@@ -140,7 +146,7 @@ class MicrosoftGraphProvider(Provider):
             if len(json.dumps(message).encode('utf-8')) > MAX_SNAPSHOT_BYTES + 1024 * 1024 - 1024:
                 raise ValueError('Mensagem Graph com anexos excede o limite de requisição pequena.')
         self._call("POST", "/me/sendMail", {"message": message, "saveToSentItems": True}, expected=(202,))
-        return {"accepted": True, "recipientCount": len(recipients)}
+        return {"accepted": True, "recipientCount": len(recipients) + len(cc) + len(bcc)}
 
     def set_read(self, identifier: str, is_read: bool) -> dict[str, object]:
         selected = _identifier(identifier, "Mensagem")

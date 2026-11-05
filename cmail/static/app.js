@@ -255,6 +255,10 @@
     document.querySelector('#composePane').hidden = false;
     document.querySelector('#composeTitle').textContent = options.title || 'Nova mensagem';
     document.querySelector('#to').value = options.to || '';
+    for (const id of ['cc', 'bcc']) {
+      document.getElementById(id).value = '';
+      document.getElementById(id).disabled = composeAction !== 'send';
+    }
     document.querySelector('#subject').value = options.subject || '';
     document.querySelector('#body').value = options.body || '';
     document.querySelector('#messageTemplate').value = 'inherit';
@@ -288,13 +292,15 @@
       const recipients = document.querySelector('#to').value.split(';').map(value => value.trim()).filter(Boolean);
       const listId = listSelect.value;
       const action = composeAction !== 'send';
+      const copies = Object.fromEntries(['cc', 'bcc'].map(id => [id, document.getElementById(id).value.split(';').map(value => value.trim()).filter(Boolean)]));
       const path = action ? `/api/messages/${encodeURIComponent(composeMessage.id)}/prepare` : '/api/send/prepare';
       const data = await json(path, effect('POST', {recipients, listId: listId ? Number(listId) : null,
         subject: document.querySelector('#subject').value, body: document.querySelector('#body').value,
-        ...(action ? {kind:composeAction,folder:composeMessage.folder} : {}),
+        ...(action ? {kind:composeAction,folder:composeMessage.folder} : (copies.cc.length || copies.bcc.length ? copies : {})),
         appearance:{template:document.querySelector('#messageTemplate').value,signature:document.querySelector('#messageSignature').value}}));
       pending = data.preview;
-      document.querySelector('#confirmText').textContent = `Enviar “${pending.subject}” para ${pending.preview.recipients.join('; ')}?${action ? ' A prévia mostra o conteúdo adicionado. O histórico é tratado pelo provedor; Gmail e IMAP encaminham somente texto, sem anexos originais.' : ''}`;
+      const copySummary = ['cc', 'bcc'].filter(key => pending.preview[key]?.length).map(key => ` ${key === 'cc' ? 'Cc' : 'Bcc'}: ${pending.preview[key].join('; ')}.`).join('');
+      document.querySelector('#confirmText').textContent = `Enviar “${pending.subject}” para ${pending.preview.recipients.join('; ')}?${copySummary}${action ? ' A prévia mostra o conteúdo adicionado. O histórico é tratado pelo provedor; Gmail e IMAP encaminham somente texto, sem anexos originais.' : ''}`;
       const preview = document.querySelector('#sendPreview'); preview.src = data.previewUrl; preview.hidden = false;
       document.querySelector('#confirm').showModal();
     } catch (error) { showError(error); }

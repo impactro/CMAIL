@@ -1,3 +1,12 @@
+## 26.11.5d — Cc e Bcc em novas mensagens
+
+API, CLI e Webmail preservam os grupos na prévia confirmada e os encaminham
+para Gmail API, SMTP/XOAUTH2, IMAP/SMTP e Microsoft Graph. SMTP conserva Bcc
+fora dos bytes transmitidos; chamadas legadas conservam a proteção anterior
+de listas. Respostas/encaminhamentos recusam cópias adicionais explicitamente.
+Normalização pública compartilhada com o consumidor CAW, sem transporte novo,
+alteração de credenciais ou envio real. Ver docs/cc-bcc.md e testes focais.
+
 ## 26.11.5c — consulta de anexos Microsoft Graph
 
 Validação na LIA encontrou HTTP400 ao selecionar contentId na coleção base
