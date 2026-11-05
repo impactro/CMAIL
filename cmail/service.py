@@ -98,7 +98,7 @@ class MailService:
             {READ_MAIL, MANAGE_MAIL, SEND_MAIL, MANAGE_LISTS}
         )
         owner = str(owner_id or "").strip()
-        if self.config.mode in {"demo", "imap"}:
+        if self.config.mode in {"demo", "imap", "microsoft-imap"}:
             return Principal(
                 "local-" + self.config.mode,
                 self.config.account,
@@ -128,7 +128,7 @@ class MailService:
 
     def connection_status(self, owner_id: str) -> dict[str, object]:
         """Expõe somente o estado público da conexão e da interface Webmail."""
-        if self.config.mode == "gmail-file":
+        if self.config.mode in {"gmail-file", "microsoft-imap"}:
             raise PermissionError("gmail-file não possui conexão web por owner.")
         owner = str(owner_id or "").strip()
         if not owner or len(owner) > 256:
@@ -391,7 +391,7 @@ class MailService:
         if hasattr(selected, "trash"):
             result = selected.trash(identifier, destination, folder=folder)
         elif hasattr(selected, "move"):
-            options = {"folder": folder} if self.config.mode in {"imap", "gmail", "gmail-file"} else {}
+            options = {"folder": folder} if self.config.mode in {"imap", "microsoft-imap", "gmail", "gmail-file"} else {}
             result = {**selected.move(identifier, destination, **options), "trashed": True}
         else:
             raise NotImplementedError("O provedor atual não permite mover para a lixeira.")
@@ -433,7 +433,7 @@ class MailService:
         selected = self.provider_for(principal)
         if not hasattr(selected, "move"):
             raise NotImplementedError("O provedor atual não permite mover mensagens.")
-        options = {"folder": folder} if self.config.mode in {"imap", "gmail", "gmail-file"} else {}
+        options = {"folder": folder} if self.config.mode in {"imap", "microsoft-imap", "gmail", "gmail-file"} else {}
         result = selected.move(identifier, destination_id, **options)  # type: ignore[attr-defined]
         self.store.record_action(
             "move", "completed",

@@ -1,5 +1,9 @@
 # CMAIL
 
+[Microsoft IMAP/SMTP com OAuth](docs/microsoft-imap.md): alternativa explícita
+ao Graph, com migração do cache OMAIL e autenticação por dispositivo.
+API Python/CLI e contas nomeadas; Gmail pode permanecer fixo no Webmail.
+
 Primeira etapa de [contas nomeadas](docs/named-connectors.md) disponível como
 API Python opcional: registro isolado e compatibilidade legada. Consumidores
 e OAuth por conector seguem em etapas posteriores.
@@ -25,7 +29,7 @@ são aceites próprios de cada consumidor, não consequência de atualizar fonte
 
 `CMAIL` é o nome técnico do módulo independente que reúne webmail, leitura de
 pastas e mensagens, listas de destinatários e disparo controlado de e-mail.
-Versão do componente: CES `26.11.5d` (pacote Python `26.11.5.post3`).
+Versão do componente: CES `26.11.5e` (pacote Python `26.11.5.post4`).
 
 Envio de novas mensagens aceita `cc` e `bcc` na API, CLI e Webmail, com
 prévia e confirmação dos três grupos. Veja [Cc e Bcc](docs/cc-bcc.md).

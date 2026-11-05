@@ -80,17 +80,22 @@ class ImapSmtpProvider:
         self.smtp_factory = smtp_factory
 
     def _imap(self):
-        password = self.config.password()
         client = self.imap_ssl_factory(self.config.imap_host, self.config.imap_port, timeout=20) if self.config.imap_security == "ssl" else self.imap_factory(self.config.imap_host, self.config.imap_port, timeout=20)
         try:
             if self.config.imap_security == "starttls":
                 client.starttls(ssl_context=ssl.create_default_context())
-            client.login(self.config.username, password)
+            self._imap_login(client)
             return client
         except Exception:
             try: client.logout()
             except Exception: pass
             raise
+
+    def _imap_login(self, client):
+        client.login(self.config.username, self.config.password())
+
+    def _smtp_login(self, client):
+        client.login(self.config.username, self.config.password())
 
     def status(self) -> dict[str, object]:
         client = self._imap()
@@ -346,12 +351,11 @@ class ImapSmtpProvider:
             message["In-Reply-To"] = reply_message_id
             message["References"] = reply_message_id
         add_body(message, body, body_html, inline_images, attachments)
-        password = self.config.password()
         client = self.smtp_ssl_factory(self.config.smtp_host, self.config.smtp_port, timeout=30) if self.config.smtp_security == "ssl" else self.smtp_factory(self.config.smtp_host, self.config.smtp_port, timeout=30)
         try:
             if self.config.smtp_security == "starttls":
                 client.starttls(context=ssl.create_default_context())
-            client.login(self.config.username, password)
+            self._smtp_login(client)
             refused = client.send_message(message)
             if refused:
                 raise MailError("Servidor recusou um ou mais destinatários.")
@@ -362,6 +366,9 @@ class ImapSmtpProvider:
 
 
 def provider(config: Config) -> Provider:
+    if config.mode == "microsoft-imap":
+        from .microsoft_imap import MicrosoftImapProvider
+        return MicrosoftImapProvider(config)
     if config.mode == "demo":
         return DemoProvider()
     if config.mode == "imap":

@@ -137,7 +137,7 @@ def create_app(
     setup_origin: str = "",
 ) -> FastAPI:
     """Create a mountable CMAIL ASGI app or a prefixed standalone host."""
-    if config.mode == "gmail-file":
+    if config.mode in {"gmail-file", "microsoft-imap"}:
         raise ValueError("gmail-file é headless: use CLI ou API Python local.")
     if setup_authorizer is not None:
         if principal_resolver is None or not callable(setup_authorizer):

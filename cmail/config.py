@@ -190,7 +190,7 @@ class Config:
                           "1.2": ROOT_KEYS_V12, "1.3": ROOT_KEYS_V12}[schema_version]
         )
         mode = _text(value["mode"], "mode", required=True).casefold()
-        allowed_modes = {"demo", "imap", "microsoft"}
+        allowed_modes = {"demo", "imap", "microsoft", "microsoft-imap"}
         if schema_version in {"1.1", "1.2", "1.3"}:
             allowed_modes.update({"setup", "gmail"})
         if schema_version in {"1.2", "1.3"}:
@@ -269,6 +269,25 @@ class Config:
             raise ConfigError("Modo IMAP exige conta, usuário, passwordFile e hosts IMAP/SMTP.")
         if mode == "microsoft" and not all((config.microsoft_client_id, config.microsoft_tenant_id, config.microsoft_client_secret_file, config.microsoft_redirect_uri)):
             raise ConfigError("Modo Microsoft exige clientId, tenantId, clientSecretFile e redirectUri.")
+        if mode == "microsoft-imap":
+            from .store import EMAIL
+            from uuid import UUID
+            try:
+                UUID(config.microsoft_client_id)
+                UUID(config.microsoft_tenant_id)
+            except ValueError:
+                raise ConfigError("Microsoft IMAP exige UUIDs de aplicativo e tenant específico.") from None
+            if (not EMAIL.fullmatch(config.microsoft_account) or not config.microsoft_client_id
+                    or not config.microsoft_tenant_id
+                    or config.microsoft_tenant_id.lower() in {"common", "organizations", "consumers"}
+                    or config.account.casefold() != config.microsoft_account.casefold()
+                    or config.username.casefold() != config.account.casefold()
+                    or config.imap_host != "outlook.office365.com" or config.imap_port != 993
+                    or config.imap_security != "ssl" or config.smtp_host != "smtp.office365.com"
+                    or config.smtp_port != 587 or config.smtp_security != "starttls"
+                    or config.password_file or config.open_browser
+                    or config.microsoft_client_secret_file or config.microsoft_redirect_uri):
+                raise ConfigError("Microsoft IMAP exige conta explícita, tenant específico, OAuth sem senha e endpoints Microsoft TLS fixos.")
         if mode == "gmail" and not all((
             config.google_client_id, config.google_client_secret_file,
             config.google_redirect_uri,
@@ -319,6 +338,7 @@ class Config:
             else self.microsoft_client_secret_file if self.mode == "microsoft"
             else self.google_client_secret_file if self.mode == "gmail"
             else self.gmail_token_file if self.mode == "gmail-file"
+            else self.state_dir / "oauth/microsoft-imap.dpapi" if self.mode == "microsoft-imap"
             else None
         )
         return {

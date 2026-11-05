@@ -71,6 +71,8 @@ class ConnectorConfig:
             configs[key] = config
         if selected not in configs:
             raise ConfigError('webmailConnectorId não existe no registro.')
+        if configs[selected].mode == 'microsoft-imap':
+            raise ConfigError('Microsoft IMAP é headless; mantenha outro conector no Webmail.')
         return cls(path, base, selected, MappingProxyType(configs))
 
 

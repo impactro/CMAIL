@@ -296,7 +296,7 @@ def create_component_api(
         if config_file is not None
         else Config.load(Path(agent_root))
     )
-    if config.mode == "gmail-file":
+    if config.mode in {"gmail-file", "microsoft-imap"}:
         raise ValueError("gmail-file exige create_api explícito, não montagem por host.")
     resolver = services.get('mailWorkspaceRootResolver')
     if resolver is not None and not callable(resolver):

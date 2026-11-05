@@ -1,3 +1,13 @@
+## 26.11.5e — Microsoft IMAP/SMTP OAuth como alternativa ao Graph
+
+Novo modo microsoft-imap com cliente público MSAL, XOAUTH2 e cache DPAPI;
+migração explícita de OMAIL, código de dispositivo e renovação silenciosa.
+Destinos TLS, conta, aplicativo e tenant validados. Reutiliza o provedor MIME,
+prévia, anexos, templates, Cc/Bcc e journal; sem senha, Graph ou fallback.
+401 testes sem navegador passaram; suite integral anterior teve uma falha
+visual já registrada. No DEV-FSND, cache antigo retornou AADSTS50173; login
+renovado no Edge, AUTH IMAP/SMTP e leitura de pastas/um item aprovados, sem envio.
+
 ## 2026-11-05 — aceite Cc/Bcc no DEV-FSND
 
 CMAIL26.11.5d/post3 e CA26.11.5e/post5 instalados:47 testes focais CMAIL,
