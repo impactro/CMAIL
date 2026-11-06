@@ -19,7 +19,7 @@ def describe() -> dict[str, object]:
              "skills": [{"path": skill("google-content"), "operations": ["google-content-contract", "google-content-read", "google-content-prepare", "google-content-execute"]}]},
             {"id": "webmail", "name": "Webmail", "description": "Consulta e gestão de conta, pastas e mensagens.",
              "skills": [
-                 {"path": skill("consultar-email"), "operations": ["check-config", "status", "list-folders", "list-messages", "attachments", "calendar", "serve"]},
+                 {"path": skill("consultar-email"), "operations": ["check-config", "status", "list-folders", "list-messages", "manage-messages", "attachments", "calendar", "serve"]},
                  {"path": skill("consultar-pessoas"), "operations": ["contacts"]},
              ]},
             {"id": "mailing", "name": "Listas e disparos", "description": "Gestão local de listas e envio com confirmação.",
@@ -35,6 +35,7 @@ def describe() -> dict[str, object]:
             "status": {"description": "Mostra configuração e estado local.", "argv": ["status"], "effects": ["read-files"]},
             "list-folders": {"description": "Lista pastas da conta configurada.", "argv": ["list-folders"], "effects": ["read-files", "network-read"]},
             "list-messages": {"description": "Lista mensagens sem executar ação externa.", "argv": ["list-messages"], "effects": ["read-files", "network-read"]},
+            "manage-messages": {"description": "Marca, move ou envia mensagens à lixeira pela API; confirmação pertence ao host autenticado.", "argv": [], "effects": ["read-files", "network-read", "external-write-with-confirmation"]},
             "attachments": {"description": "Lista e obtém anexos da conta autenticada.", "argv": [], "effects": ["read-files", "network-read"]},
             "contacts": {"description": "Consulta contatos e diretório da conta autenticada.", "argv": [], "effects": ["read-files", "network-read"]},
             "calendar": {"description": "Consulta e gere agenda com confirmação para alterações.", "argv": [], "effects": ["read-files", "network-read", "network-and-external-write-with-execute"]},

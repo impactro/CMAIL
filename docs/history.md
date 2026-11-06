@@ -1,3 +1,10 @@
+## 26.11.5g — Contrato de e-mail para chatbot
+
+Skills padrão ampliadas para busca, leitura, resumo, organização e templates
+do consumidor. API pública expõe a busca existente; descritor adiciona gestão
+opt-in. Marcação de leitura Microsoft IMAP conserva a pasta selecionada.
+Validação somente sintética para alterações; nenhuma mensagem real apagada.
+
 ## 26.11.5e — Microsoft IMAP/SMTP OAuth como alternativa ao Graph
 
 Novo modo microsoft-imap com cliente público MSAL, XOAUTH2 e cache DPAPI;

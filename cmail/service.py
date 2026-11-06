@@ -419,7 +419,7 @@ class MailService:
         selected = self.provider_for(principal)
         if not hasattr(selected, "set_read"):
             raise NotImplementedError("O provedor atual não permite alterar leitura.")
-        options = {"folder": folder} if self.config.mode == "imap" else {}
+        options = {"folder": folder} if self.config.mode in {"imap", "microsoft-imap"} else {}
         result = selected.set_read(identifier, is_read, **options)  # type: ignore[attr-defined]
         self.store.record_action(
             "mark-read" if is_read else "mark-unread", "completed",

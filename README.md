@@ -1,5 +1,8 @@
 # CMAIL
 
+[Skills e gestão pelo chatbot](docs/chatbot-email.md): busca, leitura, resumo,
+pastas, marcação, movimentação e lixeira; contas e templates do consumidor.
+
 [Microsoft IMAP/SMTP com OAuth](docs/microsoft-imap.md): alternativa explícita
 ao Graph, com migração do cache OMAIL e autenticação por dispositivo.
 API Python/CLI e contas nomeadas; Gmail pode permanecer fixo no Webmail.

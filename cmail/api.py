@@ -170,6 +170,10 @@ class CmailApi:
     def message(self, principal: Principal, folder: str, identifier: str) -> dict[str, object]:
         return self.service.message(principal, folder, identifier)
 
+    def search_messages(self, principal: Principal, folder: str, query: str, limit: int = 25) -> dict[str, object]:
+        """Busca nativa na pasta; metadados distinguem aproximação e cobertura."""
+        return self.service.search_messages(principal, folder, query, limit)
+
     def history(self, principal: Principal, limit: int = 50) -> list[dict[str, object]]:
         return self.service.history(principal, limit)
 
