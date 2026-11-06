@@ -36,3 +36,7 @@ não há cache recente. Retorna `native:false`, `incomplete:true`, cobertura
 `recent-summaries-only` e motivo `server-charset-unsupported`. Isso não prova
 ausência de mensagem antiga. Falhas de autenticação ou outros erros de busca
 continuam sendo erros; não são ocultados por uma consulta parcial.
+
+No modo `microsoft-imap`,26.11.6a aplica essa cobertura parcial diretamente
+para consultas não ASCII. Evita transmitir quoted-string de oito bits a um
+servidor que suporta somente US-ASCII; alguns retornam BAD antes de BADCHARSET.

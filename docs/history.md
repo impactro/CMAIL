@@ -1,3 +1,10 @@
+## 26.11.6a — Busca acentuada no Microsoft IMAP
+
+Exchange pode retornar BAD antes de BADCHARSET para bytes acentuados em
+quoted-string. O modo Microsoft IMAP usa diretamente a cobertura parcial
+explícita para consulta não ASCII, preservando o termo e evitando o comando
+inválido. Busca ASCII continua nativa. Sem alteração de mensagens.
+
 ## 26.11.6 — Busca IMAP compatível com Exchange
 
 Diagnóstico vivo encontrou BADCHARSET US-ASCII no Microsoft IMAP local.

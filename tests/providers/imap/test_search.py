@@ -50,3 +50,13 @@ def test_search_control_characters_never_reach_imap():
     with pytest.raises(ValueError):
         selected.search_messages('INBOX', 'test\r\nDELETE')
     client.uid.assert_not_called()
+
+
+def test_microsoft_unicode_uses_explicit_partial_search_without_malformed_command():
+    selected, client = provider()
+    selected.config = SimpleNamespace(mode='microsoft-imap')
+    selected.messages = Mock(return_value=[{'id': '42', 'subject': 'Fábio'}])
+    result = search_messages(selected, 'INBOX', 'Fábio', 7)
+    assert result['search']['native'] is False and result['search']['incomplete']
+    assert result['messages'][0]['id'] == '42'
+    selected._imap.assert_not_called()

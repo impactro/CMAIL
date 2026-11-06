@@ -159,6 +159,10 @@ class ImapSmtpProvider:
         query = str(query).strip()
         if not 1 <= len(query) <= 200 or any(ord(char) < 32 or ord(char) == 127 for char in query):
             raise ValueError('Busca inválida.')
+        if getattr(self.config, 'mode', '') == 'microsoft-imap' and not query.isascii():
+            # Exchange advertises US-ASCII only. Do not send raw eight-bit
+            # quoted strings, which may produce BAD before BADCHARSET.
+            raise SearchCharsetUnsupported('Microsoft IMAP aceita somente busca nativa US-ASCII.')
         client = self._imap()
         try:
             if client.select(_mailbox(folder), readonly=True)[0] != 'OK':
