@@ -117,6 +117,7 @@ class CmailApi:
                 "status": {"capability": "mail.read", "effect": "read-local"},
                 "folders": {"capability": "mail.read", "effect": "network-read"},
                 "messages": {"capability": "mail.read", "effect": "network-read"},
+                "search-messages": {"capability": "mail.read", "effect": "network-read"},
                 "message": {"capability": "mail.read", "effect": "network-read"},
                 "history": {"capability": "mail.read", "effect": "read-local"},
                 "message-actions": {"capability": "mail.read", "effect": "network-read"},

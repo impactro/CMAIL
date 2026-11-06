@@ -17,6 +17,7 @@ def test_search_public_api_preserves_native_scope_and_read_gate(tmp_path):
     api = CmailApi(service)
     reader = Principal('', '', frozenset({'mail.read'}))
     result = api.search_messages(reader, 'Archive', 'proposta', 7)
+    assert api.describe()['operations']['search-messages']['capability'] == 'mail.read'
     assert result['messages'][0]['id'] == 'old'
     assert result['search']['scope'] == 'selected-folder'
     native.assert_called_once_with('Archive', 'proposta', 7)
