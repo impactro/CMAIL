@@ -27,6 +27,10 @@ class MailError(ValueError):
     pass
 
 
+class SearchCharsetUnsupported(MailError):
+    """O servidor recusou explicitamente o charset da busca, não a autenticação."""
+
+
 def _mailbox(value: str) -> str:
     if not value or any(ord(char) < 32 for char in value):
         raise MailError("Pasta de e-mail inválida.")
@@ -152,13 +156,22 @@ class ImapSmtpProvider:
             client.logout()
 
     def search_messages(self, folder, query, limit=50):
+        query = str(query).strip()
+        if not 1 <= len(query) <= 200 or any(ord(char) < 32 or ord(char) == 127 for char in query):
+            raise ValueError('Busca inválida.')
         client = self._imap()
         try:
             if client.select(_mailbox(folder), readonly=True)[0] != 'OK':
                 raise MailError('Pasta de e-mail inválida.')
-            literal = ('"' + str(query).replace('\\', '\\\\').replace('"', '\\"') + '"').encode('utf-8')
-            status, data = client.uid('search', 'CHARSET', 'UTF-8', 'OR', 'OR', 'SUBJECT', literal, 'BODY', literal, 'TO', literal)
+            literal = ('"' + query.replace('\\', '\\\\').replace('"', '\\"') + '"').encode('utf-8')
+            # ASCII is the portable default. Exchange rejects an explicit UTF-8
+            # charset even for an entirely ASCII query (BADCHARSET US-ASCII).
+            charset = () if query.isascii() else ('CHARSET', 'UTF-8')
+            status, data = client.uid('search', *charset, 'OR', 'OR', 'OR', 'FROM', literal,
+                                      'SUBJECT', literal, 'BODY', literal, 'TO', literal)
             if status != 'OK':
+                if any(b'BADCHARSET' in item.upper() for item in data or [] if isinstance(item, bytes)):
+                    raise SearchCharsetUnsupported('O servidor não aceita o charset desta busca.')
                 raise MailError('Servidor recusou a busca de mensagens.')
             rows = []
             for uid in recent_uids(data[0] or b'', limit):

@@ -35,7 +35,14 @@ def search_messages(provider, folder, query, limit, recent=()):
     native = getattr(provider, 'search_messages', None)
     if not callable(native):
         raise ValueError('Este provedor não oferece busca na pasta.')
-    rows = native(folder, query, limit)
+    from .mail import SearchCharsetUnsupported
+    supported = True
+    try:
+        rows = native(folder, query, limit)
+    except SearchCharsetUnsupported:
+        # Do not silently transliterate the query or pretend to search the server.
+        # A bounded, explicitly partial summary match is still useful to the user.
+        supported, rows = False, []
     candidates = list(recent)
     if len(rows) < limit and not candidates:
         candidates = provider.messages(folder, 40)
@@ -44,5 +51,7 @@ def search_messages(provider, folder, query, limit, recent=()):
         if approximate(row, query):
             combined.setdefault(str(row['id']), row)
     return {'messages': sorted(combined.values(), key=lambda row: (recent_key(row), str(row['id'])), reverse=True)[:limit],
-            'search': {'native': True, 'fuzzyWindow': len(candidates), 'order': 'received-desc',
-                       'scope': 'selected-folder', 'approximation': 'recent-summaries-only'}}
+            'search': {'native': supported, 'fuzzyWindow': len(candidates), 'order': 'received-desc',
+                       'scope': 'selected-folder' if supported else 'recent-summaries-only',
+                       'approximation': 'recent-summaries-only',
+                       **({'incomplete': True, 'reason': 'server-charset-unsupported'} if not supported else {})}}

@@ -22,3 +22,17 @@ acesso. Monitores e plugins administrativos não substituem a identidade do host
 Cadastro de clientes, aliases, marca e relação conta/template pertencem ao
 agente. O módulo não embute regras pessoais. Resumo é produzido pelo agente
 sobre mensagens realmente lidas, com indicação de conta, pasta e cobertura.
+
+## Compatibilidade de busca IMAP
+
+A partir de26.11.6, pesquisa ASCII não declara charset e inclui remetente,
+assunto, corpo e destinatário. A caixa Microsoft local recusava UTF-8 com
+`BADCHARSET (US-ASCII)`; a variante ASCII foi validada sem alterar mensagens.
+A limitação de charset consta no [contrato Microsoft do SEARCH](https://learn.microsoft.com/en-us/openspecs/exchange_standards/ms-stanximap/8a9ff967-52be-4efa-bf48-29e0036748cc).
+
+Quando o servidor rejeita explicitamente o charset de consulta com acentos,
+o CMAIL preserva o texto e consulta somente resumos recentes, até40 quando
+não há cache recente. Retorna `native:false`, `incomplete:true`, cobertura
+`recent-summaries-only` e motivo `server-charset-unsupported`. Isso não prova
+ausência de mensagem antiga. Falhas de autenticação ou outros erros de busca
+continuam sendo erros; não são ocultados por uma consulta parcial.

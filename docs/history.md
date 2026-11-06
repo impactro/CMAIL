@@ -1,3 +1,10 @@
+## 26.11.6 — Busca IMAP compatível com Exchange
+
+Diagnóstico vivo encontrou BADCHARSET US-ASCII no Microsoft IMAP local.
+Busca ASCII passou sem charset explícito; remetente também entra na consulta.
+Recusa de charset em texto acentuado gera cobertura parcial explícita de
+resumos recentes; outros erros não são ocultados. Nenhuma mensagem alterada.
+
 ## 26.11.5g — Contrato de e-mail para chatbot
 
 Skills padrão ampliadas para busca, leitura, resumo, organização e templates
