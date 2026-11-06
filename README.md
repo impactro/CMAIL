@@ -1,5 +1,8 @@
 # CMAIL
 
+Na26.11.6b, a prévia de envio não vence por relógio: aprovação pertence à
+sequência/contexto mantidos pelo host. Claim continua unitário e por snapshot.
+
 [Skills e gestão pelo chatbot](docs/chatbot-email.md): busca, leitura, resumo,
 pastas, marcação, movimentação e lixeira; contas e templates do consumidor.
 
