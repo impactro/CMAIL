@@ -68,15 +68,17 @@ def test_concurrent_claim_has_exactly_one_winner(tmp_path):
     assert sorted(results) == [False,True]
 
 
-def test_expired_draft_state_is_committed_without_consuming_or_sending(tmp_path):
+def test_draft_can_be_confirmed_days_later_without_time_expiry(tmp_path):
     store = Store(tmp_path)
     draft = store.prepare({'recipients':['recipient@example.test'],'subject':'Test','body':'Synthetic'},'owner')
     with store.connect() as connection:
         connection.execute("UPDATE mail_drafts SET expires_at='2000-01-01T00:00:00+00:00'")
-    with pytest.raises(ValueError,match='expirada'):
-        store.claim(draft['draftId'],draft['confirmationToken'],'owner')
+    assert draft['expiresAt'] is None
+    assert store.claim(draft['draftId'],draft['confirmationToken'],'owner')['subject'] == 'Test'
     with store.connect() as connection:
-        assert connection.execute('SELECT status FROM mail_drafts').fetchone()[0] == 'expired'
+        assert connection.execute('SELECT status FROM mail_drafts').fetchone()[0] == 'sending'
+    with pytest.raises(ValueError):
+        store.claim(draft['draftId'],draft['confirmationToken'],'owner')
 
 
 def test_history_query_uses_owner_index(tmp_path):

@@ -1,3 +1,11 @@
+## 26.11.6b — Aprovação sem vencimento por relógio
+
+Rascunhos de envio deixam de vencer após dez minutos. O host consumidor valida
+a continuidade da conversa e a aprovação da prévia pendente; a passagem de
+horas/dias não a invalida. Claim continua unitário, por proprietário e snapshot,
+sem reativar rascunhos consumidos ou incertos. Sessões OAuth/web mantêm seus
+próprios prazos técnicos, independentes da decisão humana.
+
 ## 26.11.6a — Busca acentuada no Microsoft IMAP
 
 Exchange pode retornar BAD antes de BADCHARSET para bytes acentuados em

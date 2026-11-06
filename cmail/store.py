@@ -178,13 +178,12 @@ class Store:
             clean['messageAction'] = message_action
         # Keep opaque values usable as CLI arguments even when randomness starts '-'.
         identifier, token = "d_" + secrets.token_urlsafe(18), "c_" + secrets.token_urlsafe(32)
-        expires = _now() + timedelta(minutes=10)
         with self.connect() as db:
             db.execute("INSERT INTO mail_drafts(id,created_at,expires_at,payload_json,confirmation_hash,status,owner_id) VALUES(?,?,?,?,?,?,?)",
-                       (identifier, _now().isoformat(), expires.isoformat(), json.dumps(clean, ensure_ascii=False),
+                       (identifier, _now().isoformat(), "", json.dumps(clean, ensure_ascii=False),
                         hashlib.sha256(token.encode()).hexdigest(), "prepared-files-v1" if attachments else "prepared", owner_id))
             self._audit(db, "send-prepare", "prepared", {"draftId": identifier, "recipientCount": len(recipients) + len(clean.get('cc', [])) + len(clean.get('bcc', []))}, owner_id)
-        return {"draftId": identifier, "confirmationToken": token, "expiresAt": expires.isoformat(),
+        return {"draftId": identifier, "confirmationToken": token, "expiresAt": None,
                 "recipientCount": len(recipients) + len(clean.get('cc', [])) + len(clean.get('bcc', [])), "subject": subject, "bodyPreview": body[:240],
                 "bodyType": "html" if body_html else "text", "preview": ({k: v for k, v in clean.items() if k not in {'attachments', 'deliveryBinding'}} if attachments else clean),
                 **({'attachmentSummary': summaries(attachments)} if attachments else {}),
@@ -196,23 +195,19 @@ class Store:
             row = db.execute("SELECT * FROM mail_drafts WHERE id=? AND owner_id=?", (identifier, owner_id)).fetchone()
             if not row or row["status"] not in {"prepared", "prepared-files-v1"}:
                 raise ValueError("Rascunho ausente, consumido ou incerto.")
-            expired = datetime.fromisoformat(row["expires_at"]) < _now()
-            if expired:
-                db.execute("UPDATE mail_drafts SET status='expired' WHERE id=? AND owner_id=?", (identifier, owner_id))
-            else:
-                if not secrets.compare_digest(row["confirmation_hash"], hashlib.sha256(token.encode()).hexdigest()):
-                    raise ValueError("Confirmação inválida.")
-                payload = json.loads(row['payload_json'])
-                if row['status'] == 'prepared-files-v1' and not payload.get('attachments'):
-                    raise ValueError('Integridade dos anexos diverge da prévia.')
-                from .outgoing_attachments import validate_snapshot
-                validate_snapshot(payload)
-                if payload.get('deliveryBinding') is not None and payload['deliveryBinding'] != delivery_binding:
-                    raise ValueError('A conta de envio mudou; prepare uma nova prévia.')
-                db.execute("UPDATE mail_drafts SET status='sending' WHERE id=? AND owner_id=?", (identifier, owner_id))
-                self._audit(db, "send-execute", "sending", {"draftId": identifier}, owner_id)
-        if expired:
-            raise ValueError("Confirmação expirada.")
+            # A aprovação pertence à sequência da conversa validada pelo host.
+            # O relógio não invalida um rascunho ainda não consumido.
+            if not secrets.compare_digest(row["confirmation_hash"], hashlib.sha256(token.encode()).hexdigest()):
+                raise ValueError("Confirmação inválida.")
+            payload = json.loads(row['payload_json'])
+            if row['status'] == 'prepared-files-v1' and not payload.get('attachments'):
+                raise ValueError('Integridade dos anexos diverge da prévia.')
+            from .outgoing_attachments import validate_snapshot
+            validate_snapshot(payload)
+            if payload.get('deliveryBinding') is not None and payload['deliveryBinding'] != delivery_binding:
+                raise ValueError('A conta de envio mudou; prepare uma nova prévia.')
+            db.execute("UPDATE mail_drafts SET status='sending' WHERE id=? AND owner_id=?", (identifier, owner_id))
+            self._audit(db, "send-execute", "sending", {"draftId": identifier}, owner_id)
         return payload
 
     def finish(self, identifier: str, status: str, result: dict[str, object], owner_id: str = "") -> None:
