@@ -11,8 +11,10 @@ pule a prévia. Pela API Python, chame `prepare_send`; pela CLI local, use
 `send-prepare --input-json <arquivo>`. Mostre
 destinatários, quantidade, assunto e resumo do corpo. Somente após autorização
 específica chame `execute_send` ou use `send-execute --draft-id <id>
---confirmation-token <token> --execute` dentro dos dez minutos de validade.
+--confirmation-token <token> --execute`. A prévia não vence por relógio:
+o host mantém a pendência da conversa até a próxima aprovação ou mudança de assunto.
 
+Rotina previamente autorizada segue seu contrato, sem pedir aprovação a cada ocorrência.
 O token autoriza apenas aquele rascunho e é consumido uma vez. Falha depois do
 início do SMTP fica `uncertain`; não repita automaticamente, pois o servidor
 pode ter aceitado a mensagem antes de interromper a resposta.

@@ -101,7 +101,7 @@ preview = api.prepare_send(operator, {
 Preparar não consulta provedor nem envia. A prévia indica o remetente configurado;
 somente `status(live=True)` e a execução validam a conta no Google. O journal é
 isolado pelo remetente configurado: trocar a conta não permite consumir um
-rascunho anterior. O token de confirmação é unitário e expira em dez minutos.
+rascunho anterior. O token de confirmação é unitário, sem expiração temporal; o host mantém a aprovação vinculada à prévia atual.
 Após claim, falha permanece `uncertain`, sem retry automático. A execução usa
 exatamente o conteúdo gravado; não relê um template modificado.
 

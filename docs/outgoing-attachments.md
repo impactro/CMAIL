@@ -57,7 +57,8 @@ vínculo exige nova prévia; rotação normal de token não altera o vínculo.
 O registro nomeado usa o Store isolado do conector, impedindo claim de prévia
 de outra caixa ou proprietário. A execução não aceita substituição de arquivos.
 
-Validade continua10 minutos. Expiração e claim único são os do CMAIL.
+Não há vencimento por relógio. O host valida aprovação na sequência da conversa;
+claim permanece unitário e vinculado ao snapshot/conta.
 Prévias com arquivos usam status interno `prepared-files-v1`; executores antigos,
 que aceitam apenas `prepared`, não podem enviar essa prévia sem os anexos em
 um rollback. Prévias antigas sem arquivo continuam aceitas. Não converter o
