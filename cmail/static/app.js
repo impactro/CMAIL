@@ -17,7 +17,7 @@
   let composeAction = 'send';
   let composeMessage = null;
   let mailFolders = [], messageItems = [], actions = {};
-  let busy = false, readerVersion = 0, listVersion = 0;
+  let busy = false, readerVersion = 0, listVersion = 0, readerController = null, pendingReader = null;
   let pendingDelete = null;
   const parameters=new URLSearchParams(location.search);
   const composeOnly = parameters.get('composeOnly') === '1';
@@ -89,7 +89,8 @@
     document.querySelector('#configureAppearance').disabled = busy || !actions.send;
   }
   function clearSelection() {
-    readerVersion++; selectedMessage = null;
+    readerVersion++; readerController?.abort(); pendingReader = null; selectedMessage = null;
+    document.querySelector('#readerContent').removeAttribute('aria-busy');
     document.querySelector('#readerEmpty').hidden = false;
     document.querySelector('#readerContent').hidden = true;
     updateActions();
@@ -209,11 +210,16 @@
   async function openMessage(identifier, row) {
     if (busy) return;
     const version = ++readerVersion, sourceFolder = folder;
+    readerController?.abort(); readerController = new AbortController();
+    const previous = selectedMessage || pendingReader; pendingReader = previous;
     selectedMessage = null; updateActions();
-    document.querySelector('#readerContent').hidden = true;
-    document.querySelector('#readerEmpty').hidden = false;
+    const content = document.querySelector('#readerContent');
+    content.setAttribute('aria-busy','true');
+    content.hidden = !previous;
+    document.querySelector('#readerEmpty').hidden = Boolean(previous);
     setNotice('Abrindo mensagem…');
-    const data = await json(`/api/messages/${encodeURIComponent(identifier)}?folder=${encodeURIComponent(sourceFolder)}`);
+    try {
+    const data = await json(`/api/messages/${encodeURIComponent(identifier)}?folder=${encodeURIComponent(sourceFolder)}`, {signal:readerController.signal});
     if (version !== readerVersion || sourceFolder !== folder) return;
     selectedMessage = data.message;
     document.querySelector('#readerEmpty').hidden = true;
@@ -233,6 +239,12 @@
     messagesNode.querySelectorAll('.message-item').forEach(node => { const active = node === row; node.classList.toggle('active', active); node.setAttribute('aria-pressed', String(active)); });
     updateActions();
     setNotice('Mensagem selecionada. As ações estão na barra superior.');
+    } catch(error) {
+      if(version!==readerVersion || sourceFolder!==folder || error.name==='AbortError')return;
+      selectedMessage=previous; updateActions(); throw error;
+    } finally {
+      if(version===readerVersion){pendingReader=null;content.removeAttribute('aria-busy');}
+    }
   }
 
   async function loadLists() {
@@ -409,7 +421,8 @@
       if(!requestedFolder||!identifier)throw Error('Selecione uma pasta e mensagem no menu.');
       folder=requestedFolder;await loadFolders();
       if(folder!==requestedFolder)throw Error('A pasta selecionada não está disponível.');
-      if(actions.lists)await loadLists();await openMessage(identifier,null);
+      await openMessage(identifier,null);
+      if(actions.lists)await loadLists().catch(showError);
     } else { await loadFolders(); if (actions.lists) await loadLists(); await loadMessages(); }
   })().catch(showError);
 })();
