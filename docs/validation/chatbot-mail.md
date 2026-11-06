@@ -22,7 +22,7 @@ de40 resumos recentes e2 resultados. Não representa busca completa da caixa.
 
 409 testes CMAIL sem navegador passaram na26.11.6; após a correção acentuada,
 9 focais de busca/API passaram. CA:98 testes de integração e6 de gestão;
-adaptador pessoal:31; CCR:10; leitor JavaScript:4. Conjuntos têm sobreposição.
+adaptador pessoal:32; CCR:10; leitor JavaScript:4. Conjuntos têm sobreposição.
 As duas skills padrão e a skill pessoal passaram no validador de skills.
 O bug visual preexistente de toolbar estreita continua na fila; essa bateria
 não inclui os três arquivos de testes de navegador.
