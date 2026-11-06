@@ -5,6 +5,16 @@ do consumidor. API pública expõe a busca existente; descritor adiciona gestão
 opt-in. Marcação de leitura Microsoft IMAP conserva a pasta selecionada.
 Validação somente sintética para alterações; nenhuma mensagem real apagada.
 
+## 05/11/2026 — preservação de leitura e atualizações
+
+Fonte 26.11.5f / Python post5. Leitor conserva o conteúdo anterior enquanto busca a próxima mensagem, desabilita ações da seleção pendente e cancela buscas substituídas. Respostas antigas não sobrescrevem a leitura atual. Erro restaura a seleção anterior; consultas auxiliares de listas só começam após abrir a mensagem e não bloqueiam sua leitura.
+
+Conferência própria: 6 frontend e 401 Python aprovados. Cenários sintéticos, sem envio ou
+conta real de cliente. O caso do cliente sem instância identificada não teve
+causa individual certificada. Implantação consolidada aguarda janela OPS/ALP;
+esta publicação não altera runtime ou credenciais.
+
+
 ## 26.11.5e — Microsoft IMAP/SMTP OAuth como alternativa ao Graph
 
 Novo modo microsoft-imap com cliente público MSAL, XOAUTH2 e cache DPAPI;

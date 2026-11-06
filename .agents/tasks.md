@@ -8,6 +8,12 @@ seus estados nem autoriza efeitos operacionais. Conferir baseline antes da retom
 
 ## BUG
 
+### BUG-MAIL-VIEW-REFRESH-20261105
+
+- WAITING implantação; natureza INTEGRAÇÃO. Fonte e testes entregues. Pedido humano: preservar navegação/leitura em atualizações.
+- AIstein DEV FAST; testes sintéticos de identidade/frames/consulta lenta e regressões do consumidor.
+- Interfaces backend/autorização e dados preservados; implantação coordenada após Sync Full.
+
 ### BUG-CMAIL-NATIVE-READER-VIEWPORT-20261102 — Barra de ações excede o leitor estreito
 
 - Fonte `feeabb8`, pacote `26.11.2.post4` com hash novo instalado no UniServer.
