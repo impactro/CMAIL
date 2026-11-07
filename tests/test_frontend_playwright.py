@@ -60,9 +60,13 @@ def _setup_config(tmp_path: Path) -> Config:
 
 
 def _assert_inside_viewport(page, selector: str) -> None:
-    box = page.locator(selector).bounding_box()
-    assert box is not None
-    width = page.locator('body').evaluate("() => window.innerWidth")
+    # Playwright bounding_box() is relative to the top-level viewport even
+    # for an iframe locator; compare geometry in the element's own viewport.
+    box = page.locator(selector).evaluate("""element => {
+        const rect = element.getBoundingClientRect();
+        return {x: rect.x, width: rect.width, viewportWidth: window.innerWidth};
+    }""")
+    width = box["viewportWidth"]
     assert box["x"] >= -0.5
     assert box["x"] + box["width"] <= width + 0.5
 
@@ -170,6 +174,8 @@ class ContextMailbox:
     def folders(self):
         return [{"id": "INBOX", "name": "INBOX", "unread": 2}, {"id": "Archive", "name": "INBOX.Archive"}, {"id": "Sent", "name": "INBOX.Sent"}, {"id": "Drafts", "name": "INBOX.Drafts"}, {"id": "Junk", "name": "INBOX.Junk"}, {"id": "Trash", "name": "INBOX.Trash"}]
     def messages(self, folder, limit=50): return [item for item in self.items if self.locations[item["id"]] == folder]
+    def search_messages(self, folder, query, limit=25):
+        return [item for item in self.messages(folder) if query.casefold() in item['subject'].casefold()][:limit]
     def message(self, folder, identifier): return next(item for item in self.items if item["id"] == identifier)
     def set_read(self, identifier, is_read):
         item = self.message("INBOX", identifier); item["isRead"] = is_read; return item

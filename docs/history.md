@@ -1,3 +1,11 @@
+## Verificação de regressão — 07/11/2026
+
+O teste responsivo compara dimensões no mesmo viewport do elemento, inclusive
+em iframe. A fixture do provedor declara busca nativa na pasta, conforme o
+contrato usado pela navegação. Corrige falsos erros de homologação; não altera
+CSS, autenticação, transporte, caixas reais ou envio. Entrega apenas de testes
+e documentação, sem nova versão ou reinstalação do runtime.
+
 ## 26.11.6b — Aprovação sem vencimento por relógio
 
 Rascunhos de envio deixam de vencer após dez minutos. O host consumidor valida
