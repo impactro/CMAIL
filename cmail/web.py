@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
+from .cui_assets import CuiStaticFiles, template_environment
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -31,7 +31,8 @@ from .appearance import Appearance
 
 
 PACKAGE_ROOT = Path(__file__).resolve().parent
-TEMPLATES = Jinja2Templates(directory=str(PACKAGE_ROOT / "templates"))
+from jinja2 import Environment, select_autoescape
+TEMPLATES = Jinja2Templates(env=Environment(loader=template_environment(PACKAGE_ROOT), autoescape=select_autoescape(['html', 'xml'])))
 LOGGER = logging.getLogger(__name__)
 _cookie_path = _module_path
 
@@ -55,7 +56,7 @@ def _create_module_app(
         https_only=config.cookie_secure,
         session_cookie="cmail_setup_session",
     )
-    app.mount("/static", StaticFiles(directory=str(PACKAGE_ROOT / "static")), name="cmail.static")
+    app.mount("/static", CuiStaticFiles(package=PACKAGE_ROOT, static='static'), name="cmail.static")
     previews = PreviewCache()
     app.state.preview_cache = previews
 
@@ -71,8 +72,15 @@ def _create_module_app(
 
     @app.middleware("http")
     async def security_headers(request: Request, call_next: Any):
+        asset_prefix = f"{_base_path(request)}/static/vendor/cui/"
         response = await call_next(request)
-        response.headers["Cache-Control"] = "no-store"
+        immutable_asset = (
+            request.url.path.startswith(asset_prefix)
+            and response.status_code == 200
+            and 'immutable' in response.headers.get('Cache-Control', '')
+        )
+        if not immutable_asset:
+            response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers.setdefault("Content-Security-Policy", (

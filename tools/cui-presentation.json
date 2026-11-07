@@ -1,0 +1,49 @@
+{
+  "profile": "cmail",
+  "repository": "impactro/CMAIL",
+  "packageRoot": "cmail",
+  "files": {
+    "static/cm-theme.css": {
+      "target": "hosts/cmail/static/cm-theme.css"
+    },
+    "static/connection.css": {
+      "target": "hosts/cmail/static/connection.css"
+    },
+    "static/mailbox-navigation.css": {
+      "target": "hosts/cmail/static/mailbox-navigation.css"
+    },
+    "static/mailbox-shell.css": {
+      "target": "hosts/cmail/static/mailbox-shell.css"
+    },
+    "static/style.css": {
+      "target": "hosts/cmail/static/style.css"
+    },
+    "templates/_appearance.html": {
+      "target": "hosts/cmail/templates/_appearance.html"
+    },
+    "templates/_icons.html": {
+      "target": "hosts/cmail/templates/_icons.html"
+    },
+    "templates/auth_error.html": {
+      "target": "hosts/cmail/templates/auth_error.html"
+    },
+    "templates/connection.html": {
+      "target": "hosts/cmail/templates/connection.html"
+    },
+    "templates/index.html": {
+      "target": "hosts/cmail/templates/index.html"
+    },
+    "templates/setup.html": {
+      "target": "hosts/cmail/templates/setup.html"
+    },
+    "templates/setup_saved.html": {
+      "target": "hosts/cmail/templates/setup_saved.html"
+    },
+    "templates/template.html": {
+      "target": "hosts/cmail/templates/template.html"
+    },
+    "templates/webmail.html": {
+      "target": "hosts/cmail/templates/webmail.html"
+    }
+  }
+}

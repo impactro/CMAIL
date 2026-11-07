@@ -1,6 +1,7 @@
-const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('./cui-assets.cjs'),path=require('node:path');
 const {JSDOM}=require('jsdom');
-const source=fs.readFileSync(path.join(__dirname,'../cmail/static/mailbox-navigation.mjs'),'utf8').replace('export function','function').replaceAll('import.meta.url',JSON.stringify('http://localhost/email/static/mailbox-navigation.mjs'));
+const views=fs.readFileSync(path.join(__dirname,'../cmail/static/cui-navigation.mjs'),'utf8').replace(/export\s*\{[^}]+\};?/g,'').replace('export function','function');
+const source=views+'\n'+fs.readFileSync(path.join(__dirname,'../cmail/static/mailbox-navigation.mjs'),'utf8').replace(/^import .*;\r?\n/m,'').replace('export function','function').replaceAll('import.meta.url',JSON.stringify('http://localhost/email/static/mailbox-navigation.mjs'));
 const settle=async()=>{for(let i=0;i<10;i++)await new Promise(r=>setImmediate(r));};
 function fixture(){
  const dom=new JSDOM('<aside id="mail"></aside>',{url:'http://localhost/email/',runScripts:'outside-only'}),w=dom.window,calls=[],opened=[];

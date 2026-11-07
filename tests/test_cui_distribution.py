@@ -1,0 +1,53 @@
+"""Packaged frontend contracts, independent of live mailbox credentials."""
+import json
+from pathlib import Path
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from jinja2 import Environment
+from cmail.cui_assets import CuiStaticFiles, template_environment
+
+
+def test_aliases_keep_private_templates_out_of_public_vendor():
+    root = Path(__file__).resolve().parents[1] / 'cmail'
+    manifest = json.loads((root/'static/vendor/cui/cui.asset.json').read_text(encoding='utf8'))
+    app = FastAPI()
+    app.mount('/static', CuiStaticFiles(package=root, static='static'))
+    with TestClient(app) as client:
+        assert client.get('/static/style.css').status_code == 200
+        base = '/static/vendor/cui/' + manifest['release'] + '/'
+        response = client.get(base + 'cui-host.js')
+        assert response.status_code == 200 and 'immutable' in response.headers['cache-control']
+        assert client.get(base + 'hosts/cmail/templates/index.html').status_code == 404
+        assert client.post('/static/style.css').status_code == 405
+
+
+def test_cached_template_reloads_when_previous_snapshot_is_retired(tmp_path):
+    vendor = tmp_path/'static/vendor/cui'
+    vendor.mkdir(parents=True)
+    first = vendor/'one/template.html'
+    first.parent.mkdir()
+    first.write_text('<p>{{ value }}</p>', encoding='utf8')
+    def receipt(release):
+        (vendor/'cui.asset.json').write_text(json.dumps({'package':'@crania/ui','contract':'cui.ui.v1',
+            'release':release,'files':{'template.html':{}},'resources':{'templates/index.html':'template.html'}}), encoding='utf8')
+    receipt('one')
+    env = Environment(loader=template_environment(tmp_path), autoescape=True)
+    assert env.get_template('index.html').render(value='<script>') == '<p>&lt;script&gt;</p>'
+    second = vendor/'two/template.html'
+    second.parent.mkdir()
+    second.write_text('<strong>{{ value }}</strong>', encoding='utf8')
+    first.unlink()
+    receipt('two')
+    assert env.get_template('index.html').render(value='new') == '<strong>new</strong>'
+
+
+def test_only_public_fingerprinted_assets_are_cached_in_the_real_mail_app(tmp_path):
+    from cmail.web import create_app
+    from helpers import config
+    root = Path(__file__).resolve().parents[1] / 'cmail'
+    manifest = json.loads((root/'static/vendor/cui/cui.asset.json').read_text(encoding='utf8'))
+    with TestClient(create_app(config(tmp_path))) as client:
+        response = client.get('/static/vendor/cui/' + manifest['release'] + '/cui-host.js')
+        assert response.status_code == 200 and 'immutable' in response.headers['cache-control']
+        for path in ('/', '/api/status', '/static/cm-theme.css'):
+            assert client.get(path).headers['cache-control'] == 'no-store'

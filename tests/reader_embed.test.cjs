@@ -1,7 +1,7 @@
 // Run with jsdom from the development test environment; no live provider calls.
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),{execFileSync}=require('node:child_process');
 const {JSDOM}=require('jsdom');
-const html=execFileSync(process.env.CMAIL_TEST_PYTHON||'python',['-s','-X','utf8','-c',"from jinja2 import Environment,FileSystemLoader;print(Environment(loader=FileSystemLoader('cmail/templates')).get_template('index.html').render(authenticated=True,embedded=True,mode='demo',identity=None,csrf='fixture',base_path='/cm/cmail',webmail_enabled=True,auth_state='authorized'))"],{encoding:'utf8'});
+const html=execFileSync(process.env.CMAIL_TEST_PYTHON||'python',['-s','-X','utf8','-c',"from cmail.web import TEMPLATES;print(TEMPLATES.env.get_template('index.html').render(authenticated=True,embedded=True,mode='demo',identity=None,csrf='fixture',base_path='/cm/cmail',webmail_enabled=True,auth_state='authorized'))"],{encoding:'utf8'});
 const script=fs.readFileSync(path.join(__dirname,'../cmail/static/app.js'),'utf8');
 async function fixture(actions,folder='INBOX',override){
  const dom=new JSDOM(html,{url:'http://localhost:5080/cm/cmail/?readerOnly=1&folder='+folder+'&messageId=target&hostRequest='+'a'.repeat(32),runScripts:'outside-only'}),w=dom.window,calls=[];

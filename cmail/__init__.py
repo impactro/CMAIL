@@ -2,7 +2,7 @@
 
 from importlib import import_module
 
-__version__ = "26.11.6b"
+__version__ = "26.11.7a"
 
 _EXPORTS = {
     'normalize_recipient_groups': ('recipient_fields', 'groups'),

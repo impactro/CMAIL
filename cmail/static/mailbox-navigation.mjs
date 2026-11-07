@@ -1,3 +1,4 @@
+import {renderMailRows} from './cui-navigation.mjs';
 /* One mailbox list for CMAIL, CAW and CWH. Identity and effects stay on the server. */
 export function mountMailboxNavigation(root,{basePath='',initialFolder='',onMessage=()=>{},onCompose=()=>{},onFolders=()=>{}}={}){
   if(!document.querySelector('link[data-cmail-navigation]')){const link=document.createElement('link');link.rel='stylesheet';link.href=new URL('./mailbox-navigation.css',import.meta.url).href;link.dataset.cmailNavigation='true';document.head.append(link)}
@@ -16,12 +17,7 @@ export function mountMailboxNavigation(root,{basePath='',initialFolder='',onMess
     try{
       const data=await json('messages?'+new URLSearchParams({folder:sourceFolder,limit:25,...(term?{q:term}:{})}),controller.signal);
       if(!active||version!==generation)return;list.replaceChildren();
-      for(const item of data.messages){
-        const row=make('button','','cmail-navigation-item');row.type='button';row.dataset.mailId=item.id;row.setAttribute('aria-current',item.id===selected?'page':'false');
-        const heading=make('span','','cmail-message-heading'),subject=make('strong',item.subject||'(sem assunto)'),stamp=make('time',date(item.receivedAt),'cmail-message-date');subject.title=subject.textContent;if(item.receivedAt)stamp.dateTime=item.receivedAt;
-        const sender=make('span',item.from?.name||item.from?.address||'Remetente não informado','cmail-message-sender');sender.title=item.from?.address||sender.textContent;heading.append(subject,stamp);row.append(heading,sender,make('span',item.preview||'','cmail-message-preview'));
-        row.onclick=()=>{selected=item.id;for(const r of list.children)r.setAttribute('aria-current',r===row?'page':'false');onMessage({folder:sourceFolder,id:item.id})};list.append(row);
-      }
+      renderMailRows(list,data.messages,{selected,date,onSelect:(item,row)=>{selected=item.id;for(const r of list.children)r.setAttribute('aria-current',r===row?'page':'false');onMessage({folder:sourceFolder,id:item.id})}});
       status.textContent=data.messages.length?`${data.messages.length} e-mails · mais recentes primeiro${data.search?.fuzzyWindow?' · aproximações no recorte recente':''}`:'Nenhum e-mail encontrado.';
     }catch(error){if(active&&version===generation)fail(error,reload)}finally{if(version===generation)list.removeAttribute('aria-busy')}
   }

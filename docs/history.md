@@ -1,3 +1,15 @@
+## 26.11.7a — apresentação CUI
+
+Templates Jinja e estilos passam ao CUI; lista de e-mails usa o renderizador
+comum com callbacks do CMAIL. Snapshot completo distribuído no wheel,
+autoescape preservado e recarga de template tolerante à troca de release.
+Somente assets públicos com hash recebem cache imutável; páginas e APIs
+continuam privadas. OAuth, owner, CSRF, prévias, confirmação e isolamento
+de conteúdo permanecem sob responsabilidade do CMAIL. Guia: [CUI](CUI.md).
+
+Validação: suíte sintética Python, treze testes Node, cinco testes focais de
+distribuição/layout e matriz de sete temas no Browser. Nenhum envio real.
+
 ## Verificação de regressão — 07/11/2026
 
 O teste responsivo compara dimensões no mesmo viewport do elemento, inclusive
