@@ -3,7 +3,7 @@ import json
 from functools import lru_cache
 from pathlib import Path
 from starlette.staticfiles import StaticFiles
-from starlette.responses import FileResponse
+from starlette.responses import FileResponse, RedirectResponse
 from starlette.exceptions import HTTPException
 
 
@@ -50,6 +50,14 @@ class CuiStaticFiles(StaticFiles):
         alias = self.static + '/' + ('index.html' if path in ('', '.') else path)
         file = resource(self.package, self.static, alias)
         if file != self.package / alias and file.is_file():
+            vendor = self.package / self.static / 'vendor/cui'
+            receipt = vendor / 'cui.asset.json'
+            value = _receipt(vendor, receipt.stat().st_mtime_ns)
+            name = value['resources'][alias]
+            if value['files'][name].get('canonicalUrl'):
+                # Relative imports must resolve from their immutable URL, including named mounts.
+                location = scope.get('root_path', '').rstrip('/') + '/vendor/cui/' + value['release'] + '/' + name
+                return RedirectResponse(location, status_code=307, headers={'Cache-Control': 'no-cache'})
             return FileResponse(file, headers={'Cache-Control': 'no-cache'})
         response = await super().get_response(path, scope)
         if path.startswith('vendor/cui/') and not path.endswith('cui.asset.json'):

@@ -51,3 +51,23 @@ def test_only_public_fingerprinted_assets_are_cached_in_the_real_mail_app(tmp_pa
         assert response.status_code == 200 and 'immutable' in response.headers['cache-control']
         for path in ('/', '/api/status', '/static/cm-theme.css'):
             assert client.get(path).headers['cache-control'] == 'no-store'
+
+
+def test_legacy_module_alias_keeps_relative_imports_under_a_named_mount(tmp_path):
+    vendor = tmp_path/'static/vendor/cui'
+    module = vendor/'one/hosts/sample/feature.mjs'
+    module.parent.mkdir(parents=True)
+    module.write_text("import './dependency.mjs';", encoding='utf8')
+    module.with_name('dependency.mjs').write_text('export const ready=true;', encoding='utf8')
+    (vendor/'cui.asset.json').write_text(json.dumps({'package':'@crania/ui','contract':'cui.ui.v1',
+        'release':'one','files':{'hosts/sample/feature.mjs':{'canonicalUrl':True}},
+        'resources':{'static/feature.mjs':'hosts/sample/feature.mjs'}}),encoding='utf8')
+    app=FastAPI()
+    app.mount('/named/static',CuiStaticFiles(package=tmp_path,static='static'))
+    with TestClient(app) as client:
+        response=client.get('/named/static/feature.mjs',follow_redirects=False)
+        assert response.status_code==307
+        location=response.headers['location']
+        assert location=='/named/static/vendor/cui/one/hosts/sample/feature.mjs'
+        assert client.get(location).status_code==200
+        assert client.get(location.replace('feature.mjs','dependency.mjs')).status_code==200

@@ -4,8 +4,8 @@
   "version": "26.11.7-d.0",
   "contract": "cui.ui.v1",
   "profile": "cmail",
-  "release": "26.11.7-d.0-cmail-69ff8784bf0acfe1",
-  "sourceCommit": "3f218f6b9a72c0de6a54aa3ddf6ad84720b0ed27",
+  "release": "26.11.7-d.0-cmail-98ab7d16c4bc95b4",
+  "sourceCommit": "4145d3465a223c9b922aea5bd4e570dc2795a4f1",
   "files": {
     "index.mjs": {
       "sha256": "8adce053158a12700d360b54965931e94ef4e46947fd43f42dd78252f60d6627",
@@ -104,31 +104,31 @@
       "bytes": 2868
     },
     "hosts/cmail/templates/auth_error.html": {
-      "sha256": "7841d4809de1d8ffec9c8c58caf192e335f879f1df4310dd84d4b26191faa258",
+      "sha256": "ef25149b71f03b5ec5912f9b4232e5eac9c17c788d57c917a04bc4771d082185",
       "bytes": 1986
     },
     "hosts/cmail/templates/connection.html": {
-      "sha256": "f68e28faa31ae59f096cb0a0e6d0ed9e9c4d2aa114833e0bc1586dc723fec366",
+      "sha256": "c40c6108492216f2f881bd654af087267113c3c494ec4c8218f9cbbeccd5c47b",
       "bytes": 1904
     },
     "hosts/cmail/templates/index.html": {
-      "sha256": "c6d30995d77c577c39dc542d2521f397fbd09937cb744255c738d6be32cda111",
+      "sha256": "b972506d2cd45a54af2ff527934ddbfbf653f79c9d935ade79f18b701cfc78d6",
       "bytes": 11668
     },
     "hosts/cmail/templates/setup.html": {
-      "sha256": "5e67ef941acf131f25a942b9bbc27b9a14922b3ea637dd98ff2f02fbce4de4c9",
+      "sha256": "47e085db572980c7298edec200c9cf392ea3cfc11e6be65e20ec4c796ce136da",
       "bytes": 5775
     },
     "hosts/cmail/templates/setup_saved.html": {
-      "sha256": "c61864c70005d1c3993bae34b1a03cb51827e3b29d6ce853b3d2288f938802af",
+      "sha256": "db8ffd24fb9c62c780b594bdd0afcfd4892fa9b436bb1b948ba19163f6fd8a23",
       "bytes": 1745
     },
     "hosts/cmail/templates/template.html": {
-      "sha256": "fe82a04c5299969e1ceec13f0188fa9eb9186473a811e8c4cd6d98c5c920a236",
+      "sha256": "e331926526b33d1a114802fc6eb560fcc4fd53095f7a2387aac422d1873ee998",
       "bytes": 1699
     },
     "hosts/cmail/templates/webmail.html": {
-      "sha256": "6368c7df31232d138a21eab06b89a8a58f314cd7b79e0c2ede31b6dd6809cc56",
+      "sha256": "db7fbf3fd500e9cd1e0df14c2e797be1572160c98b567b024be7fbc11209ad74",
       "bytes": 2045
     },
     "hosts/cmail/navigation.mjs": {
