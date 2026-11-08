@@ -1,3 +1,13 @@
+## 2026-11-08 — Revisão independente da apresentação CUI
+
+Revisão ASTRA em cc578b5 não confirmou defeito funcional material na migração;
+sete testes Node e quatro Python focais passaram,34 recursos foram conferidos
+por hash e a estrutura funcional dos nove templates foi preservada. Identificada
+exposição do template Jinja bruto por variantes de maiúsculas no Windows,
+sem dados de conta renderizados; BUG-CMAIL-CUI-STATIC-CASE-20261108 na fila única.
+Aceite limitado a fonte/fixtures, sem provedor real, envio ou caixa ativa.
+Esta revisão não alterou produto ou runtime.
+
 ## 26.11.7a — apresentação CUI
 
 Templates Jinja e estilos passam ao CUI; lista de e-mails usa o renderizador
