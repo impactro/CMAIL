@@ -41,11 +41,28 @@ class CuiStaticFiles(StaticFiles):
         self.package, self.static = Path(package), static
         super().__init__(directory=str(self.package / static), **kwargs)
 
+    def _is_template(self, path):
+        # Windows resolves case variants too. Classify the private resource,
+        # not every HTML document: other profiles also ship public HTML assets.
+        parts = path.casefold().split('/', 3)
+        if len(parts) != 4 or parts[:2] != ['vendor', 'cui']:
+            return False
+        name = parts[3]
+        if 'templates' in name.split('/'):
+            return True
+        vendor = self.package / self.static / 'vendor/cui'
+        receipt = vendor / 'cui.asset.json'
+        if not receipt.is_file():
+            return False
+        value = _receipt(vendor, receipt.stat().st_mtime_ns)
+        return any(alias.casefold().startswith('templates/') and target.casefold() == name
+                   for alias, target in value.get('resources', {}).items())
+
     async def get_response(self, path, scope):
         if scope['method'] not in ('GET', 'HEAD'):
             raise HTTPException(405)
         path = path.replace('\\', '/')
-        if path.startswith('vendor/cui/') and path.endswith('.html'):
+        if self._is_template(path):
             raise HTTPException(404)  # Templates are exposed only through product routes.
         alias = self.static + '/' + ('index.html' if path in ('', '.') else path)
         file = resource(self.package, self.static, alias)
@@ -60,7 +77,7 @@ class CuiStaticFiles(StaticFiles):
                 return RedirectResponse(location, status_code=307, headers={'Cache-Control': 'no-cache'})
             return FileResponse(file, headers={'Cache-Control': 'no-cache'})
         response = await super().get_response(path, scope)
-        if path.startswith('vendor/cui/') and not path.endswith('cui.asset.json'):
+        if path.casefold().startswith('vendor/cui/') and not path.casefold().endswith('cui.asset.json'):
             response.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
         return response
 

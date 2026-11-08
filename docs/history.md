@@ -1,3 +1,11 @@
+## 26.11.8a — Templates de distribuição no Windows
+
+Guard comum do CUI identifica templates por caminho/recibo normalizados,
+negando variantes de prefixo/extensão sem distinção de caixa. HTML público,
+aliases, cache e montagem nomeada permanecem válidos. Correção de
+CUI:BUG-CUI-STATIC-TEMPLATE-CASE-20261108 adotada e testada, sem alteração de
+provedores, OAuth, CSRF, prévias, envio ou dados de caixa.
+
 ## 2026-11-08 — Revisão independente da apresentação CUI
 
 Revisão ASTRA em cc578b5 não confirmou defeito funcional material na migração;
