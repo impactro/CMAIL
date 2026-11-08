@@ -1,5 +1,8 @@
 # Apresentação CUI
 
+26.11.7b atualiza o snapshot compartilhado para CUI26.11.7e e revalida a
+apresentação. OAuth, provedores, estado e autorização de envio não mudam.
+
 A branch `CUI` transfere os templates Jinja e CSS ao perfil `cmail`. O loader
 consulta o snapshot declarado em `cmail/static/vendor/cui`, distribuído no wheel,
 com autoescape e contexto Jinja preservados. Não exige um checkout vizinho.

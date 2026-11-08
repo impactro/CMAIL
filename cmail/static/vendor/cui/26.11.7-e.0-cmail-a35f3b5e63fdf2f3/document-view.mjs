@@ -1,6 +1,6 @@
 // A trusted product template mounted in the current document, without an iframe.
 // Transport, permitted assets, identity and controller selection belong to the host.
-export async function mountTrustedView(root,{markup,styles=[],initialize,enhance=()=>{},signal}={}){
+export async function mountTrustedView(root,{markup,styles=[],initialize,enhance=()=>{},signal,isHidden=()=>false}={}){
  if(typeof initialize!=='function')throw TypeError('Inicializador de apresentação obrigatório.');
  const document=root.ownerDocument,window=document.defaultView;
  const parsed=new window.DOMParser().parseFromString(String(markup),'text/html');
@@ -17,8 +17,8 @@ export async function mountTrustedView(root,{markup,styles=[],initialize,enhance
  for(const css of [...styles,...[...parsed.head.querySelectorAll('style')].map(node=>node.textContent)]){
   const style=document.createElement('style');style.textContent=css;head.append(style);
  }
- const virtual={documentElement:html,head,body,querySelector:selector=>html.querySelector(selector),querySelectorAll:selector=>html.querySelectorAll(selector),getElementById:id=>[...html.querySelectorAll('[id]')].find(node=>node.id===id)||null,addEventListener:shadow.addEventListener.bind(shadow),removeEventListener:shadow.removeEventListener.bind(shadow)};
- const scope=new Proxy(document,{get(target,key){if(Object.hasOwn(virtual,key))return virtual[key];const value=Reflect.get(target,key,target);return typeof value==='function'?value.bind(target):value;}});
+ const virtual={documentElement:html,head,body,querySelector:selector=>html.querySelector(selector),querySelectorAll:selector=>html.querySelectorAll(selector),getElementById:id=>[...html.querySelectorAll('[id]')].find(node=>node.id===id)||null,addEventListener:shadow.addEventListener.bind(shadow),removeEventListener:shadow.removeEventListener.bind(shadow),dispatchEvent:shadow.dispatchEvent.bind(shadow)};
+ const scope=new Proxy(document,{get(target,key){if(key==='activeElement')return shadow.activeElement;if(key==='hidden')return document.hidden||isHidden();if(key==='visibilityState')return document.hidden||isHidden()?'hidden':'visible';if(Object.hasOwn(virtual,key))return virtual[key];const value=Reflect.get(target,key,target);return typeof value==='function'?value.bind(target):value;}});
  let controller,disposed=false;const cleanup=new Set();
  const dispose=()=>{if(disposed)return;disposed=true;observer.disconnect();controller?.dispose?.();for(const callback of cleanup)callback();cleanup.clear();signal?.removeEventListener('abort',dispose);surface.remove();};
  const observer=new window.MutationObserver(records=>{for(const record of records)for(const node of record.addedNodes)if(node.nodeType===1)enhance(node);});

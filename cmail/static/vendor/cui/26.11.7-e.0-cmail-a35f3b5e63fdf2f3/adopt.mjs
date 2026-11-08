@@ -10,6 +10,12 @@ const defaultAliases={
 const richContent='.message-body,.chat-data,.chat-html-frame,.chat-message,.chat-envelope';
 export function adoptDocument(document,{aliases:hostAliases={}}={}){
  if(document?.nodeType!==9||!document.defaultView||document.defaultView.document!==document)throw TypeError('Documento CUI inválido.');
+ return adoptSurface(document,{aliases:hostAliases});
+}
+// A product may mount in a CUI-created shadow document without installing a
+// second window.CUI kernel. Selectors, theme and observers stay in that surface.
+export function adoptSurface(document,{aliases:hostAliases={}}={}){
+ if(!document?.body||!document?.documentElement||!document.defaultView)throw TypeError('Superfície CUI inválida.');
  for(const[key,value]of Object.entries(hostAliases))if(!/^[a-z][a-z0-9_-]*$/.test(key)||!/^cui-[a-z0-9-]+$/.test(value))throw TypeError('Alias de apresentação inválido.');
  const aliases={...defaultAliases,...hostAliases},aliasEntries=Object.entries(aliases);
  const candidates=[...Object.keys(aliases).map(name=>'.'+name),'button','input','select','textarea','label'].join(',');
@@ -48,6 +54,6 @@ export function adoptDocument(document,{aliases:hostAliases={}}={}){
  const themeObserver=new window.MutationObserver(theme);
  themeObserver.observe(document.documentElement,{attributes:true,attributeFilter:['style','class','data-ca-theme','data-theme']});
  const refresh=()=>theme();document.addEventListener('ca:theme-change',refresh);
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+ if(document.readyState==='loading'&&document.defaultView.document===document)document.addEventListener('DOMContentLoaded',start,{once:true});else start();
  return {enhance,refreshTheme:theme,dispose(){if(disposed)return;disposed=true;observer?.disconnect();themeObserver.disconnect();document.removeEventListener('DOMContentLoaded',start);document.removeEventListener('ca:theme-change',refresh);}};
 }
