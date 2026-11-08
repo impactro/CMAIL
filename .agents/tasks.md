@@ -8,19 +8,6 @@ seus estados nem autoriza efeitos operacionais. Conferir baseline antes da retom
 
 ## BUG
 
-### BUG-CMAIL-CUI-STATIC-CASE-20261108 — Template bruto por variante de maiúsculas
-
-- P3, natureza DISTRIBUIÇÃO; revisão ASTRA do CUI cc578b5, em Windows.
-- cmail/cui_assets.py:48 bloqueia prefixo/extensão de template de forma
-  case-sensitive, mas StaticFiles resolve variantes no filesystem Windows.
-- Reprodução em FastAPI/TestClient sintético: caminho vendor/cui/.../index.html
-  retorna404; index.HTML ou vendor/CUI/.../index.html retorna200 com Jinja bruto.
-  Não renderiza CSRF nem expõe mensagens, credenciais ou dados de mailbox.
-- Direcionamento: validar a autorização do recurso com normalização coerente
-  de prefixo/extensão e manter templates fora das rotas públicas. Cobrir
-  variantes de caixa no Windows e distribuição empacotada, preservando assets
-  públicos permitidos e montagem nomeada. Não é bypass da API autenticada.
-
 ### BUG-MAIL-VIEW-REFRESH-20261105
 
 - WAITING implantação; natureza INTEGRAÇÃO. Fonte e testes entregues. Pedido humano: preservar navegação/leitura em atualizações.

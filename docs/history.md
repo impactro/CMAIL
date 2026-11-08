@@ -4,7 +4,10 @@ Revisão ASTRA em cc578b5 não confirmou defeito funcional material na migraçã
 sete testes Node e quatro Python focais passaram,34 recursos foram conferidos
 por hash e a estrutura funcional dos nove templates foi preservada. Identificada
 exposição do template Jinja bruto por variantes de maiúsculas no Windows,
-sem dados de conta renderizados; BUG-CMAIL-CUI-STATIC-CASE-20261108 na fila única.
+sem dados de conta renderizados. A fonte do adaptador é tools/runtime_assets.py
+do CUI: achado consolidado no dono como BUG-CUI-STATIC-TEMPLATE-CASE-20261108,
+sem manter outra cópia da tarefa no consumidor. O registro transitório anterior
+BUG-CMAIL-CUI-STATIC-CASE-20261108 foi conciliado para essa referência.
 Aceite limitado a fonte/fixtures, sem provedor real, envio ou caixa ativa.
 Esta revisão não alterou produto ou runtime.
 
