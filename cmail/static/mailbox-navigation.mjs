@@ -16,7 +16,7 @@ export function mountMailboxNavigation(root,{basePath='',initialFolder='',onMess
     if(!active||!folder)return;controller?.abort();controller=new AbortController();const version=++generation,sourceFolder=folder,term=query;status.textContent='Carregando e-mails…';list.setAttribute('aria-busy','true');
     try{
       const data=await json('messages?'+new URLSearchParams({folder:sourceFolder,limit:25,...(term?{q:term}:{})}),controller.signal);
-      if(!active||version!==generation)return;list.replaceChildren();
+      if(!active||version!==generation)return;
       renderMailRows(list,data.messages,{selected,date,onSelect:(item,row)=>{selected=item.id;for(const r of list.children)r.setAttribute('aria-current',r===row?'page':'false');onMessage({folder:sourceFolder,id:item.id})}});
       status.textContent=data.messages.length?`${data.messages.length} e-mails · mais recentes primeiro${data.search?.fuzzyWindow?' · aproximações no recorte recente':''}`:'Nenhum e-mail encontrado.';
     }catch(error){if(active&&version===generation)fail(error,reload)}finally{if(version===generation)list.removeAttribute('aria-busy')}

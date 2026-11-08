@@ -18,6 +18,16 @@ test('shared list renders safely, toggles folder/search and sends the query to t
  const url=new URL(f.calls.filter(c=>c.url.includes('/messages?')).at(-1).url,'http://localhost');assert.equal(url.searchParams.get('q'),'proposta antiga');assert.equal(url.searchParams.get('folder'),'INBOX');
  assert.ok(f.calls.every(c=>!c.opts?.method||c.opts.method==='GET'));f.api.dispose();f.dom.window.close();
 });
+
+test('reload keeps focus on the same message without opening it again',async()=>{
+ const f=fixture();
+ try{
+  await settle();const old=f.w.document.querySelector('.cmail-navigation-item');old.focus();
+  await f.api.reload();const current=f.w.document.querySelector('.cmail-navigation-item');
+  assert.notEqual(current,old);assert.equal(f.w.document.activeElement,current);
+  assert.equal(current.dataset.mailId,'message');assert.equal(f.opened.length,0);
+ }finally{f.api.dispose();f.dom.window.close();}
+});
 test('late search responses and disposed navigation cannot overwrite the current list',async()=>{
  const f=fixture();await settle();const pending=[];
  f.w.fetch=(url,opts)=>new Promise(resolve=>pending.push({url,opts,resolve}));
