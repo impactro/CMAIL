@@ -1,11 +1,11 @@
 {
   "schemaVersion": "1.0",
   "package": "@crania/ui",
-  "version": "26.11.7-e.0",
+  "version": "26.11.8-a.0",
   "contract": "cui.ui.v1",
   "profile": "cmail",
-  "release": "26.11.7-e.0-cmail-a35f3b5e63fdf2f3",
-  "sourceCommit": "58f44d5acd2f9533ddec2b5c15b859d3ce85a159",
+  "release": "26.11.8-a.0-cmail-651daa9b519004cd",
+  "sourceCommit": "feb4af40c4b6d3290b964bb30a5edce62372d8dc",
   "files": {
     "index.mjs": {
       "sha256": "923b03a1681dcbf964a4d1a7a4cf0eb73e14afb2d6e2a7a129802a31bd075b32",
@@ -28,8 +28,8 @@
       "bytes": 13067
     },
     "components.css": {
-      "sha256": "b7af08a376bb852a5d55486bc485e2fa9a8a208711a4cd5d58bbd58786656840",
-      "bytes": 10559
+      "sha256": "9cea6cf0d3ccf17f6a14b5670421395507489afc60fe72c0ca6cb4d75eff7956",
+      "bytes": 10180
     },
     "themes.mjs": {
       "sha256": "8f5ba6577e372b5af80e993e6a6fef4de746eaf46f53f83568368725bc0da7c7",
@@ -60,40 +60,40 @@
       "bytes": 8248
     },
     "compat/ca-modal.css": {
-      "sha256": "2eca7acd3664166f88194b3c3a763be9a5138dde2900d129880378555b073717",
-      "bytes": 5209
+      "sha256": "4a42719aad69f6983c84575ea312880cf2c7f5150c63223dd282da3ff69a9976",
+      "bytes": 5173
     },
     "compat/app-feedback.css": {
-      "sha256": "4c9311bbbc56cb2c52c45faf26eaca2ca190c2b8341289c3d68388e92f085500",
-      "bytes": 3236
+      "sha256": "d90f1021d98dd9c80539220b4ec73333fc3eae83efed1c0aac5371cd31505339",
+      "bytes": 3212
     },
     "compat/ui/index.js": {
       "sha256": "0bf7aee403f2b04aae2f54193ea0f74e9dd6a20d00e9fe7fb801ec273bade973",
       "bytes": 1489
     },
     "compat/ui/components.css": {
-      "sha256": "4656540fb419d24b5148b3b59ba56ade75823b9faa9b814b8d49f418b9f6c5a0",
-      "bytes": 2038
+      "sha256": "04cb3b7b5c1b03e1fae33eb38321b88fe68b8b15221cbc72e6a006d026eb883e",
+      "bytes": 2017
     },
     "hosts/cmail/static/cm-theme.css": {
-      "sha256": "598d9934a2f120c5954a7a9dc53ba147c478abd9a060a89a8533746323001d5f",
-      "bytes": 12573
+      "sha256": "7e33c1c7e288fb06594464f20de2f048d7bcb2a073bf4a4cf13f0756428b5bfd",
+      "bytes": 12518
     },
     "hosts/cmail/static/connection.css": {
-      "sha256": "f90c74006199626591541b1baf14f3e64ff4a18c1418828a809199f48d28ba0e",
-      "bytes": 502
+      "sha256": "668897d013e9b496175d11ef92377748358db7ccd616deca239b588aa1ae3356",
+      "bytes": 466
     },
     "hosts/cmail/static/mailbox-navigation.css": {
       "sha256": "8a23016a3612b4eca3a7a6c46b8d1deac6f4a5c42dbaeae36f75fe34ff14d365",
       "bytes": 2203
     },
     "hosts/cmail/static/mailbox-shell.css": {
-      "sha256": "0c1b9198925c18654fc108eee514d3d8bd36082b363804a95c431dea74db8739",
-      "bytes": 1711
+      "sha256": "bfe1c1eefb1cf3e4de0d838ca4181572b3576a050c8c8d33ea1bf13b7ec6f6b9",
+      "bytes": 1675
     },
     "hosts/cmail/static/style.css": {
-      "sha256": "196c0a24b0666f7f993e2534b42353d152a28b57d74886ca974897b2175e3123",
-      "bytes": 17030
+      "sha256": "f02a05bf6588467d27dc66176bff7c3b26ffdf5a04051d4ea9fe949efb6fa2f9",
+      "bytes": 16920
     },
     "hosts/cmail/templates/_appearance.html": {
       "sha256": "f4f90b700e8efb75e9137ee329f7a6a4eb8f9fd9343d5dea215e322b6410b3d0",
@@ -104,31 +104,31 @@
       "bytes": 2868
     },
     "hosts/cmail/templates/auth_error.html": {
-      "sha256": "599f028bd5dc5531f127a34f48f49ce456fb678e1fd5e22838fcd076a70dac73",
+      "sha256": "6aee56a4f6bb72366c3f9e919e70fdc1fde2cb7bc506da319d26e4e57e36bc06",
       "bytes": 1986
     },
     "hosts/cmail/templates/connection.html": {
-      "sha256": "aa0dc68ff3e4449990a3345eaf2daf43ccc3bd192cb8b1227746a7d235927d67",
+      "sha256": "a85edde5158f2a52ec8a54c630d66b13ffe24d5c3748ba990817266c4791bc90",
       "bytes": 1904
     },
     "hosts/cmail/templates/index.html": {
-      "sha256": "6ce1297293ab7a6d0c3ead4a775f4592fe7384a59b502d3704207a037250661a",
+      "sha256": "a55270427dfc17174e283b96f813725d3f789d574a493ce9aa4e8724b269b6f3",
       "bytes": 11668
     },
     "hosts/cmail/templates/setup.html": {
-      "sha256": "5cd8e1f1dde4aa19c61856edc85882cccf7c0f26ccc955be6d6c165b8f154177",
+      "sha256": "20d6a62412a18a6cf233686a5723fa6e31f3daf3330b24141e1f87e5b9fced54",
       "bytes": 5775
     },
     "hosts/cmail/templates/setup_saved.html": {
-      "sha256": "3d11f2e8b9d2fc0195d50c567fb11587cfda3bd05187da13bc3357ba081befbb",
+      "sha256": "85713b84876cde145a4dc4207acc3c1b2935ff5056d8b2bd3ce27910cad95711",
       "bytes": 1745
     },
     "hosts/cmail/templates/template.html": {
-      "sha256": "193e0a5a842e40f8bec12f60a185c7ecf3f54f71bf443a0c402c3f96ce0ecd32",
+      "sha256": "96847a95c67f5c63d8878cee5a9a3d3d049c1fac08bb30e9a3f8ad0a6cdf7db9",
       "bytes": 1699
     },
     "hosts/cmail/templates/webmail.html": {
-      "sha256": "955afe6fe87b87a92b02436c7f0728c21e3afcbba522ccb148aec89466631c98",
+      "sha256": "c7f4ae0e851df96f584d9de9839cbd02bdef5c9dec3cc1c848cdef520647d9a2",
       "bytes": 2045
     },
     "hosts/cmail/navigation.mjs": {
@@ -140,8 +140,8 @@
       "bytes": 34736
     },
     "cui-host.css": {
-      "sha256": "d3e7b34388f0ce5bc989a3ea35597d2a82ba2ab70ea93977a906338436afefc3",
-      "bytes": 10506
+      "sha256": "fd18ce0e3794346fdaad3bc1b39b6032cabb107c531f424d8ab60c079cf7477a",
+      "bytes": 10425
     }
   },
   "resources": {
